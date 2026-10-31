@@ -18,16 +18,13 @@ const VIEWPORTS = {
 } as const
 
 async function stabilize(page: Page) {
+  await page.evaluate(() => document.fonts.ready)
   await page.addStyleTag({
     content: `
       *, *::before, *::after {
         animation: none !important;
         transition: none !important;
         caret-color: transparent !important;
-      }
-      html, body, button, input, textarea, p, h1, h2, h3, span, label, div {
-        font-family: "Courier New", Courier, monospace !important;
-        letter-spacing: 0 !important;
       }
     `,
   })
