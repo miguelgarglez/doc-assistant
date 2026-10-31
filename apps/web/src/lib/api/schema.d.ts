@@ -106,6 +106,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sources/{source_id}/chunks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Source Chunks */
+        get: operations["source_chunks_sources__source_id__chunks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sources/{source_id}": {
         parameters: {
             query?: never;
@@ -425,6 +442,17 @@ export interface components {
             status_detail?: string | null;
             /** File */
             file?: string | null;
+        };
+        /** SourceChunk */
+        SourceChunk: {
+            /** Chunk Id */
+            chunk_id: string;
+            /** Section */
+            section: string;
+            /** Pages */
+            pages: number[];
+            /** Text */
+            text: string;
         };
         /** SourceSection */
         SourceSection: {
@@ -809,6 +837,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Source"][];
+                };
+            };
+        };
+    };
+    source_chunks_sources__source_id__chunks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceChunk"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

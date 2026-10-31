@@ -11,6 +11,18 @@ from doc_assistant.ingest import ingest_pdfs
 from doc_assistant.store import ChunkStore
 
 
+def test_source_chunks_only_returns_the_requested_document(
+    config_path: Path, synthetic_pdf: Path
+) -> None:
+    ingest_pdfs(config_path, synthetic_pdf.parent, embedder=FakeEmbedder())
+    with TestClient(create_app(config_path)) as client:
+        source = next(item for item in client.get("/sources").json() if item["kind"] == "pdf")
+        chunks = client.get(f"/sources/{source['id']}/chunks").json()
+        assert len(chunks) == source["n_chunks"]
+        assert chunks[0]["text"]
+        assert client.get("/sources/pdf-missing/chunks").json() == []
+
+
 def test_ingest_replaces_old_chunks_and_renders_pages(
     config_path: Path, synthetic_pdf: Path
 ) -> None:

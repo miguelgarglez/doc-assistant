@@ -271,6 +271,49 @@
         }
       }
     },
+    "/sources/{source_id}/chunks": {
+      "get": {
+        "summary": "Source Chunks",
+        "operationId": "source_chunks_sources__source_id__chunks_get",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SourceChunk"
+                  },
+                  "title": "Response Source Chunks Sources  Source Id  Chunks Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/sources/{source_id}": {
       "delete": {
         "summary": "Delete Source",
@@ -1332,6 +1375,37 @@
           "status"
         ],
         "title": "Source"
+      },
+      "SourceChunk": {
+        "properties": {
+          "chunk_id": {
+            "type": "string",
+            "title": "Chunk Id"
+          },
+          "section": {
+            "type": "string",
+            "title": "Section"
+          },
+          "pages": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Pages"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "chunk_id",
+          "section",
+          "pages",
+          "text"
+        ],
+        "title": "SourceChunk"
       },
       "SourceSection": {
         "properties": {

@@ -136,6 +136,13 @@ class SourceSection(BaseModel):
     pages: list[int]
 
 
+class SourceChunk(BaseModel):
+    chunk_id: str
+    section: str
+    pages: list[int]
+    text: str
+
+
 class Source(BaseModel):
     id: str
     kind: Literal["pdf", "invoice"]
@@ -384,6 +391,26 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
     @app.get("/sources", response_model=list[Source])
     def sources(request: Request) -> Any:
         return list_sources(request.app.state.config)
+
+    @app.get("/sources/{source_id}/chunks", response_model=list[SourceChunk])
+    def source_chunks(source_id: str, request: Request) -> Any:
+        cfg = request.app.state.config
+        store = ChunkStore(cfg.db, cfg.embeddings.dim)
+        try:
+            return [
+                SourceChunk(
+                    chunk_id=row["chunk_id"],
+                    section=row["section"],
+                    pages=json.loads(row["pages"]),
+                    text=row["body"],
+                )
+                for row in store.db.execute(
+                    "SELECT chunk_id, section, pages, body FROM chunks WHERE doc = ? ORDER BY rowid",
+                    (source_id,),
+                )
+            ]
+        finally:
+            store.db.close()
 
     @app.delete("/sources/{source_id}", status_code=204, responses={404: {"model": ErrorBody}})
     def delete_source(source_id: str, request: Request) -> Response:
