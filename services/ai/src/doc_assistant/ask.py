@@ -91,6 +91,10 @@ def _union_candidates(vec: list[tuple[str, float]], bm: list[tuple[str, float]])
 Event = tuple[str, dict[str, Any]]
 
 
+def _count(n: int, one: str, many: str) -> str:
+    return f"{n} {one if n == 1 else many}"
+
+
 def _step(sid: str, status: str, label: str, **extra: Any) -> Event:
     return ("step", {"id": sid, "status": status, "label": label, **extra})
 
@@ -235,7 +239,7 @@ def ask_events(
     yield _step(
         "retrieve",
         "done",
-        f"{len(ordered)} fragmentos candidatos",
+        _count(len(ordered), "fragmento candidato", "fragmentos candidatos"),
         data={"n": len(ordered)},
         elapsed_s=round(time.perf_counter() - t0, 4),
     )
@@ -252,7 +256,7 @@ def ask_events(
     yield _step(
         "rerank",
         "done",
-        f"{len(top_chunks)} fragmentos seleccionados",
+        _count(len(top_chunks), "fragmento seleccionado", "fragmentos seleccionados"),
         data={
             "n": len(top_chunks),
             "top": [{"doc": c["display_doc"], "section": c["section"]} for c in top_chunks],
@@ -340,7 +344,7 @@ def ask_events(
     yield _step(
         "verify",
         "done",
-        f"{len(citations)} citas verificadas",
+        _count(len(citations), "cita verificada", "citas verificadas"),
         data={"n_citations": len(citations)},
         elapsed_s=latencies["verify"],
     )

@@ -27,6 +27,7 @@ export class ChunkMapper {
   private textOpen = false
   private text = ""
   private finished = false
+  private suggestions: Suggestion[] = []
 
   push(event: StreamEvent): AskChunk[] {
     if (this.finished) return []
@@ -87,7 +88,10 @@ export class ChunkMapper {
     return [{ type: "finish-step" }]
   }
 
-  private refuse(answer: string, reason: string, suggestions: Suggestion[], retract: boolean): AskChunk[] {
+  private refuse(answer: string, reason: string, incoming: Suggestion[], retract: boolean): AskChunk[] {
+    // `refusal` and `done` both carry the suggestions; an empty list in the second must not erase the first.
+    const suggestions = incoming.length > 0 ? incoming : this.suggestions
+    this.suggestions = suggestions
     const out = this.closeText()
     if (retract && this.stepOpen) {
       out.push({ type: "reset-step" }, ...this.replaySteps())

@@ -168,10 +168,7 @@ export function classifyDroppedFile(
   if (type === "application/pdf" || name.endsWith(".pdf")) {
     return "document"
   }
-  if (
-    type.startsWith("image/") ||
-    /\.(png|jpe?g|webp|gif)$/i.test(name)
-  ) {
+  if (type === "image/png" || type === "image/jpeg" || /\.(png|jpe?g)$/i.test(name)) {
     return "invoice"
   }
   return "unsupported"

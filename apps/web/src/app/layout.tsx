@@ -1,10 +1,14 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { DM_Sans, IBM_Plex_Mono, Manrope, Space_Grotesk } from "next/font/google"
 
 import { ThemeProvider } from "@/components/theme/theme-provider"
-import { Navigation } from "@/components/system/navigation"
-import { TraceProvider } from "@/components/system/trace-provider"
+import { PromptInputProvider } from "@/components/ai-elements/prompt-input"
+import { ChatProvider } from "@/components/providers/chat-provider"
+import { SourcesProvider } from "@/components/providers/sources-provider"
+import { UploadsProvider } from "@/components/providers/uploads-provider"
+import { AppShell } from "@/components/shell/app-shell"
 import { ToastProvider } from "@/components/ui/toast"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import { DEFAULT_THEME, THEME_NAMES, COLOR_MODES, THEME_STORAGE_KEY, MODE_STORAGE_KEY } from "@/lib/theme"
 
 import "./globals.css"
@@ -36,20 +40,40 @@ export const metadata: Metadata = {
     "Consulta local de documentación técnica de robótica industrial con citas verificables.",
 }
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  // The on-screen keyboard shrinks the layout instead of covering the composer.
+  interactiveWidget: "resizes-content",
+}
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
       data-theme={DEFAULT_THEME}
       suppressHydrationWarning
-      className={`${industrialDisplay.variable} ${industrialSans.variable} ${neutralSans.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${industrialDisplay.variable} ${industrialSans.variable} ${neutralSans.variable} ${plexMono.variable} h-dvh antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)}),m=localStorage.getItem(${JSON.stringify(MODE_STORAGE_KEY)}),r=document.documentElement;if(${JSON.stringify(THEME_NAMES)}.includes(t))r.dataset.theme=t;if(${JSON.stringify(COLOR_MODES)}.includes(m)){r.classList.toggle('dark',m==='dark');r.style.colorScheme=m}}catch(e){}})()` }} />
       </head>
-      <body className="flex min-h-full flex-col">
+      <body className="h-dvh overflow-hidden">
         <ThemeProvider>
-          <ToastProvider><TraceProvider><Navigation />{children}</TraceProvider></ToastProvider>
+          <ToastProvider>
+            <TooltipProvider delay={300}>
+              <SourcesProvider>
+                <UploadsProvider>
+                  <ChatProvider>
+                    <PromptInputProvider>
+                      <AppShell>{children}</AppShell>
+                    </PromptInputProvider>
+                  </ChatProvider>
+                </UploadsProvider>
+              </SourcesProvider>
+            </TooltipProvider>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

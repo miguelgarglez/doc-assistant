@@ -59,12 +59,12 @@ export const ChainOfThoughtHeader = memo(
     return (
       <CollapsibleTrigger
         className={cn(
-          "flex w-full items-center gap-2 rounded-md py-1 text-left text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+          "flex w-fit max-w-full items-center gap-1.5 rounded-md py-1 text-left text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
           className
         )}
         {...props}
       >
-        <span className="min-w-0 flex-1 truncate">{children}</span>
+        <span className="min-w-0 truncate">{children}</span>
         <ChevronDownIcon
           className={cn(
             "size-4 shrink-0 transition-transform duration-200",

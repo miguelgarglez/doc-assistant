@@ -6,14 +6,14 @@ export type ShortcutHelp = {
 }
 
 export const SHORTCUTS: readonly ShortcutHelp[] = [
-  { keys: "Enter", action: "Enviar pregunta" },
+  { keys: "Enter", action: "Enviar la pregunta" },
   { keys: "Shift+Enter", action: "Nueva línea" },
-  { keys: "⌘/Ctrl+Enter", action: "Enviar pregunta" },
-  { keys: "⌘/Ctrl+K", action: "Enfocar el campo de pregunta" },
-  { keys: "Esc", action: "Cancelar generación o cerrar el visor" },
-  { keys: "↑ / ↓", action: "Recorrer historial de preguntas (input vacío)" },
-  { keys: "?", action: "Mostrar esta ayuda" },
-  { keys: "⌘/Ctrl+/", action: "Mostrar esta ayuda" },
+  { keys: "⌘/Ctrl+K", action: "Ir al campo de pregunta" },
+  { keys: "Esc", action: "Detener la respuesta o cerrar la fuente abierta" },
+  { keys: "↑ / ↓", action: "Recorrer preguntas anteriores (campo vacío)" },
+  { keys: "⌘/Ctrl+V", action: "Pegar un PDF o una imagen como fuente" },
+  { keys: "⌘/Ctrl+B", action: "Mostrar u ocultar el menú" },
+  { keys: "? o ⌘/Ctrl+/", action: "Mostrar esta ayuda" },
 ]
 
 export function isEditableTarget(target: EventTarget | null): boolean {

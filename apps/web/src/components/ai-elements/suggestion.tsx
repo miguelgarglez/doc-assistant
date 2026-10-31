@@ -1,33 +1,20 @@
-"use client";
+"use client"
 
-import { Button } from "@/components/ui/button";
-import {
-  ScrollArea,
-  ScrollBar,
-} from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-import type { ComponentProps } from "react";
-import { useCallback } from "react";
+import type { ComponentProps } from "react"
+import { useCallback } from "react"
 
-export type SuggestionsProps = ComponentProps<typeof ScrollArea>;
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
-export const Suggestions = ({
-  className,
-  children,
-  ...props
-}: SuggestionsProps) => (
-  <ScrollArea className="w-full overflow-x-auto whitespace-nowrap" {...props}>
-    <div className={cn("flex w-max flex-nowrap items-center gap-2", className)}>
-      {children}
-    </div>
-    <ScrollBar className="hidden" orientation="horizontal" />
-  </ScrollArea>
-);
+/** Chips wrap instead of scrolling sideways: a hidden scroller hides the suggestions it exists to show. */
+export const Suggestions = ({ className, ...props }: ComponentProps<"div">) => (
+  <div className={cn("flex flex-wrap items-center gap-2", className)} role="group" {...props} />
+)
 
 export type SuggestionProps = Omit<ComponentProps<typeof Button>, "onClick"> & {
-  suggestion: string;
-  onClick?: (suggestion: string) => void;
-};
+  suggestion: string
+  onClick?: (suggestion: string) => void
+}
 
 export const Suggestion = ({
   suggestion,
@@ -38,13 +25,10 @@ export const Suggestion = ({
   children,
   ...props
 }: SuggestionProps) => {
-  const handleClick = useCallback(() => {
-    onClick?.(suggestion);
-  }, [onClick, suggestion]);
-
+  const handleClick = useCallback(() => onClick?.(suggestion), [onClick, suggestion])
   return (
     <Button
-      className={cn("cursor-pointer rounded-full px-4", className)}
+      className={cn("cursor-pointer rounded-full px-3.5", className)}
       onClick={handleClick}
       size={size}
       type="button"
@@ -53,5 +37,5 @@ export const Suggestion = ({
     >
       {children || suggestion}
     </Button>
-  );
-};
+  )
+}

@@ -115,6 +115,7 @@ test.describe("transport: SSE a mensajes del AI SDK", () => {
     expect(view.kind).toBe("refusal")
     if (view.kind !== "refusal") return
     expect(view.refusal.answer).toContain("No dispongo")
+    expect(view.refusal.suggestions).toHaveLength(1)
     expect(view.steps.map((s) => s.id)).toEqual(["retrieve", "generate", "verify"])
   })
 

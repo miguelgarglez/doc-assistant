@@ -1,45 +1,75 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { useTrace } from "@/components/system/trace-provider"
+import { RefreshCwIcon } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 
-const pieces = [
-  { id: "web", label: "Web", steps: ["route"] },
-  { id: "proxy", label: "Proxy / BFF", steps: ["route"] },
-  { id: "ai", label: "Servicio AI", steps: ["route", "meta", "invoices", "verify"] },
-  { id: "embeddings", label: "Embeddings", steps: ["retrieve"] },
-  { id: "sqlite", label: "Índice SQLite", steps: ["retrieve", "meta", "invoices"] },
-  { id: "reranker", label: "Reranker", steps: ["rerank"] },
-  { id: "llm", label: "LLM", steps: ["generate"] },
-  { id: "ocr", label: "OCR", steps: [] },
-] as const
-type Health = { id: string; status: string; latency_ms: number | null; detail: string | null }
+import { useConversation } from "@/components/providers/chat-provider"
+import { Page, PageHeader } from "@/components/shell/page"
+import { SystemDiagram } from "@/components/system/system-diagram"
+import { TracePanel } from "@/components/system/trace-panel"
+import { Button } from "@/components/ui/button"
+import { useHealth } from "@/hooks/use-health"
+import { pieceUsage } from "@/lib/system/pieces"
+
+const REPLAY_STEP_MS = 700
 
 // El guard de administrador se aplicará aquí cuando exista autenticación.
 export default function SystemPage() {
-  const { steps } = useTrace()
-  const [health, setHealth] = useState<Health[]>([])
+  const health = useHealth()
+  const { trace, busy } = useConversation()
+  const [selected, setSelected] = useState<string | null>(null)
   const [replay, setReplay] = useState<number | null>(null)
-  useEffect(() => {
-    const controller = new AbortController()
-    fetch("/api/health/components", { signal: controller.signal }).then((response) => response.ok ? response.json() : null).then((data) => { if (data?.components) setHealth(data.components) }).catch(() => {})
-    return () => controller.abort()
-  }, [])
+  const steps = useMemo(() => trace?.steps ?? [], [trace])
+
   useEffect(() => {
     if (replay === null) return
-    if (replay >= steps.length - 1) return
-    const timer = window.setTimeout(() => setReplay(replay + 1), 700)
+    const timer = window.setTimeout(
+      () => setReplay(replay >= steps.length - 1 ? null : replay + 1),
+      replay >= steps.length - 1 ? REPLAY_STEP_MS * 1.5 : REPLAY_STEP_MS
+    )
     return () => window.clearTimeout(timer)
   }, [replay, steps.length])
-  const active = replay === null ? steps.at(-1) : steps[replay]
-  return <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6">
-    <div><h1 className="font-heading text-3xl font-semibold">Sistema</h1><p className="mt-2 text-muted-foreground">Piezas y recorrido de la última consulta.</p></div>
-    <section aria-labelledby="architecture-heading" className="flex flex-col gap-4"><h2 id="architecture-heading" className="font-heading text-xl font-medium">Arquitectura</h2><p className="text-sm text-muted-foreground">Web → Proxy / BFF → Servicio AI → modelos e índice</p><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{pieces.map((piece) => {
-      const state = health.find((item) => item.id === piece.id)
-      const lit = active?.status === "running" && (piece.steps as readonly string[]).includes(active.id)
-      return <article key={piece.id} className={`rounded-lg border bg-card p-4 ${lit ? "border-primary ring-2 ring-primary/30" : "border-border"}`}><h3 className="font-medium">{piece.label}</h3><p className="mt-2 text-sm text-muted-foreground">{state ? `${state.status} ${state.latency_ms === null ? "" : `· ${state.latency_ms} ms`}` : "Estado sin medir"}</p>{state?.detail ? <p className="mt-1 text-sm">{state.detail}</p> : null}</article>
-    })}</div></section>
-    <section aria-labelledby="trace-heading" className="flex flex-col gap-4"><div className="flex flex-wrap items-center justify-between gap-3"><h2 id="trace-heading" className="font-heading text-xl font-medium">Última petición</h2><Button variant="outline" disabled={!steps.length} onClick={() => setReplay(0)}>Reproducir</Button></div>{steps.length ? <ol className="flex flex-col gap-2">{steps.map((step, index) => <li key={index} className={`rounded-md border p-3 text-sm ${replay === index ? "border-primary bg-muted" : "border-border"}`}>{step.label} · {step.status === "done" ? "completado" : "en curso"}{step.elapsed_s !== undefined ? ` · ${step.elapsed_s.toFixed(2)} s` : ""}</li>)}</ol> : <p className="text-sm text-muted-foreground">Haz una consulta para ver su recorrido.</p>}</section>
-  </main>
+
+  const running = busy ? steps.findLast((step) => step.status === "running") : undefined
+  const active =
+    (replay !== null ? steps[replay] : undefined) ?? steps.find((step) => step.id === selected) ?? running ?? null
+  const usage = useMemo(() => pieceUsage(steps), [steps])
+
+  const checked = health.checkedAt
+    ? new Date(health.checkedAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    : null
+
+  return (
+    <Page>
+      <PageHeader
+        actions={
+          <>
+            {checked ? (
+              <span className="hidden text-xs text-muted-foreground sm:inline" data-testid="health-checked">
+                Comprobado a las {checked}
+              </span>
+            ) : null}
+            <Button disabled={health.checking} onClick={() => void health.refresh()} size="sm" type="button" variant="outline">
+              <RefreshCwIcon className={health.checking ? "animate-spin" : undefined} data-icon="inline-start" />
+              Comprobar
+            </Button>
+          </>
+        }
+        description="Qué piezas intervienen en una consulta, cómo están y dónde se fue el tiempo en la última."
+        title="Sistema"
+      />
+      <div className="grid min-h-0 gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
+        <section aria-label="Piezas del sistema">
+          <SystemDiagram pieces={health.pieces} step={active} usage={usage} />
+        </section>
+        <TracePanel
+          activeId={active?.id ?? null}
+          onReplay={() => setReplay(0)}
+          onSelect={setSelected}
+          replaying={replay !== null}
+          trace={trace}
+        />
+      </div>
+    </Page>
+  )
 }
