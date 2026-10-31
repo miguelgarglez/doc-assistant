@@ -1,0 +1,20 @@
+db: data/doc-assistant.db
+docs: data/documents
+llm:
+  base_url: http://127.0.0.1:8081
+  endpoint: /v1/chat/completions
+  model: llm-local
+  timeout_s: 90
+embeddings:
+  base_url: http://127.0.0.1:8082
+  endpoint: /v1/embeddings
+  model: emb-local
+  timeout_s: 90
+  dim: 8
+reranker:
+  base_url: http://127.0.0.1:8083
+  endpoint: /v1/rerank
+  model: rerank-local
+  timeout_s: 90
+top_k: 5
+answer_mode: decide_first
