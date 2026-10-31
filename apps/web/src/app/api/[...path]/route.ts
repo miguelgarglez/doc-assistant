@@ -41,6 +41,7 @@ async function proxyRequest(request: Request, context: RouteContext) {
     method: request.method,
     headers,
     redirect: "manual",
+    signal: request.signal,
   }
 
   if (request.method !== "GET" && request.method !== "HEAD") {

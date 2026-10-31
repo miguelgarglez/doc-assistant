@@ -10,6 +10,10 @@ import {
   PAGE_PNG,
 } from "./fixtures"
 
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/ask/stream", (route) => route.fulfill({ status: 404 }))
+})
+
 const FIXTURE_PDF = path.join(
   "..",
   "..",

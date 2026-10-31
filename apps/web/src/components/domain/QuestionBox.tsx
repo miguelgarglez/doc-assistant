@@ -114,6 +114,7 @@ export function QuestionBox({
       }}
       onDrop={(event) => {
         event.preventDefault()
+        event.stopPropagation()
         const files = Array.from(event.dataTransfer.files)
         if (files.length > 0) {
           onPasteFiles?.(files)

@@ -10,6 +10,10 @@ import {
   invoiceReviewUpload,
 } from "./invoice-fixtures"
 
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/ask/stream", (route) => route.fulfill({ status: 404 }))
+})
+
 const SCREENSHOT_DIR = path.join("..", "..", "evidence", "screenshots")
 
 const VIEWPORTS = {
@@ -31,7 +35,8 @@ async function stabilize(page: Page) {
 }
 
 async function openFacturas(page: Page) {
-  await page.getByRole("tab", { name: "Facturas" }).click()
+  if (await page.getByText("Menú", { exact: true }).isVisible()) await page.getByText("Menú", { exact: true }).click()
+  await page.getByRole("link", { name: "Fuentes", exact: true }).click()
   await expect(page.getByTestId("invoices-workspace")).toBeVisible()
 }
 

@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import { DM_Sans, IBM_Plex_Mono, Manrope, Space_Grotesk } from "next/font/google"
 
 import { ThemeProvider } from "@/components/theme/theme-provider"
+import { Navigation } from "@/components/system/navigation"
+import { TraceProvider } from "@/components/system/trace-provider"
 import { ToastProvider } from "@/components/ui/toast"
 import { DEFAULT_THEME, THEME_NAMES, COLOR_MODES, THEME_STORAGE_KEY, MODE_STORAGE_KEY } from "@/lib/theme"
 
@@ -47,7 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col">
         <ThemeProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider><TraceProvider><Navigation />{children}</TraceProvider></ToastProvider>
         </ThemeProvider>
       </body>
     </html>

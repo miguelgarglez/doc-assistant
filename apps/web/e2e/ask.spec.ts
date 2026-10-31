@@ -11,6 +11,10 @@ import {
   PAGE_PNG,
 } from "./fixtures"
 
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/ask/stream", (route) => route.fulfill({ status: 404 }))
+})
+
 const SCREENSHOT_DIR = path.join("..", "..", "evidence", "screenshots")
 
 const VIEWPORTS = {

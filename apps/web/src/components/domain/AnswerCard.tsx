@@ -3,13 +3,13 @@
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CitationChips } from "@/components/domain/CitationChips"
 import { MessageActions } from "@/components/ai/message-actions"
+import { Message, MessageContent } from "@/components/ai/message"
 import { useToast } from "@/components/ui/toast"
 import { copyText } from "@/lib/clipboard"
 import type { Citation } from "@/lib/api/types"
@@ -48,12 +48,11 @@ export function AnswerCard({
   }
 
   return (
+    <div className="flex flex-col gap-3">
+    <Message align="end"><MessageContent><p className="w-fit max-w-[85%] rounded-xl bg-muted px-4 py-3">{question}</p></MessageContent></Message>
     <Card data-testid="answer-card" className="shadow-[var(--shadow-panel)]">
       <CardHeader>
         <CardTitle className="font-heading">Respuesta</CardTitle>
-        <CardDescription className="text-sm leading-relaxed">
-          {question}
-        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <p className="text-sm leading-relaxed text-foreground sm:text-[0.95rem]">
@@ -95,5 +94,6 @@ export function AnswerCard({
         />
       </CardContent>
     </Card>
+    </div>
   )
 }

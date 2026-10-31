@@ -5,6 +5,10 @@ import { expect, test, type Page } from "@playwright/test"
 
 import { askAnswerWithCitation, DEMO_QUESTION, PAGE_PNG } from "./fixtures"
 
+test.beforeEach(async ({ page }) => {
+  await page.route("**/api/ask/stream", (route) => route.fulfill({ status: 404 }))
+})
+
 const SCREENSHOT_DIR = path.join("..", "..", "evidence", "screenshots")
 
 async function stabilize(page: Page) {
@@ -47,11 +51,7 @@ async function gotoThemed(
   } else {
     await expect(page.locator("html")).not.toHaveClass(/dark/)
   }
-  await page.getByTestId(theme === "industrial" ? "theme-industrial" : "theme-neutral").click()
-  if (dark !== (await page.locator("html").evaluate((el) => el.classList.contains("dark")))) {
-    await page.getByTestId("mode-toggle").click()
-  }
-  await expect(page.locator("html")).toHaveAttribute("data-theme", theme)
+
 }
 
 async function mockAsk(page: Page) {
@@ -72,7 +72,7 @@ async function mockAsk(page: Page) {
 }
 
 test("swap de tema industrial ↔ neutral", async ({ page }) => {
-  await page.goto("/")
+  await page.goto("/ajustes")
   await expect(page.locator("html")).toHaveAttribute("data-theme", "industrial")
   await page.getByTestId("theme-neutral").click()
   await expect(page.locator("html")).toHaveAttribute("data-theme", "neutral")

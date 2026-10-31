@@ -12,7 +12,7 @@ export default defineConfig({
     toHaveScreenshot: { maxDiffPixels: 100 },
   },
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL: "http://127.0.0.1:3100",
     viewport: { width: 1280, height: 800 },
     deviceScaleFactor: 1,
     locale: "es-ES",
@@ -31,9 +31,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm exec next start --hostname 127.0.0.1 --port 3000",
-    url: "http://127.0.0.1:3000",
-    reuseExistingServer: !process.env.CI,
+    command: "pnpm exec next start --hostname 127.0.0.1 --port 3100",
+    url: "http://127.0.0.1:3100",
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 })

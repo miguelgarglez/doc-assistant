@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import Link from "next/link"
+import { useTrace } from "@/components/system/trace-provider"
 import { KeyboardIcon } from "lucide-react"
 
 import {
@@ -9,6 +11,8 @@ import {
   ConversationEmptyState,
   ConversationScrollButton,
 } from "@/components/ai/conversation"
+import { Trace, TraceLine, TraceTitle } from "@/components/ai/trace"
+import { Message, MessageContent } from "@/components/ai/message"
 import { Suggestion, Suggestions } from "@/components/ai/suggestion"
 import { AnswerCard } from "@/components/domain/AnswerCard"
 import { AskErrorNotice } from "@/components/domain/AskErrorNotice"
@@ -23,7 +27,7 @@ import { ShortcutsHelp } from "@/components/domain/ShortcutsHelp"
 import { SourceViewer } from "@/components/domain/SourceViewer"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
-import { useAsk } from "@/hooks/use-ask"
+import { useAsk, type AskStatus } from "@/hooks/use-ask"
 import { useDocumentUpload } from "@/hooks/use-document-upload"
 import { useQuestionHistory } from "@/hooks/use-question-history"
 import { citationPage, sourcePageUrl } from "@/lib/api/source-url"
@@ -34,20 +38,30 @@ import type { Citation } from "@/lib/api/types"
 import { isEditableTarget, isModKey } from "@/lib/shortcuts"
 
 const SUGGESTIONS = [
-  "¿Cuál es la carga útil máxima del GR-50?",
-  "¿Qué perímetro libre exige la zona de seguridad?",
-  "¿Qué interfaz de brida usa el end-effector?",
+  "¿Cuáles son los puntos principales de las fuentes?",
+  "¿Qué datos técnicos aparecen en los documentos?",
+  "Resume la información disponible.",
 ] as const
 
 export function AskWorkspace({ onInvoice }: { onInvoice: (file: File) => Promise<void> }) {
   const { status, ask, cancel } = useAsk()
+  const trace = useTrace()
+  const [archiveCitation, setArchiveCitation] = useState<Citation | null>(null)
+  const [archivePage, setArchivePage] = useState(0)
   const questionHistory = useQuestionHistory()
   const documentUpload = useDocumentUpload()
   const { toast } = useToast()
   const questionRef = useRef<QuestionBoxHandle>(null)
+  const [previous, setPrevious] = useState<Exclude<AskStatus, { kind: "idle" } | { kind: "loading" }>[]>([])
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [viewerOpen, setViewerOpen] = useState(true)
+
+  useEffect(() => {
+    if (status.kind === "error" && !questionRef.current?.value()) {
+      questionRef.current?.setValue(status.question)
+    }
+  }, [status])
 
   const loading = status.kind === "loading"
   const citations =
@@ -75,6 +89,10 @@ export function AskWorkspace({ onInvoice }: { onInvoice: (file: File) => Promise
   }
 
   function handleAsk(question: string) {
+    if (status.kind !== "idle" && status.kind !== "loading") {
+      setPrevious((items) => [...items, status])
+    }
+    questionRef.current?.setValue("")
     setSelectedIndex(0)
     setViewerOpen(true)
     questionHistory.push(question)
@@ -152,7 +170,7 @@ export function AskWorkspace({ onInvoice }: { onInvoice: (file: File) => Promise
   const showEmpty = status.kind === "idle"
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-4" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); handleFiles(Array.from(event.dataTransfer.files)) }}>
       <section aria-labelledby="ask-heading" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-col gap-1">
@@ -160,11 +178,10 @@ export function AskWorkspace({ onInvoice }: { onInvoice: (file: File) => Promise
               id="ask-heading"
               className="font-heading text-lg font-medium text-foreground"
             >
-              Consulta
+              Chat
             </h2>
             <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Pregunta sobre la documentación técnica indexada. Las respuestas
-              incluyen citas verificables.
+              Pregunta sobre tus fuentes y revisa las citas.
             </p>
           </div>
           <Button
@@ -179,18 +196,7 @@ export function AskWorkspace({ onInvoice }: { onInvoice: (file: File) => Promise
             Atajos
           </Button>
         </div>
-        <QuestionBox
-          ref={questionRef}
-          disabled={loading}
-          loading={loading}
-          onSubmit={handleAsk}
-          onCancel={() => {
-            cancel()
-          }}
-          onHistory={questionHistory.peek}
-          historyActive={questionHistory.cursor !== null}
-          onPasteFiles={handleFiles}
-        />
+
       </section>
 
       <Conversation
@@ -203,6 +209,7 @@ export function AskWorkspace({ onInvoice }: { onInvoice: (file: File) => Promise
               title="Aún no hay consulta"
               description="Elige una sugerencia o escribe tu pregunta."
             >
+              <div><h3 className="font-heading text-xl font-medium">¿Qué quieres saber?</h3><p className="mt-1 text-sm text-muted-foreground">Elige una sugerencia o escribe una pregunta.</p><Link href="/fuentes" className="mt-3 inline-block text-sm text-foreground underline">Añadir fuentes</Link></div>
               <Suggestions className="mt-2 justify-center">
                 {SUGGESTIONS.map((item) => (
                   <Suggestion
@@ -218,8 +225,27 @@ export function AskWorkspace({ onInvoice }: { onInvoice: (file: File) => Promise
             </ConversationEmptyState>
           ) : null}
 
-          {loading ? <AskLoadingSkeleton /> : null}
+          {previous.map((item, index) => (
+            <div key={index} className="flex flex-col gap-3" data-testid="previous-turn">
+              {item.kind === "success" && item.data.ok ? (
+                <AnswerCard
+                  question={item.question}
+                  answer={item.data.answer}
+                  citations={item.data.citations}
+                  onSelectCitation={(citation) => { setArchiveCitation(citation); setArchivePage(0) }}
+                />
+              ) : item.kind === "success" ? (
+                <><p>{item.question}</p><RefusalNotice message={item.data.answer} reason={item.data.reason} /></>
+              ) : (
+                <><p>{item.question}</p><p className="text-sm text-muted-foreground">{item.kind === "error" ? item.error.message : "Consulta cancelada."}</p></>
+              )}
+            </div>
+          ))}
 
+          {archiveCitation ? <SourceViewer citation={archiveCitation} page={citationPage(archiveCitation, archivePage) ?? null} pageImageSrc={citationPage(archiveCitation, archivePage) != null ? sourcePageUrl(archiveCitation.doc_id, citationPage(archiveCitation, archivePage)!) : null} pageIndex={archivePage} pageCount={archiveCitation.pages.length} onPrevPage={() => setArchivePage((index) => Math.max(0, index - 1))} onNextPage={() => setArchivePage((index) => Math.min(archiveCitation.pages.length - 1, index + 1))} /> : null}
+          {loading ? <div className="flex flex-col gap-3"><p className="rounded-lg bg-muted p-3">{status.question}</p>{trace.steps.length ? <Trace aria-label="Pasos de la consulta">{trace.steps.filter((step, index, all) => all.findLastIndex((item) => item.id === step.id) === index).map((step) => <TraceLine key={step.id} status={step.status === "running" ? "running" : undefined}><TraceTitle>{step.label}{step.status === "done" ? " ✓" : "…"}</TraceTitle></TraceLine>)}</Trace> : <AskLoadingSkeleton />}{status.text ? <div aria-live="polite" className="rounded-lg border border-border p-4"><p className="mb-2 text-xs text-muted-foreground">Respuesta provisional. Verificando fuentes…</p><p className="whitespace-pre-wrap">{status.text}</p></div> : null}</div> : null}
+
+          {status.kind !== "idle" && status.kind !== "loading" && (status.kind !== "success" || !status.data.ok) ? <Message align="end"><MessageContent><p className="w-fit max-w-[85%] rounded-xl bg-muted px-4 py-3">{status.question}</p></MessageContent></Message> : null}
           {status.kind === "cancelled" ? (
             <AskErrorNotice
               error={{
@@ -233,6 +259,8 @@ export function AskWorkspace({ onInvoice }: { onInvoice: (file: File) => Promise
           {status.kind === "error" ? (
             <AskErrorNotice error={status.error} onRetry={handleRetry} />
           ) : null}
+
+          {status.kind === "success" && trace.steps.length ? <details className="text-sm text-muted-foreground"><summary className="cursor-pointer">Ver pasos de la consulta</summary><Trace className="mt-2">{trace.steps.filter((step, index, all) => all.findLastIndex((item) => item.id === step.id) === index).map((step) => <TraceLine key={step.id}><TraceTitle>{step.label}</TraceTitle></TraceLine>)}</Trace></details> : null}
 
           {status.kind === "success" && !status.data.ok ? (
             <RefusalNotice
@@ -311,6 +339,22 @@ export function AskWorkspace({ onInvoice }: { onInvoice: (file: File) => Promise
         <ConversationScrollButton />
       </Conversation>
 
+      <div className="sticky bottom-0 z-10 rounded-xl border border-border bg-background p-4 shadow-[var(--shadow-panel)]">
+        <QuestionBox
+          ref={questionRef}
+          disabled={loading}
+          loading={loading}
+          onSubmit={handleAsk}
+          onCancel={() => {
+            if (status.kind === "loading") questionRef.current?.setValue(status.question)
+            cancel()
+          }}
+          onHistory={questionHistory.peek}
+          historyActive={questionHistory.cursor !== null}
+          onPasteFiles={handleFiles}
+        />
+      </div>
+
       {documentUpload.status.kind === "uploading" ||
       documentUpload.status.kind === "success" ||
       documentUpload.status.kind === "error" ? (
@@ -323,7 +367,7 @@ export function AskWorkspace({ onInvoice }: { onInvoice: (file: File) => Promise
         </p>
       ) : null}
 
-      <DocumentUploadPanel api={documentUpload} />
+      {documentUpload.status.kind !== "idle" ? <DocumentUploadPanel api={documentUpload} /> : null}
       <ShortcutsHelp
         open={shortcutsOpen}
         onClose={() => setShortcutsOpen(false)}
