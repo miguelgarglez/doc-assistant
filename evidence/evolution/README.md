@@ -191,3 +191,34 @@ Qué se probó:
 ![v0.8.0 invoice-ok](v0.8.0/invoice-ok.png)
 ![v0.8.0 invoice-review-mobile](v0.8.0/invoice-review-mobile.png)
 ![v0.8.0 invoice-review](v0.8.0/invoice-review.png)
+
+## v0.9.0 · 2026-10-31 15:35 +0100 · commit `af84b3d`
+
+**v0.9.0 · UI/UX del chat y sistema de diseño con temas**
+
+Qué cambió:
+- Temas intercambiables industrial (por defecto) y neutral, modo claro/oscuro, página /design, docs/design-system.md (ADR-007).
+- Chat: atajos (Enter, Shift+Enter, Cmd/Ctrl+Enter, Cmd/Ctrl+K, Esc, flechas, ?), copiar respuesta/cita/Markdown con citas, pegar/arrastrar PDF e imagen con progreso, cancelar, regenerar, rechazo con diseño propio, auto-scroll que respeta al usuario.
+- Revisión independiente con 13 hallazgos corregidos.
+
+Qué se probó:
+- mise run check OK; e2e 38 passed; axe 0 violaciones serias/críticas en home y /design, ambos temas y modos; CLS < 0.1.
+
+![v0.9.0 ask-answer-with-source-mobile](v0.9.0/ask-answer-with-source-mobile.png)
+![v0.9.0 ask-answer-with-source](v0.9.0/ask-answer-with-source.png)
+![v0.9.0 ask-error-mobile](v0.9.0/ask-error-mobile.png)
+![v0.9.0 ask-error](v0.9.0/ask-error.png)
+![v0.9.0 ask-refusal-mobile](v0.9.0/ask-refusal-mobile.png)
+![v0.9.0 ask-refusal](v0.9.0/ask-refusal.png)
+![v0.9.0 design-industrial-mobile](v0.9.0/design-industrial-mobile.png)
+![v0.9.0 design-industrial](v0.9.0/design-industrial.png)
+![v0.9.0 design-neutral-mobile](v0.9.0/design-neutral-mobile.png)
+![v0.9.0 design-neutral](v0.9.0/design-neutral.png)
+![v0.9.0 invoice-ok-mobile](v0.9.0/invoice-ok-mobile.png)
+![v0.9.0 invoice-ok](v0.9.0/invoice-ok.png)
+![v0.9.0 invoice-review-mobile](v0.9.0/invoice-review-mobile.png)
+![v0.9.0 invoice-review](v0.9.0/invoice-review.png)
+![v0.9.0 theme-industrial-mobile](v0.9.0/theme-industrial-mobile.png)
+![v0.9.0 theme-industrial](v0.9.0/theme-industrial.png)
+![v0.9.0 theme-neutral-mobile](v0.9.0/theme-neutral-mobile.png)
+![v0.9.0 theme-neutral](v0.9.0/theme-neutral.png)
