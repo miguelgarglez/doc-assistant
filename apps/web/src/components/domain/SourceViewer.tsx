@@ -20,6 +20,10 @@ type SourceViewerProps = {
   citation: Citation | null
   pageImageSrc: string | null
   page: number | null
+  pageIndex?: number
+  pageCount?: number
+  onPrevPage?: () => void
+  onNextPage?: () => void
   citationIndex?: number
   citationCount?: number
   onPrevCitation?: () => void
@@ -30,6 +34,10 @@ export function SourceViewer({
   citation,
   pageImageSrc,
   page,
+  pageIndex = 0,
+  pageCount = 0,
+  onPrevPage,
+  onNextPage,
   citationIndex = 0,
   citationCount = 0,
   onPrevCitation,
@@ -110,6 +118,37 @@ export function SourceViewer({
         >
           {pageImageSrc ? (
             <div className="flex flex-col gap-2">
+              {pageCount > 1 && onPrevPage && onNextPage ? (
+                <div
+                  className="flex items-center justify-between gap-2"
+                  role="group"
+                  aria-label="Páginas del fragmento"
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onPrevPage}
+                    disabled={pageIndex <= 0}
+                    aria-label="Página anterior del fragmento"
+                  >
+                    <ChevronLeftIcon />
+                  </Button>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {`p. ${page ?? ""} · ${pageIndex + 1}/${pageCount} del fragmento`}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onNextPage}
+                    disabled={pageIndex >= pageCount - 1}
+                    aria-label="Página siguiente del fragmento"
+                  >
+                    <ChevronRightIcon />
+                  </Button>
+                </div>
+              ) : null}
               <button
                 type="button"
                 onClick={() =>

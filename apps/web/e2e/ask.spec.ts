@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test"
 import {
   DEMO_QUESTION,
   askAnswerWithCitation,
+  askMultiPage,
   askError,
   askRefusal,
   PAGE_PNG,
@@ -156,4 +157,23 @@ test("fallo de red: estado de error y formulario usable", async ({ page }) => {
   await expect(page.getByTestId("ask-error-notice")).toBeVisible()
   await expect(page.getByText("Error (network_error)")).toBeVisible()
   await expect(page.getByRole("button", { name: "Consultar" })).toBeEnabled()
+})
+
+test("fragmento de varias páginas: el visor recorre sus páginas (#23)", async ({ page }) => {
+  await page.route("**/api/ask", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(askMultiPage) })
+  )
+  await page.route("**/api/sources/**/pages/**", (route) =>
+    route.fulfill({ status: 200, contentType: "image/png", body: PAGE_PNG })
+  )
+  await page.goto("/")
+  await page.getByLabel("Pregunta").fill(DEMO_QUESTION)
+  await page.getByRole("button", { name: "Consultar" }).click()
+  const img = page.getByTestId("source-viewer").locator("img")
+  await expect(img).toHaveAttribute("src", /\/pages\/1$/)
+  await expect(page.getByText("p. 1 · 1/2 del fragmento")).toBeVisible()
+  await page.getByRole("button", { name: "Página siguiente del fragmento" }).click()
+  await expect(img).toHaveAttribute("src", /\/pages\/2$/)
+  await expect(page.getByText("p. 2 · 2/2 del fragmento")).toBeVisible()
+  await expect(page.getByRole("button", { name: "Página siguiente del fragmento" })).toBeDisabled()
 })

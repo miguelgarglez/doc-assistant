@@ -24,7 +24,12 @@ export function AskWorkspace() {
     citations.length === 0 ? 0 : Math.min(selectedIndex, citations.length - 1)
   const selected: Citation | null =
     citations.length > 0 ? (citations[safeIndex] ?? null) : null
-  const page = selected ? (citationPage(selected) ?? null) : null
+  // #23: un fragmento puede abarcar varias páginas; el índice se reinicia al cambiar de cita
+  const [pageSel, setPageSel] = useState<{ chunkId: string; index: number } | null>(null)
+  const pageIndex =
+    selected && pageSel?.chunkId === selected.chunk_id ? pageSel.index : 0
+  const pageCount = selected?.pages.length ?? 0
+  const page = selected ? (citationPage(selected, pageIndex) ?? null) : null
   const pageImageSrc =
     selected && page !== null ? sourcePageUrl(selected.doc_id, page) : null
 
@@ -99,6 +104,19 @@ export function AskWorkspace() {
             citation={selected}
             pageImageSrc={pageImageSrc}
             page={page}
+            pageIndex={pageIndex}
+            pageCount={pageCount}
+            onPrevPage={() =>
+              selected &&
+              setPageSel({ chunkId: selected.chunk_id, index: Math.max(0, pageIndex - 1) })
+            }
+            onNextPage={() =>
+              selected &&
+              setPageSel({
+                chunkId: selected.chunk_id,
+                index: Math.min(pageCount - 1, pageIndex + 1),
+              })
+            }
             citationIndex={safeIndex}
             citationCount={citations.length}
             onPrevCitation={() =>

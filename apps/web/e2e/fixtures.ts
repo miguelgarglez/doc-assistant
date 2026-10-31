@@ -34,6 +34,11 @@ export const askAnswerWithCitation = {
   reason: "",
 } as const satisfies AskResponse
 
+export const askMultiPage = {
+  ...askAnswerWithCitation,
+  citations: [{ ...askAnswerWithCitation.citations[0], pages: [1, 2] }],
+} as const satisfies AskResponse
+
 export const askRefusal = {
   ok: false,
   answer: "No dispongo de esa información en los documentos",
