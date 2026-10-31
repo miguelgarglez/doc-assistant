@@ -12,7 +12,7 @@ El enunciado deja huecos a propósito. Para cada uno: qué se decidió, por qué
 | Preguntas agregadas sobre facturas ("suma de todas") | Hoy se rechazan si el plan no es seguro | El plan SQL aún no es fiable con agregados | Plantillas SQL validadas por tipo de pregunta |
 | Formato de fecha | Se guarda tal cual aparece | Normalizar sin un formato fijado podía inventar | Normalizar a ISO 8601 con una regla y un test por formato |
 | Cómo acreditar "cero alucinaciones" | No se afirma ninguna cifra hasta tener un gold aprobado; hoy solo hay pruebas de humo | Una cifra sobre un borrador no acredita nada | Gold aprobado + métricas reproducibles en `mise run evidence` |
-| OCR | glm-ocr en Ollama (runtime aparte, no viene en el ZIP) | Elegido en los experimentos previos (fuera de este repo); no hay aquí una comparación medida | Un OCR GGUF servido por llama.cpp, para tener un solo runtime (pendiente de decidir) |
+| OCR | GLM-OCR GGUF Q8_0 en llama-server :8084 (en el ZIP) | Medido frente a Ollama glm-ocr con 6 facturas sintéticas y el LLM cargado: 72/72 campos ambos, ~22 s/factura frente a 27–36 s, ~2,3–2,7 GB de RAM pico | Ollama queda como alternativa (`DOC_ASSISTANT_OCR_RUNTIME=ollama`) |
 | Hardware objetivo | El portátil disponible (M4, 16 GB); modelos de 4B cuantizados | El enunciado no da hardware | Un servidor GPU (ver `scaling-deployment.md`) |
 | Sistema operativo del evaluador | mise + scripts Python, sin shell ni Docker | Es lo que funciona igual en macOS, Linux y Windows | Docker o WSL2 como plan B |
 | Usuarios y permisos | No hay: es una herramienta de un solo usuario y local | Está fuera del núcleo pedido | Autenticación en la capa servidor de Next (ver `scaling-deployment.md`) |

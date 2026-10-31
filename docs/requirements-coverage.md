@@ -34,7 +34,7 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 
 | Id | Requisito (paráfrasis) | Dónde | Estado | Fiabilidad real |
 |---|---|---|---|---|
-| C1 / N1 | 100 % local, sin APIs de terceros | llama-server y Ollama en 127.0.0.1 | Cumplido | Todos los adaptadores apuntan a localhost (`config.yaml`). Internet solo en la instalación. |
+| C1 / N1 | 100 % local, sin APIs de terceros | llama-server en 127.0.0.1 (Ollama opcional) | Cumplido | Todos los adaptadores apuntan a localhost (`config.yaml`). Internet solo en la instalación. |
 | C2 | Modelos elegidos para la máquina disponible | `config.yaml`, `assets.json` | Parcial | Funciona en un M4 de 16 GB (humo real). |
 | C3 | Especificar el hardware | README "Probado en" | Parcial | Solo dice el chip y la RAM. Faltan la CPU, la GPU/VRAM unificada y la versión del SO, medidas con un comando. |
 | C4 / C5 / E-C1 | Justificar cada modelo frente al hardware, con su cuantización y las alternativas descartadas | — | **No** | No está escrito en este repo. |
@@ -58,7 +58,7 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 | E-B4 | Otra evidencia | `docs/reviews/`, `docs/test-audit` (`services/ai/docs`), CHECKPOINT | Cumplido | — |
 | E-B5 / REP3 | Evidencia regenerable con un comando | `mise run evidence [--live]` | Cumplido | Ejecutado el 31-oct; las capturas son deterministas. |
 | E-C2 / E-C3 | Arquitectura: ingesta y garantía de fundamentación | `docs/architecture.md` | Parcial | Están descritas, pero sin medidas que las respalden (ver A2 y R1.7). |
-| REP1 / REP2 | Un comando, versiones fijadas, sin montajes frágiles | mise + `setup` con SHA256 + ZIP | Parcial | Probado en macOS, ZIP con smoke falso. Windows y Linux sin probar en real. Ollama hay que instalarlo aparte. |
+| REP1 / REP2 | Un comando, versiones fijadas, sin montajes frágiles | mise + `setup` con SHA256 + ZIP | Parcial | Probado en macOS, ZIP con smoke falso. Windows y Linux sin probar en real. El OCR viene en el ZIP (Ollama solo como alternativa). |
 | N2 | Documentar las elecciones | `decisions-log.md` | Cumplido | — |
 | N3 | Huecos del enunciado decididos | `docs/open-gaps.md` | Cumplido | — |
 | N5 | ZIP con código, README y arquitectura | `mise run package` | Parcial | Solo se ha probado el smoke falso, sin modelos. El paquete completo con smoke real está pendiente. |

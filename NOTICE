@@ -17,18 +17,26 @@ models/bge-reranker-v2-m3-Q8_0.gguf
   Modelo: BAAI/bge-reranker-v2-m3; GGUF de gpustack/bge-reranker-v2-m3-GGUF
   Licencia: Apache License 2.0 — https://huggingface.co/BAAI/bge-reranker-v2-m3
 
+models/GLM-OCR-Q8_0.gguf y models/mmproj-GLM-OCR-Q8_0.gguf
+  Modelo: zai-org/GLM-OCR (Z.ai); GGUF de ggml-org/GLM-OCR-GGUF (commit 65a42de)
+  Licencia: MIT — leída de la ficha del modelo base, https://huggingface.co/zai-org/GLM-OCR
+            (etiqueta "license: mit", revisión 2e85a62)
+  DUDA: la ficha de ggml-org/GLM-OCR-GGUF no declara licencia (solo base_model:
+  zai-org/GLM-OCR) y zai-org/GLM-OCR no publica fichero LICENSE. Se aplica la MIT
+  del modelo base; texto MIT genérico en licenses/MIT.txt.
+
 vendor/archives/llama-b12020-bin-*.{tar.gz,zip}
   llama.cpp b12020 (ggml-org) — MIT License, Copyright (c) 2023-2026 The ggml authors
   https://github.com/ggml-org/llama.cpp/blob/b12020/LICENSE
   Cada archivo conserva sus propios avisos de licencia.
 
-No incluido (lo descarga quien lo use): modelo OCR glm-ocr para Ollama
-(zai-org/GLM-OCR, MIT) y el propio Ollama. Las dependencias de Python y npm se
+No incluido: Ollama y su modelo glm-ocr, solo necesarios para la alternativa
+documentada DOC_ASSISTANT_OCR_RUNTIME=ollama. Las dependencias de Python y npm se
 instalan desde sus registros con `mise run setup`; sus licencias están en
 uv.lock / pnpm-lock.yaml y en cada paquete.
 
 Textos de licencia incluidos en licenses/: Qwen3.5-4B.LICENSE (copia del LICENSE
-del repo Qwen/Qwen3.5-4B), Apache-2.0.txt (bge-reranker-v2-m3), MIT.txt (bge-m3) y
+del repo Qwen/Qwen3.5-4B), Apache-2.0.txt (bge-reranker-v2-m3), MIT.txt (bge-m3, GLM-OCR) y
 llama.cpp-b12020.LICENSE. Los repos BAAI/bge-m3 y BAAI/bge-reranker-v2-m3 no
 publican fichero LICENSE: la licencia sale solo de la etiqueta de su ficha.
 

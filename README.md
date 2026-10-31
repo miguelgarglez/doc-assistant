@@ -10,7 +10,7 @@ Pregunta en español sobre fichas técnicas, manuales de instalación, de célul
 
 **Internet:** hace falta una vez, para `mise install` y para las dependencias de Python y npm que instala `setup` (`uv sync`, `pnpm install`). Si usas el ZIP de entrega, los modelos (`models/`) y los binarios de llama.cpp (`vendor/archives/`) ya vienen dentro, y `setup` no los descarga. Si usas el repo, los descarga (~4 GB) y pide confirmación. La inferencia es 100 % local: todo escucha en `127.0.0.1`.
 
-**Facturas (OCR):** necesitan [Ollama](https://ollama.com) con el modelo `glm-ocr` (`ollama pull glm-ocr`, ~2,7 GB). `mise run start` lo arranca o reutiliza si está instalado. Sin Ollama, la consulta de documentos funciona y la subida de facturas devuelve un error claro.
+**Facturas (OCR):** GLM-OCR en GGUF (`models/GLM-OCR-Q8_0.gguf` + `mmproj-GLM-OCR-Q8_0.gguf`, ~1,4 GB) servido por el mismo llama.cpp en `127.0.0.1:8084`; viene en el ZIP y `mise run setup` lo descarga con SHA256. Alternativa documentada: `DOC_ASSISTANT_OCR_RUNTIME=ollama` usa [Ollama](https://ollama.com) con `ollama pull glm-ocr` en `:11434`.
 
 Sin mise (con uv y node ya instalados): `uv run --project services/ai python scripts/setup.py` y `uv run --project services/ai python scripts/dev.py`.
 

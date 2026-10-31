@@ -7,7 +7,7 @@ Navegador ──► Next.js (apps/web)  ── /api/* proxy fino (BFF) ──►
                tipos TS generados de openapi.json                         ├─► llama-server :8081  LLM (Qwen3.5-4B, sin "pensar")
                                                                           ├─► llama-server :8082  embeddings (bge-m3)
                                                                           ├─► llama-server :8083  reranker (bge-reranker-v2-m3)
-                                                                          ├─► Ollama :11434       OCR (GLM-OCR)
+                                                                          ├─► llama-server :8084  OCR (GLM-OCR GGUF)
                                                                           └─► SQLite + sqlite-vec (fragmentos, páginas PNG, facturas)
 ```
 Todo escucha en `127.0.0.1`. Nada sale de la máquina.
