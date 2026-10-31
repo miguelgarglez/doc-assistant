@@ -6,19 +6,33 @@ export async function copyText(text: string): Promise<boolean> {
     await navigator.clipboard.writeText(text)
     return true
   } catch {
+    const focused = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const selection = document.getSelection()
+    const ranges = selection ? Array.from({ length: selection.rangeCount }, (_, i) => selection.getRangeAt(i).cloneRange()) : []
+    const inputSelection = focused instanceof HTMLInputElement || focused instanceof HTMLTextAreaElement
+      ? { start: focused.selectionStart, end: focused.selectionEnd, direction: focused.selectionDirection }
+      : null
+    const area = document.createElement("textarea")
     try {
-      const area = document.createElement("textarea")
       area.value = text
       area.setAttribute("readonly", "")
       area.style.position = "fixed"
       area.style.left = "-9999px"
       document.body.appendChild(area)
       area.select()
-      const ok = document.execCommand("copy")
-      document.body.removeChild(area)
-      return ok
+      return document.execCommand("copy")
     } catch {
       return false
+    } finally {
+      area.remove()
+      focused?.focus()
+      if (inputSelection && (focused instanceof HTMLInputElement || focused instanceof HTMLTextAreaElement) && inputSelection.start !== null && inputSelection.end !== null) {
+        focused.setSelectionRange(inputSelection.start, inputSelection.end, inputSelection.direction ?? undefined)
+      }
+      if (selection) {
+        selection.removeAllRanges()
+        for (const range of ranges) selection.addRange(range)
+      }
     }
   }
 }

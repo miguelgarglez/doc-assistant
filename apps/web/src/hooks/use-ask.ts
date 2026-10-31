@@ -13,19 +13,8 @@ export type AskStatus =
   | { kind: "error"; question: string; error: ErrorBody }
   | { kind: "cancelled"; question: string }
 
-export type AskTurn = {
-  id: string
-  question: string
-  data: AskResponse
-}
-
-function newId() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-}
-
 export function useAsk() {
   const [status, setStatus] = useState<AskStatus>({ kind: "idle" })
-  const [history, setHistory] = useState<AskTurn[]>([])
   const abortRef = useRef<AbortController | null>(null)
   const generationRef = useRef(0)
 
@@ -73,10 +62,6 @@ export function useAsk() {
         return
       }
 
-      setHistory((current) => [
-        ...current,
-        { id: newId(), question: trimmed, data },
-      ])
       setStatus({ kind: "success", question: trimmed, data })
     } catch (error) {
       if (generation !== generationRef.current || controller.signal.aborted) {
@@ -123,9 +108,5 @@ export function useAsk() {
     setStatus({ kind: "idle" })
   }
 
-  function clearHistory() {
-    setHistory([])
-  }
-
-  return { status, history, ask, cancel, reset, clearHistory }
+  return { status, ask, cancel, reset }
 }

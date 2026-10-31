@@ -194,7 +194,7 @@ export function AskWorkspace({ onInvoice }: { onInvoice: (file: File) => Promise
       </section>
 
       <Conversation
-        className="min-h-[12rem] rounded-xl border border-border bg-card/60"
+        className="h-[min(70vh,48rem)] min-h-[12rem] rounded-xl border border-border bg-card/60"
         data-testid="ask-conversation"
       >
         <ConversationContent className="p-4">
