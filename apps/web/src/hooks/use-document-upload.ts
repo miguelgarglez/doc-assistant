@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 
 import type { DocumentUploadResponse, ErrorBody } from "@/lib/api/types"
 import { uploadDocumentFile } from "@/lib/api/upload"
@@ -14,16 +14,32 @@ export type DocumentUploadStatus =
 export function useDocumentUpload() {
   const [status, setStatus] = useState<DocumentUploadStatus>({ kind: "idle" })
 
-  async function upload(file: File) {
+  const queue = useRef<Promise<void>>(Promise.resolve())
+  const abortRef = useRef<AbortController | null>(null)
+
+  async function run(file: File) {
+    const controller = new AbortController()
+    abortRef.current = controller
     setStatus({ kind: "uploading", fileName: file.name, progress: 0 })
     const result = await uploadDocumentFile(file, (progress) => {
       setStatus({ kind: "uploading", fileName: file.name, progress })
-    })
+    }, controller.signal)
+    abortRef.current = null
     if (!result.ok) {
       setStatus({ kind: "error", file, error: result.error })
       return
     }
     setStatus({ kind: "success", data: result.data })
+  }
+
+  function upload(file: File) {
+    const next = queue.current.then(() => run(file))
+    queue.current = next
+    return next
+  }
+
+  function cancel() {
+    abortRef.current?.abort()
   }
 
   function retry() {
@@ -36,5 +52,5 @@ export function useDocumentUpload() {
     setStatus({ kind: "idle" })
   }
 
-  return { status, upload, retry, reset }
+  return { status, upload, retry, reset, cancel }
 }

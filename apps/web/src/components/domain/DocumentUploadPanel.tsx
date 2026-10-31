@@ -10,6 +10,7 @@ type DocumentUploadApi = {
   status: DocumentUploadStatus
   upload: (file: File) => Promise<void>
   retry: () => void
+  cancel: () => void
 }
 
 type DocumentUploadPanelProps = {
@@ -18,7 +19,7 @@ type DocumentUploadPanelProps = {
 
 export function DocumentUploadPanel({ api }: DocumentUploadPanelProps) {
   const internal = useDocumentUpload()
-  const { status, upload, retry } = api ?? internal
+  const { status, upload, retry, cancel } = api ?? internal
   const uploading = status.kind === "uploading"
   const error = status.kind === "error" ? status.error : null
   const progress = status.kind === "uploading" ? status.progress : null
@@ -40,6 +41,7 @@ export function DocumentUploadPanel({ api }: DocumentUploadPanelProps) {
         error={error}
         onFile={(file) => void upload(file)}
         onRetry={retry}
+        onCancel={cancel}
         data-testid="document-upload"
       />
       {status.kind === "success" ? (

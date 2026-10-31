@@ -29,21 +29,16 @@ async function uploadWithProgress<T>(
   onProgress?: ProgressHandler,
   signal?: AbortSignal
 ): Promise<UploadResult<T>> {
-  if (!onProgress) {
-    if (path === "/documents") {
-      return uploadDocumentFile(file) as Promise<UploadResult<T>>
-    }
-    return uploadInvoiceFile(file) as Promise<UploadResult<T>>
-  }
 
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest()
     xhr.open("POST", `/api${path}`)
     xhr.responseType = "json"
+    xhr.timeout = 180_000
 
     xhr.upload.onprogress = (event) => {
       if (!event.lengthComputable) return
-      onProgress(Math.round((event.loaded / event.total) * 100))
+      onProgress?.(Math.round((event.loaded / event.total) * 100))
     }
 
     const abort = () => xhr.abort()
@@ -52,7 +47,7 @@ async function uploadWithProgress<T>(
     xhr.onload = () => {
       signal?.removeEventListener("abort", abort)
       if (xhr.status >= 200 && xhr.status < 300) {
-        onProgress(100)
+        onProgress?.(100)
         resolve({ ok: true, data: xhr.response as T })
         return
       }
@@ -79,6 +74,11 @@ async function uploadWithProgress<T>(
       })
     }
 
+    xhr.ontimeout = () => {
+      signal?.removeEventListener("abort", abort)
+      resolve({ ok: false, error: { code: "timeout", message: "La subida ha agotado el tiempo de espera." } })
+    }
+
     xhr.onabort = () => {
       signal?.removeEventListener("abort", abort)
       resolve({
@@ -92,7 +92,11 @@ async function uploadWithProgress<T>(
 
     const form = new FormData()
     form.append("file", file)
-    xhr.send(form)
+    if (signal?.aborted) {
+      resolve({ ok: false, error: { code: "cancelled", message: "Subida cancelada." } })
+    } else {
+      xhr.send(form)
+    }
   })
 }
 

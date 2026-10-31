@@ -6,7 +6,7 @@ import { UploadDropzone } from "@/components/domain/UploadDropzone"
 import { AskErrorNotice } from "@/components/domain/AskErrorNotice"
 import { useInvoices } from "@/hooks/use-invoices"
 
-export function InvoicesWorkspace() {
+export function InvoicesWorkspace({ api }: { api: ReturnType<typeof useInvoices> }) {
   const {
     invoices,
     listLoading,
@@ -17,7 +17,8 @@ export function InvoicesWorkspace() {
     retryUpload,
     selectFromList,
     refresh,
-  } = useInvoices()
+    cancelUpload,
+  } = api
 
   const uploading = uploadStatus.kind === "uploading"
   const uploadError =
@@ -37,6 +38,7 @@ export function InvoicesWorkspace() {
         error={uploadError}
         onFile={(file) => void upload(file)}
         onRetry={retryUpload}
+        onCancel={cancelUpload}
         data-testid="invoice-upload"
       />
 

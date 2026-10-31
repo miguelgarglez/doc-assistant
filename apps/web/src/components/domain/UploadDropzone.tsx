@@ -21,6 +21,7 @@ export type UploadDropzoneProps = {
   error?: ErrorBody | null
   compact?: boolean
   onFile: (file: File) => void
+  onCancel?: () => void
   onRetry?: () => void
   "data-testid"?: string
 }
@@ -37,6 +38,7 @@ export function UploadDropzone({
   compact = false,
   onFile,
   onRetry,
+  onCancel,
   "data-testid": testId = "upload-dropzone",
 }: UploadDropzoneProps) {
   const inputId = useId()
@@ -156,6 +158,7 @@ export function UploadDropzone({
         />
       </div>
 
+      {uploading && onCancel ? <Button type="button" variant="outline" onClick={onCancel}>Cancelar subida</Button> : null}
       {error ? <AskErrorNotice error={error} onRetry={onRetry} /> : null}
     </div>
   )

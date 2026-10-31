@@ -29,7 +29,6 @@ import { useQuestionHistory } from "@/hooks/use-question-history"
 import { citationPage, sourcePageUrl } from "@/lib/api/source-url"
 import {
   classifyDroppedFile,
-  uploadInvoiceFile,
 } from "@/lib/api/upload"
 import type { Citation } from "@/lib/api/types"
 import { isEditableTarget, isModKey } from "@/lib/shortcuts"
@@ -40,7 +39,7 @@ const SUGGESTIONS = [
   "¿Qué interfaz de brida usa el end-effector?",
 ] as const
 
-export function AskWorkspace() {
+export function AskWorkspace({ onInvoice }: { onInvoice: (file: File) => Promise<void> }) {
   const { status, ask, cancel } = useAsk()
   const questionHistory = useQuestionHistory()
   const documentUpload = useDocumentUpload()
@@ -103,13 +102,7 @@ export function AskWorkspace() {
         void documentUpload.upload(file)
       } else if (kind === "invoice") {
         toast(`Subiendo factura ${file.name}…`)
-        void uploadInvoiceFile(file).then((result) => {
-          if (result.ok) {
-            toast(`Factura ${result.data.record.numero} lista`, "success")
-          } else {
-            toast(result.error.message)
-          }
-        })
+        void onInvoice(file)
       } else {
         toast(`Tipo no soportado: ${file.name}`)
       }

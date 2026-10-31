@@ -6,9 +6,11 @@ import { useState } from "react"
 import { AskWorkspace } from "@/components/domain/AskWorkspace"
 import { InvoicesWorkspace } from "@/components/domain/InvoicesWorkspace"
 import { ThemeControls } from "@/components/theme/theme-controls"
+import { useInvoices } from "@/hooks/use-invoices"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function HomePage() {
+  const invoices = useInvoices()
   const [tab, setTab] = useState("consulta")
 
   return (
@@ -40,10 +42,10 @@ export default function HomePage() {
           <TabsTrigger value="facturas">Facturas</TabsTrigger>
         </TabsList>
         <TabsContent value="consulta" className="pt-6">
-          <AskWorkspace />
+          <AskWorkspace onInvoice={async (file) => { setTab("facturas"); await invoices.upload(file) }} />
         </TabsContent>
         <TabsContent value="facturas" className="pt-6">
-          {tab === "facturas" ? <InvoicesWorkspace /> : null}
+          {tab === "facturas" ? <InvoicesWorkspace api={invoices} /> : null}
         </TabsContent>
       </Tabs>
     </main>

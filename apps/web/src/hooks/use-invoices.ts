@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import { api } from "@/lib/api/client"
 import { toErrorBody } from "@/lib/api/errors"
@@ -14,6 +14,7 @@ export type InvoiceUploadStatus =
   | { kind: "error"; file: File; error: ErrorBody }
 
 export function useInvoices() {
+  const abortRef = useRef<AbortController | null>(null)
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [listLoading, setListLoading] = useState(true)
   const [listError, setListError] = useState<ErrorBody | null>(null)
@@ -56,13 +57,16 @@ export function useInvoices() {
   }
 
   async function upload(file: File) {
+    const controller = new AbortController()
+    abortRef.current = controller
     setUploadStatus({ kind: "uploading", fileName: file.name, progress: 0 })
     const result = await uploadInvoiceFile(file, (progress) => {
       setUploadStatus({ kind: "uploading", fileName: file.name, progress })
-    })
+    }, controller.signal)
+    abortRef.current = null
     if (!result.ok) {
       setUploadStatus({ kind: "error", file, error: result.error })
-      return
+      return false
     }
     setUploadStatus({ kind: "success", data: result.data })
     setSelected(result.data)
@@ -71,6 +75,7 @@ export function useInvoices() {
       [result.data.record.numero]: result.data,
     }))
     await refresh()
+    return true
   }
 
   function retryUpload() {
@@ -105,5 +110,6 @@ export function useInvoices() {
     retryUpload,
     selectFromList,
     refresh,
+    cancelUpload: () => abortRef.current?.abort(),
   }
 }
