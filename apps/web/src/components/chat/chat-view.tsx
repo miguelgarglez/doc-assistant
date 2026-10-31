@@ -18,8 +18,6 @@ import { SourceViewer } from "@/components/chat/source-viewer"
 import { UserMessage } from "@/components/chat/user-message"
 import { useConversation } from "@/components/providers/chat-provider"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
-import { useMediaQuery } from "@/hooks/use-media-query"
 import type { Citation } from "@/lib/chat/types"
 import { viewOfAssistant } from "@/lib/chat/view"
 
@@ -37,7 +35,6 @@ export function ChatView() {
   const { messages, status, error, busy, ask, regenerate, stop } = useConversation()
   const { textareaRef } = usePromptInput()
   const [viewer, setViewer] = useState<ViewerState | null>(null)
-  const wide = useMediaQuery("(min-width: 1024px)")
 
   useEffect(() => {
     if (window.matchMedia("(pointer: fine)").matches) textareaRef.current?.focus()
@@ -53,9 +50,8 @@ export function ChatView() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) return
-      if (viewerOpen) setViewer(null)
-      else if (busy) stop()
+      if (event.key !== "Escape" || event.defaultPrevented || event.isComposing || viewerOpen) return
+      if (busy) stop()
     }
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
@@ -137,31 +133,13 @@ export function ChatView() {
         </div>
       </div>
 
-      {viewerOpen && wide ? (
-        <aside aria-label="Fuente citada" className="hidden w-[24rem] shrink-0 border-l border-border lg:block xl:w-[26rem]">
-          <SourceViewer
-            citations={viewerCitations}
-            index={Math.min(viewer.index, viewerCitations.length - 1)}
-            onClose={() => setViewer(null)}
-            onIndexChange={(index) => setViewer({ messageId: viewer.messageId, index })}
-          />
-        </aside>
-      ) : null}
-      {!wide ? (
-        <Sheet open={viewerOpen} onOpenChange={(open) => !open && setViewer(null)}>
-          <SheetContent className="h-[85dvh] gap-0 rounded-t-xl p-0" showCloseButton={false} side="bottom">
-            <SheetTitle className="sr-only">Fuente citada</SheetTitle>
-            <SheetDescription className="sr-only">Página y fragmento de la cita seleccionada.</SheetDescription>
-            {viewerOpen ? (
-              <SourceViewer
-                citations={viewerCitations}
-                index={Math.min(viewer.index, viewerCitations.length - 1)}
-                onClose={() => setViewer(null)}
-                onIndexChange={(index) => setViewer({ messageId: viewer.messageId, index })}
-              />
-            ) : null}
-          </SheetContent>
-        </Sheet>
+      {viewerOpen ? (
+        <SourceViewer
+          citations={viewerCitations}
+          index={viewer.index}
+          onClose={() => setViewer(null)}
+          onIndexChange={(index) => setViewer({ messageId: viewer.messageId, index })}
+        />
       ) : null}
     </div>
   )

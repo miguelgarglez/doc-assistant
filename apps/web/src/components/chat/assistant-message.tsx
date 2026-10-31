@@ -1,21 +1,26 @@
 "use client"
 
 import { CheckIcon, CopyIcon, FileSearchIcon, RefreshCwIcon } from "lucide-react"
-import { memo, useState } from "react"
+import { memo, useMemo, useState } from "react"
+import { toast } from "sonner"
 
 import { Message, MessageAction, MessageActions, MessageContent, MessageResponse } from "@/components/ai-elements/message"
 import { Shimmer } from "@/components/ai-elements/shimmer"
 import { Suggestion } from "@/components/ai-elements/suggestion"
+import { AnswerLink } from "@/components/chat/citation-marker"
+import { CitationContext } from "@/components/chat/citation-context"
 import { Citations } from "@/components/chat/citations"
 import { TraceBlock } from "@/components/chat/trace-block"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/toast"
 import { duration } from "@/lib/format"
 import { copyText, formatAnswerMarkdown } from "@/lib/clipboard"
-import type { AskMessage, RefusalData } from "@/lib/chat/types"
+import type { AskMessage, Citation, RefusalData, ResultData } from "@/lib/chat/types"
+import { segmentsMatch, withMarkers } from "@/lib/chat/inline"
 import { suggestionLabel, viewOfAssistant } from "@/lib/chat/view"
 import { cn } from "@/lib/utils"
+
+const answerComponents = { a: AnswerLink }
 
 type AssistantMessageProps = {
   message: AskMessage
@@ -61,12 +66,13 @@ export const AssistantMessage = memo(function AssistantMessage({
           </div>
         ) : null}
         {view.kind === "answer" ? (
-          <>
-            <div data-testid="answer-text">
-              <MessageResponse>{view.text}</MessageResponse>
-            </div>
-            <Citations activeIndex={activeCitation} citations={view.citations} onOpen={onOpenCitation} />
-          </>
+          <AnswerBody
+            activeIndex={activeCitation}
+            citations={view.citations}
+            onOpen={onOpenCitation}
+            segments={view.result.segments}
+            text={view.text}
+          />
         ) : null}
         {view.kind === "refusal" ? <Refusal onAsk={onAsk} refusal={view.refusal} /> : null}
         {view.kind === "failed" ? (
@@ -94,7 +100,7 @@ export const AssistantMessage = memo(function AssistantMessage({
         ) : null}
         {view.kind === "answer" || view.kind === "refusal" ? (
           <Actions
-            copyText={view.kind === "answer" ? formatAnswerMarkdown(view.text, view.citations) : view.refusal.answer}
+            copyText={view.kind === "answer" ? formatAnswerMarkdown(withMarkers(view.text, view.result.segments, view.citations.length, "plain"), view.citations) : view.refusal.answer}
             elapsed={total}
             isLast={isLast}
             onRetry={onRetry}
@@ -105,9 +111,32 @@ export const AssistantMessage = memo(function AssistantMessage({
   )
 })
 
+type AnswerBodyProps = {
+  text: string
+  segments: ResultData["segments"]
+  citations: Citation[]
+  activeIndex: number | null
+  onOpen: (index: number) => void
+}
+
+/** The verified answer. Markers sit after each supported segment; without them the sources follow the text. */
+function AnswerBody({ text, segments, citations, activeIndex, onOpen }: AnswerBodyProps) {
+  const inline = segmentsMatch(text, segments, citations.length) && segments.some((segment) => segment.refs.length > 0)
+  const context = useMemo(() => ({ citations, activeIndex, onOpen }), [citations, activeIndex, onOpen])
+  return (
+    <CitationContext.Provider value={context}>
+      <div data-inline={inline} data-testid="answer-text">
+        <MessageResponse components={answerComponents}>
+          {inline ? withMarkers(text, segments, citations.length) : text}
+        </MessageResponse>
+      </div>
+      <Citations activeIndex={activeIndex} citations={citations} onOpen={onOpen} pills={!inline} />
+    </CitationContext.Provider>
+  )
+}
+
 function Actions({ copyText: text, elapsed, isLast, onRetry }: { copyText: string; elapsed: number | null; isLast: boolean; onRetry: () => void }) {
   const [copied, setCopied] = useState(false)
-  const { toast } = useToast()
   const copy = async () => {
     const ok = await copyText(text)
     if (!ok) {

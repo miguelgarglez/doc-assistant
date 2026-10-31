@@ -127,6 +127,7 @@ export class ChunkMapper {
           reason: event.reason,
           suggestions: event.suggestions ?? [],
           timings: event.timings,
+          segments: event.segments ?? [],
         },
       },
       ...this.closeStep(),

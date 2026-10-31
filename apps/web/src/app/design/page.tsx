@@ -79,7 +79,7 @@ export default function DesignPage() {
               <MessageContent>
                 <TraceBlock live={false} steps={STEPS} total={2.17} />
                 <MessageResponse>{"El alcance de detección es de **4 m** y trabaja entre 0 y 50 °C."}</MessageResponse>
-                <Citations activeIndex={null} citations={CITATIONS} onOpen={() => undefined} />
+                <Citations activeIndex={null} citations={CITATIONS} onOpen={() => undefined} pills />
               </MessageContent>
             </Message>
             <Message from="assistant">

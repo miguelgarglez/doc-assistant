@@ -4,6 +4,7 @@ import type { components } from "../api/schema"
 
 export type Citation = components["schemas"]["Citation"]
 export type Suggestion = components["schemas"]["Suggestion"]
+export type Segment = components["schemas"]["Segment"]
 export type StepEvent = components["schemas"]["StepEvent"]
 export type DoneEvent = components["schemas"]["DoneEvent"]
 export type StreamEvent = components["schemas"]["StreamEvent"]
@@ -23,6 +24,8 @@ export type ResultData = {
   reason: string
   suggestions: Suggestion[]
   timings: Record<string, number>
+  /** Pieces of the answer with the citations that support them; empty when markers are not possible. */
+  segments: Segment[]
 }
 
 export type RefusalData = {
