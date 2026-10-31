@@ -115,6 +115,7 @@ test.describe("sistema", () => {
         return page.scrollHeight - page.clientHeight
       })
       expect(scrolls).toBeLessThanOrEqual(0)
+      await page.evaluate(() => window.sessionStorage.clear())
       await page.goto("/")
     }
   })
