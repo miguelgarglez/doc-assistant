@@ -228,7 +228,11 @@ class ChunkStore:
             "SELECT chunk_id, distance FROM vec WHERE emb MATCH ? AND k = ? ORDER BY distance",
             (serialize_f32(query_emb), k),
         ).fetchall()
-        return [(r["chunk_id"], 1.0 - float(r["distance"])) for r in rows]
+        # distance es NULL si algún vector tiene norma 0 (coseno indefinido): similitud 0.
+        return [
+            (r["chunk_id"], 0.0 if r["distance"] is None else 1.0 - float(r["distance"]))
+            for r in rows
+        ]
 
     @staticmethod
     def _row(row: sqlite3.Row) -> dict[str, Any]:

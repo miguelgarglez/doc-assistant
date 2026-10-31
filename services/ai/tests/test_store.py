@@ -43,3 +43,14 @@ def test_ingest_idempotent(
 
     store = ChunkStore.from_config(config_path)
     assert store.count() == r1["n_chunks"]
+
+
+def test_vector_search_zero_vector_does_not_crash(
+    tmp_path: Path, synthetic_pdf: Path, fake_embedder: FakeEmbedder
+) -> None:
+    """Un vector de norma 0 (p. ej. embedder simulado) da distancia NULL: similitud 0, sin 500."""
+    store = ChunkStore(tmp_path / "z.db", dim=fake_embedder.dim)
+    chunks = chunk_pdf(synthetic_pdf, doc="manual")
+    store.upsert(chunks, [[0.0] * fake_embedder.dim for _ in chunks])
+    hits = store.vector_search([0.0] * fake_embedder.dim, k=3)
+    assert hits and all(score == 0.0 for _, score in hits)
