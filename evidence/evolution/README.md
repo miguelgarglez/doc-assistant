@@ -223,11 +223,11 @@ Qué se probó:
 ![v0.9.0 theme-neutral-mobile](v0.9.0/theme-neutral-mobile.png)
 ![v0.9.0 theme-neutral](v0.9.0/theme-neutral.png)
 
-## v0.10.0 · 2026-10-31
+## v0.10.0 · 2026-10-31 16:27 +0100 · commit `96a63bb`
 
-**Chat, fuentes, ajustes y sistema**
+**v0.10.0: chat con streaming, fuentes y sistema**
 
-Capturas generadas con los fixtures de Playwright en desktop y móvil.
+SSE verificado por proxy; integración de panorámicas y ADR-009. Playwright: 69 pruebas en tres pasadas. axe sin violaciones serias o críticas en cuatro rutas, dos temas y dos modos. mise run check correcto; salud por pieza pendiente del servicio.
 
 ![v0.10.0 ajustes-industrial-mobile](v0.10.0/ajustes-industrial-mobile.png)
 ![v0.10.0 ajustes-industrial](v0.10.0/ajustes-industrial.png)
@@ -259,3 +259,114 @@ Capturas generadas con los fixtures de Playwright en desktop y móvil.
 ![v0.10.0 theme-industrial](v0.10.0/theme-industrial.png)
 ![v0.10.0 theme-neutral-mobile](v0.10.0/theme-neutral-mobile.png)
 ![v0.10.0 theme-neutral](v0.10.0/theme-neutral.png)
+
+## v0.11.0 · 2026-10-31 17:51 +0100 · commit `0f40c1b`
+
+**v0.11.0 — Chat sobre AI SDK y AI Elements, shell 100dvh, Sistema y Fuentes rediseñados**
+
+Qué cambió:
+- Chat con useChat y un ChatTransport propio para /ask/stream (data parts tipados, retirada del texto provisional con reset-step), Prompt Input con adjuntos, Markdown con Streamdown, traza plegable, citas numeradas que abren el fragmento, sugerencias, copiar y regenerar. Decisión por componente en ADR-010.
+- Layout a 100dvh con un único scroll (el hilo), composer anclado y visor lateral u hoja inferior en móvil.
+- Sistema con diagrama de piezas, estado y latencia reales (GET /health/components) y traza de la última consulta; Fuentes con tabla, filtro, detalle y cola de subida.
+
+Qué se probó:
+- mise run check OK; Playwright 77/77 tres veces, axe sin violaciones serias o críticas; 4 pruebas contra el stack real.
+- 96 capturas reales (3 tamaños, 2 temas, claro y oscuro). Pendiente: teclado virtual real en móvil y facturas reales de extremo a extremo.
+- Antes y después frente a v0.10.0, con el mismo stack real: evidence/comparison-v0.10-v0.11/.
+
+![v0.11.0 ajustes-1280x720-industrial-dark](v0.11.0/ajustes-1280x720-industrial-dark.png)
+![v0.11.0 ajustes-1280x720-industrial-light](v0.11.0/ajustes-1280x720-industrial-light.png)
+![v0.11.0 ajustes-1280x720-neutral-dark](v0.11.0/ajustes-1280x720-neutral-dark.png)
+![v0.11.0 ajustes-1280x720-neutral-light](v0.11.0/ajustes-1280x720-neutral-light.png)
+![v0.11.0 ajustes-1440x900-industrial-dark](v0.11.0/ajustes-1440x900-industrial-dark.png)
+![v0.11.0 ajustes-1440x900-industrial-light](v0.11.0/ajustes-1440x900-industrial-light.png)
+![v0.11.0 ajustes-1440x900-neutral-dark](v0.11.0/ajustes-1440x900-neutral-dark.png)
+![v0.11.0 ajustes-1440x900-neutral-light](v0.11.0/ajustes-1440x900-neutral-light.png)
+![v0.11.0 ajustes-390x844-industrial-dark](v0.11.0/ajustes-390x844-industrial-dark.png)
+![v0.11.0 ajustes-390x844-industrial-light](v0.11.0/ajustes-390x844-industrial-light.png)
+![v0.11.0 ajustes-390x844-neutral-dark](v0.11.0/ajustes-390x844-neutral-dark.png)
+![v0.11.0 ajustes-390x844-neutral-light](v0.11.0/ajustes-390x844-neutral-light.png)
+![v0.11.0 chat-generando-1280x720-industrial-dark](v0.11.0/chat-generando-1280x720-industrial-dark.png)
+![v0.11.0 chat-generando-1280x720-industrial-light](v0.11.0/chat-generando-1280x720-industrial-light.png)
+![v0.11.0 chat-generando-1280x720-neutral-dark](v0.11.0/chat-generando-1280x720-neutral-dark.png)
+![v0.11.0 chat-generando-1280x720-neutral-light](v0.11.0/chat-generando-1280x720-neutral-light.png)
+![v0.11.0 chat-generando-1440x900-industrial-dark](v0.11.0/chat-generando-1440x900-industrial-dark.png)
+![v0.11.0 chat-generando-1440x900-industrial-light](v0.11.0/chat-generando-1440x900-industrial-light.png)
+![v0.11.0 chat-generando-1440x900-neutral-dark](v0.11.0/chat-generando-1440x900-neutral-dark.png)
+![v0.11.0 chat-generando-1440x900-neutral-light](v0.11.0/chat-generando-1440x900-neutral-light.png)
+![v0.11.0 chat-generando-390x844-industrial-dark](v0.11.0/chat-generando-390x844-industrial-dark.png)
+![v0.11.0 chat-generando-390x844-industrial-light](v0.11.0/chat-generando-390x844-industrial-light.png)
+![v0.11.0 chat-generando-390x844-neutral-dark](v0.11.0/chat-generando-390x844-neutral-dark.png)
+![v0.11.0 chat-generando-390x844-neutral-light](v0.11.0/chat-generando-390x844-neutral-light.png)
+![v0.11.0 chat-rechazo-1280x720-industrial-dark](v0.11.0/chat-rechazo-1280x720-industrial-dark.png)
+![v0.11.0 chat-rechazo-1280x720-industrial-light](v0.11.0/chat-rechazo-1280x720-industrial-light.png)
+![v0.11.0 chat-rechazo-1280x720-neutral-dark](v0.11.0/chat-rechazo-1280x720-neutral-dark.png)
+![v0.11.0 chat-rechazo-1280x720-neutral-light](v0.11.0/chat-rechazo-1280x720-neutral-light.png)
+![v0.11.0 chat-rechazo-1440x900-industrial-dark](v0.11.0/chat-rechazo-1440x900-industrial-dark.png)
+![v0.11.0 chat-rechazo-1440x900-industrial-light](v0.11.0/chat-rechazo-1440x900-industrial-light.png)
+![v0.11.0 chat-rechazo-1440x900-neutral-dark](v0.11.0/chat-rechazo-1440x900-neutral-dark.png)
+![v0.11.0 chat-rechazo-1440x900-neutral-light](v0.11.0/chat-rechazo-1440x900-neutral-light.png)
+![v0.11.0 chat-rechazo-390x844-industrial-dark](v0.11.0/chat-rechazo-390x844-industrial-dark.png)
+![v0.11.0 chat-rechazo-390x844-industrial-light](v0.11.0/chat-rechazo-390x844-industrial-light.png)
+![v0.11.0 chat-rechazo-390x844-neutral-dark](v0.11.0/chat-rechazo-390x844-neutral-dark.png)
+![v0.11.0 chat-rechazo-390x844-neutral-light](v0.11.0/chat-rechazo-390x844-neutral-light.png)
+![v0.11.0 chat-respuestas-1280x720-industrial-dark](v0.11.0/chat-respuestas-1280x720-industrial-dark.png)
+![v0.11.0 chat-respuestas-1280x720-industrial-light](v0.11.0/chat-respuestas-1280x720-industrial-light.png)
+![v0.11.0 chat-respuestas-1280x720-neutral-dark](v0.11.0/chat-respuestas-1280x720-neutral-dark.png)
+![v0.11.0 chat-respuestas-1280x720-neutral-light](v0.11.0/chat-respuestas-1280x720-neutral-light.png)
+![v0.11.0 chat-respuestas-1440x900-industrial-dark](v0.11.0/chat-respuestas-1440x900-industrial-dark.png)
+![v0.11.0 chat-respuestas-1440x900-industrial-light](v0.11.0/chat-respuestas-1440x900-industrial-light.png)
+![v0.11.0 chat-respuestas-1440x900-neutral-dark](v0.11.0/chat-respuestas-1440x900-neutral-dark.png)
+![v0.11.0 chat-respuestas-1440x900-neutral-light](v0.11.0/chat-respuestas-1440x900-neutral-light.png)
+![v0.11.0 chat-respuestas-390x844-industrial-dark](v0.11.0/chat-respuestas-390x844-industrial-dark.png)
+![v0.11.0 chat-respuestas-390x844-industrial-light](v0.11.0/chat-respuestas-390x844-industrial-light.png)
+![v0.11.0 chat-respuestas-390x844-neutral-dark](v0.11.0/chat-respuestas-390x844-neutral-dark.png)
+![v0.11.0 chat-respuestas-390x844-neutral-light](v0.11.0/chat-respuestas-390x844-neutral-light.png)
+![v0.11.0 chat-vacio-1280x720-industrial-dark](v0.11.0/chat-vacio-1280x720-industrial-dark.png)
+![v0.11.0 chat-vacio-1280x720-industrial-light](v0.11.0/chat-vacio-1280x720-industrial-light.png)
+![v0.11.0 chat-vacio-1280x720-neutral-dark](v0.11.0/chat-vacio-1280x720-neutral-dark.png)
+![v0.11.0 chat-vacio-1280x720-neutral-light](v0.11.0/chat-vacio-1280x720-neutral-light.png)
+![v0.11.0 chat-vacio-1440x900-industrial-dark](v0.11.0/chat-vacio-1440x900-industrial-dark.png)
+![v0.11.0 chat-vacio-1440x900-industrial-light](v0.11.0/chat-vacio-1440x900-industrial-light.png)
+![v0.11.0 chat-vacio-1440x900-neutral-dark](v0.11.0/chat-vacio-1440x900-neutral-dark.png)
+![v0.11.0 chat-vacio-1440x900-neutral-light](v0.11.0/chat-vacio-1440x900-neutral-light.png)
+![v0.11.0 chat-vacio-390x844-industrial-dark](v0.11.0/chat-vacio-390x844-industrial-dark.png)
+![v0.11.0 chat-vacio-390x844-industrial-light](v0.11.0/chat-vacio-390x844-industrial-light.png)
+![v0.11.0 chat-vacio-390x844-neutral-dark](v0.11.0/chat-vacio-390x844-neutral-dark.png)
+![v0.11.0 chat-vacio-390x844-neutral-light](v0.11.0/chat-vacio-390x844-neutral-light.png)
+![v0.11.0 chat-visor-1280x720-industrial-dark](v0.11.0/chat-visor-1280x720-industrial-dark.png)
+![v0.11.0 chat-visor-1280x720-industrial-light](v0.11.0/chat-visor-1280x720-industrial-light.png)
+![v0.11.0 chat-visor-1280x720-neutral-dark](v0.11.0/chat-visor-1280x720-neutral-dark.png)
+![v0.11.0 chat-visor-1280x720-neutral-light](v0.11.0/chat-visor-1280x720-neutral-light.png)
+![v0.11.0 chat-visor-1440x900-industrial-dark](v0.11.0/chat-visor-1440x900-industrial-dark.png)
+![v0.11.0 chat-visor-1440x900-industrial-light](v0.11.0/chat-visor-1440x900-industrial-light.png)
+![v0.11.0 chat-visor-1440x900-neutral-dark](v0.11.0/chat-visor-1440x900-neutral-dark.png)
+![v0.11.0 chat-visor-1440x900-neutral-light](v0.11.0/chat-visor-1440x900-neutral-light.png)
+![v0.11.0 chat-visor-390x844-industrial-dark](v0.11.0/chat-visor-390x844-industrial-dark.png)
+![v0.11.0 chat-visor-390x844-industrial-light](v0.11.0/chat-visor-390x844-industrial-light.png)
+![v0.11.0 chat-visor-390x844-neutral-dark](v0.11.0/chat-visor-390x844-neutral-dark.png)
+![v0.11.0 chat-visor-390x844-neutral-light](v0.11.0/chat-visor-390x844-neutral-light.png)
+![v0.11.0 fuentes-1280x720-industrial-dark](v0.11.0/fuentes-1280x720-industrial-dark.png)
+![v0.11.0 fuentes-1280x720-industrial-light](v0.11.0/fuentes-1280x720-industrial-light.png)
+![v0.11.0 fuentes-1280x720-neutral-dark](v0.11.0/fuentes-1280x720-neutral-dark.png)
+![v0.11.0 fuentes-1280x720-neutral-light](v0.11.0/fuentes-1280x720-neutral-light.png)
+![v0.11.0 fuentes-1440x900-industrial-dark](v0.11.0/fuentes-1440x900-industrial-dark.png)
+![v0.11.0 fuentes-1440x900-industrial-light](v0.11.0/fuentes-1440x900-industrial-light.png)
+![v0.11.0 fuentes-1440x900-neutral-dark](v0.11.0/fuentes-1440x900-neutral-dark.png)
+![v0.11.0 fuentes-1440x900-neutral-light](v0.11.0/fuentes-1440x900-neutral-light.png)
+![v0.11.0 fuentes-390x844-industrial-dark](v0.11.0/fuentes-390x844-industrial-dark.png)
+![v0.11.0 fuentes-390x844-industrial-light](v0.11.0/fuentes-390x844-industrial-light.png)
+![v0.11.0 fuentes-390x844-neutral-dark](v0.11.0/fuentes-390x844-neutral-dark.png)
+![v0.11.0 fuentes-390x844-neutral-light](v0.11.0/fuentes-390x844-neutral-light.png)
+![v0.11.0 sistema-1280x720-industrial-dark](v0.11.0/sistema-1280x720-industrial-dark.png)
+![v0.11.0 sistema-1280x720-industrial-light](v0.11.0/sistema-1280x720-industrial-light.png)
+![v0.11.0 sistema-1280x720-neutral-dark](v0.11.0/sistema-1280x720-neutral-dark.png)
+![v0.11.0 sistema-1280x720-neutral-light](v0.11.0/sistema-1280x720-neutral-light.png)
+![v0.11.0 sistema-1440x900-industrial-dark](v0.11.0/sistema-1440x900-industrial-dark.png)
+![v0.11.0 sistema-1440x900-industrial-light](v0.11.0/sistema-1440x900-industrial-light.png)
+![v0.11.0 sistema-1440x900-neutral-dark](v0.11.0/sistema-1440x900-neutral-dark.png)
+![v0.11.0 sistema-1440x900-neutral-light](v0.11.0/sistema-1440x900-neutral-light.png)
+![v0.11.0 sistema-390x844-industrial-dark](v0.11.0/sistema-390x844-industrial-dark.png)
+![v0.11.0 sistema-390x844-industrial-light](v0.11.0/sistema-390x844-industrial-light.png)
+![v0.11.0 sistema-390x844-neutral-dark](v0.11.0/sistema-390x844-neutral-dark.png)
+![v0.11.0 sistema-390x844-neutral-light](v0.11.0/sistema-390x844-neutral-light.png)
