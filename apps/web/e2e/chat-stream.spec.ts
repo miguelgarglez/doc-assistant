@@ -60,6 +60,7 @@ test.describe("transport: SSE a mensajes del AI SDK", () => {
         reason: "verified",
         suggestions: [],
         inline: "none",
+        clarification: null,
         timings: { total: 2.5 },
       }),
     ])
@@ -109,6 +110,7 @@ test.describe("transport: SSE a mensajes del AI SDK", () => {
         reason: "verify:numbers",
         suggestions: [],
         inline: "none",
+        clarification: null,
         timings: { total: 1 },
       }),
     ])
@@ -124,7 +126,44 @@ test.describe("transport: SSE a mensajes del AI SDK", () => {
   test("un rechazo sin texto previo no necesita retirar nada", async () => {
     const message = await finalMessage([
       ev({ event: "refusal", answer: "No dispongo de esa información", reason: "llm_unanswerable", retract: false, suggestions: [] }),
-      ev({ event: "done", ok: false, answer: "No dispongo de esa información", citations: [], reason: "llm_unanswerable", suggestions: [], inline: "none", timings: {} }),
+      ev({ event: "done", ok: false, answer: "No dispongo de esa información", citations: [], reason: "llm_unanswerable", suggestions: [], inline: "none", clarification: null, timings: {} }),
+    ])
+    expect(viewOfAssistant(message, false).kind).toBe("refusal")
+  })
+
+  test("una aclaración llega como evento propio y no como rechazo", async () => {
+    const clarification = {
+      prompt: "¿De qué factura?",
+      detail: null,
+      total: 1,
+      candidates: [{ doc: "A-1", doc_id: "inv-a-1", emisor: null, cliente: null, fecha: null, total: null, question: "¿Qué datos tiene la factura A-1?" }],
+    }
+    const message = await finalMessage([
+      steps("retrieve", "done"),
+      ev({ event: "clarification", reason: "invoice:aclaracion", clarification }),
+      ev({ event: "done", ok: false, answer: "¿De qué factura?", citations: [], reason: "invoice:aclaracion", suggestions: [], inline: "none", clarification, timings: {} }),
+    ])
+    const view = viewOfAssistant(message, false)
+    expect(view.kind).toBe("clarification")
+    if (view.kind !== "clarification") return
+    expect(view.clarification.clarification.candidates[0]?.question).toBe("¿Qué datos tiene la factura A-1?")
+    expect(message.parts.filter((part) => part.type === "data-clarification")).toHaveLength(1)
+    expect(message.parts.some((part) => part.type === "data-refusal")).toBe(false)
+    expect(view.steps.map((s) => s.id)).toEqual(["retrieve"])
+  })
+
+  test("un done con aclaración, sin evento previo (servicio sin streaming), también es aclaración", async () => {
+    const clarification = { prompt: "¿De qué factura?", detail: null, total: 0, candidates: [] }
+    const message = await finalMessage([
+      ev({ event: "done", ok: false, answer: "¿De qué factura?", citations: [], reason: "invoice:aclaracion", suggestions: [], inline: "none", clarification, timings: {} }),
+    ])
+    expect(viewOfAssistant(message, false).kind).toBe("clarification")
+  })
+
+  test("un rechazo de factura sin candidatas sigue siendo rechazo", async () => {
+    const message = await finalMessage([
+      ev({ event: "refusal", answer: "No hay ninguna factura con número X-1.", reason: "invoice:factura_no_encontrada", retract: false, suggestions: [] }),
+      ev({ event: "done", ok: false, answer: "No hay ninguna factura con número X-1.", citations: [], reason: "invoice:factura_no_encontrada", suggestions: [], inline: "none", clarification: null, timings: {} }),
     ])
     expect(viewOfAssistant(message, false).kind).toBe("refusal")
   })

@@ -5,6 +5,7 @@ import { Message, MessageContent, MessageResponse } from "@/components/ai-elemen
 import { Shimmer } from "@/components/ai-elements/shimmer"
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion"
 import { Refusal } from "@/components/chat/assistant-message"
+import { ClarificationCard } from "@/components/chat/clarification"
 import { Citations } from "@/components/chat/citations"
 import { TraceBlock } from "@/components/chat/trace-block"
 import { Page, PageHeader } from "@/components/shell/page"
@@ -92,6 +93,21 @@ export default function DesignPage() {
             <Refusal
               onAsk={() => undefined}
               refusal={{ answer: "No dispongo de esa información en los documentos.", reason: "no_evidence", suggestions: [] }}
+            />
+            <ClarificationCard
+              data={{
+                reason: "invoice:aclaracion",
+                clarification: {
+                  prompt: "¿De qué factura?",
+                  detail: null,
+                  total: 2,
+                  candidates: [
+                    { doc: "A-2026/014", doc_id: "inv-a-2026-014", emisor: "Suministros Aranda, S.L.", cliente: "Taller Norte, S.L.", fecha: "12/02/2026", total: "1210.00", question: "¿Cuál es el importe total de la factura A-2026/014?" },
+                    { doc: "B-77", doc_id: "inv-b-77", emisor: "Clara Ibáñez Roca", cliente: null, fecha: null, total: null, question: "¿Cuál es el importe total de la factura B-77?" },
+                  ],
+                },
+              }}
+              onAsk={() => undefined}
             />
             <Alert variant="destructive">
               <AlertTitle>No se pudo completar la consulta</AlertTitle>

@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright"
 import { expect, test, type Page } from "@playwright/test"
 
-import { answerEvents, ask, CITATION, mockBackend, SECOND_CITATION, sse } from "./mocks"
+import { answerEvents, ask, CITATION, clarificationEvents, mockBackend, SECOND_CITATION, sse } from "./mocks"
 
 test.use({ reducedMotion: "reduce" })
 
@@ -42,6 +42,17 @@ for (const theme of ["industrial", "neutral"] as const) {
       await expect(page.getByTestId("assistant-message")).toHaveAttribute("data-kind", "answer")
       await page.getByTestId("citation-1").click()
       await expect(page.getByTestId("source-viewer")).toBeVisible()
+      await expectNoSeriousViolations(page)
+    })
+
+    test(`aclaración de facturas con candidatas (${label})`, async ({ page }) => {
+      await mockBackend(page, { ask: (route) => route.fulfill({ contentType: "text/event-stream", body: sse(clarificationEvents()) }) })
+      await themed(page, theme, dark)
+      await page.goto("/")
+      await ask(page, "¿Cuál es el importe total de la factura?")
+      await expect(page.getByTestId("clarification-notice")).toBeVisible()
+      await expectNoSeriousViolations(page)
+      await page.getByTestId("clarification-candidate").first().focus()
       await expectNoSeriousViolations(page)
     })
 

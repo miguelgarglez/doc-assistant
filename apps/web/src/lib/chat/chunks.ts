@@ -3,6 +3,7 @@ import type { UIMessageChunk } from "ai"
 import type {
   AskDataParts,
   Citation,
+  Clarification,
   DoneEvent,
   StepData,
   StreamEvent,
@@ -28,6 +29,7 @@ export class ChunkMapper {
   private text = ""
   private finished = false
   private suggestions: Suggestion[] = []
+  private clarified = false
 
   push(event: StreamEvent): AskChunk[] {
     if (this.finished) return []
@@ -40,6 +42,8 @@ export class ChunkMapper {
         return [citationsChunk(event.citations)]
       case "refusal":
         return this.refuse(event.answer, event.reason, event.suggestions ?? [], event.retract)
+      case "clarification":
+        return this.clarify(event.reason, event.clarification)
       case "done":
         return this.done(event)
       case "error":
@@ -101,7 +105,23 @@ export class ChunkMapper {
     return out
   }
 
+  /** An ambiguous question: the user picks a candidate. It is not a refusal, so it never carries suggestions. */
+  private clarify(reason: string, clarification: Clarification): AskChunk[] {
+    if (this.clarified) return []
+    this.clarified = true
+    const out = this.closeText()
+    if (this.stepOpen) out.push({ type: "reset-step" }, ...this.replaySteps())
+    this.text = ""
+    out.push({ type: "data-clarification", id: "clarification", data: { reason, clarification } })
+    return out
+  }
+
   private done(event: DoneEvent): AskChunk[] {
+    if (!event.ok && event.clarification) {
+      const out = [...this.clarify(event.reason, event.clarification), ...this.closeStep(), { type: "finish" } as AskChunk]
+      this.finished = true
+      return out
+    }
     if (!event.ok) {
       const out = this.refuse(event.answer, event.reason, event.suggestions ?? [], true)
       out.push(...this.closeStep(), { type: "finish" })

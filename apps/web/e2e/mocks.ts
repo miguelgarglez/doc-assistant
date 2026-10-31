@@ -4,6 +4,7 @@ import path from "node:path"
 import type { Page, Route } from "@playwright/test"
 
 import type { Source } from "../src/lib/api/types"
+import type { Clarification } from "../src/lib/chat/types"
 
 /** Synthetic datasheet page, generated for the repo. */
 export const PAGE_PNG = fs.readFileSync(path.join(process.cwd(), "e2e", "fixtures", "page-acme-demo-ds.png"))
@@ -138,6 +139,45 @@ export function refusalEvents(provisional = "Texto sin verificar"): SseEvent[] {
       },
     ],
     ["done", { ok: false, answer, citations: [], reason: "verify:numbers", suggestions: [], inline: "none", timings: { total: 0.9 } }],
+  ]
+}
+
+export const CLARIFICATION: Clarification = {
+  prompt: "¿De qué factura?",
+  detail: null,
+  total: 2,
+  candidates: [
+    {
+      doc: "A-2026/014",
+      doc_id: "inv-a-2026-014",
+      emisor: "Suministros Aranda, S.L.",
+      cliente: "Taller Norte, S.L.",
+      fecha: "12/02/2026",
+      total: "1210.00",
+      question: "¿Cuál es el importe total de la factura A-2026/014?",
+    },
+    {
+      doc: "B-77",
+      doc_id: "inv-b-77",
+      emisor: "Clara Ibáñez Roca",
+      cliente: null,
+      fecha: null,
+      total: null,
+      question: "¿Cuál es el importe total de la factura B-77?",
+    },
+  ],
+}
+
+/** An ambiguous invoice question: the `clarification` event, then `done` with the same data. */
+export function clarificationEvents(clarification = CLARIFICATION): SseEvent[] {
+  const answer = `${clarification.prompt} ¿Te refieres a alguna de estas?`
+  return [
+    step("route", "running", "Analizando la pregunta"),
+    step("route", "done", "Pregunta sobre documentos", 0.01),
+    step("invoices", "running", "Comprobando si es una consulta de facturas"),
+    step("invoices", "done", "Consulta de facturas", 1.1),
+    ["clarification", { reason: "invoice:aclaracion", clarification }],
+    ["done", { ok: false, answer, citations: [], reason: "invoice:aclaracion", suggestions: [], inline: "none", clarification, timings: { total: 1.2 } }],
   ]
 }
 

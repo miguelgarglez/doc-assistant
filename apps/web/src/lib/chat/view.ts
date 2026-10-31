@@ -1,6 +1,7 @@
 import type {
   AskMessage,
   Citation,
+  ClarificationData,
   RefusalData,
   ResultData,
   StepData,
@@ -12,6 +13,7 @@ export type AssistantView =
   | { kind: "provisional"; text: string; steps: StepData[] }
   | { kind: "answer"; text: string; citations: Citation[]; result: ResultData; steps: StepData[] }
   | { kind: "refusal"; refusal: RefusalData; steps: StepData[] }
+  | { kind: "clarification"; clarification: ClarificationData; steps: StepData[] }
   | { kind: "failed"; code: string | null; message: string; steps: StepData[] }
   | { kind: "stopped"; steps: StepData[] }
 
@@ -24,6 +26,7 @@ export function viewOfAssistant(message: AskMessage, live: boolean, error?: Erro
   let citations: Citation[] = []
   let result: ResultData | null = null
   let refusal: RefusalData | null = null
+  let clarification: ClarificationData | null = null
   let failure: { code: string; message: string } | null = null
   const steps: StepData[] = []
   for (const part of message.parts) {
@@ -32,8 +35,10 @@ export function viewOfAssistant(message: AskMessage, live: boolean, error?: Erro
     else if (part.type === "data-citations") citations = part.data
     else if (part.type === "data-result") result = part.data
     else if (part.type === "data-refusal") refusal = part.data
+    else if (part.type === "data-clarification") clarification = part.data
     else if (part.type === "data-failure") failure = part.data
   }
+  if (clarification) return { kind: "clarification", clarification, steps }
   if (refusal) return { kind: "refusal", refusal, steps }
   if (result) return { kind: "answer", text, citations, result, steps }
   if (failure) return { kind: "failed", code: failure.code, message: failure.message, steps }

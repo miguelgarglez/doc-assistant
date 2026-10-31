@@ -9,6 +9,7 @@ import { Shimmer } from "@/components/ai-elements/shimmer"
 import { Suggestion } from "@/components/ai-elements/suggestion"
 import { AnswerLink } from "@/components/chat/citation-marker"
 import { CitationContext } from "@/components/chat/citation-context"
+import { ClarificationCard } from "@/components/chat/clarification"
 import { Citations } from "@/components/chat/citations"
 import { TraceBlock } from "@/components/chat/trace-block"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -16,8 +17,9 @@ import { Button } from "@/components/ui/button"
 import { duration } from "@/lib/format"
 import { copyText, formatAnswerMarkdown } from "@/lib/clipboard"
 import type { AskMessage, Citation, RefusalData, ResultData } from "@/lib/chat/types"
+import { clarificationText } from "@/lib/chat/clarification"
 import { segmentsMatch, withMarkers } from "@/lib/chat/inline"
-import { suggestionLabel, viewOfAssistant } from "@/lib/chat/view"
+import { suggestionLabel, viewOfAssistant, type AssistantView } from "@/lib/chat/view"
 import { cn } from "@/lib/utils"
 
 const answerComponents = { a: AnswerLink }
@@ -75,6 +77,7 @@ export const AssistantMessage = memo(function AssistantMessage({
           />
         ) : null}
         {view.kind === "refusal" ? <Refusal onAsk={onAsk} refusal={view.refusal} /> : null}
+        {view.kind === "clarification" ? <ClarificationCard data={view.clarification} onAsk={onAsk} /> : null}
         {view.kind === "failed" ? (
           <Alert data-testid="ask-error-notice" variant="destructive">
             <AlertTitle>No se pudo completar la consulta</AlertTitle>
@@ -98,18 +101,19 @@ export const AssistantMessage = memo(function AssistantMessage({
             ) : null}
           </p>
         ) : null}
-        {view.kind === "answer" || view.kind === "refusal" ? (
-          <Actions
-            copyText={view.kind === "answer" ? formatAnswerMarkdown(withMarkers(view.text, view.result.segments, view.citations.length, "plain"), view.citations) : view.refusal.answer}
-            elapsed={total}
-            isLast={isLast}
-            onRetry={onRetry}
-          />
+        {view.kind === "answer" || view.kind === "refusal" || view.kind === "clarification" ? (
+          <Actions copyText={copyTextOf(view)} elapsed={total} isLast={isLast} onRetry={onRetry} />
         ) : null}
       </MessageContent>
     </Message>
   )
 })
+
+function copyTextOf(view: Extract<AssistantView, { kind: "answer" | "refusal" | "clarification" }>): string {
+  if (view.kind === "refusal") return view.refusal.answer
+  if (view.kind === "clarification") return clarificationText(view.clarification.clarification)
+  return formatAnswerMarkdown(withMarkers(view.text, view.result.segments, view.citations.length, "plain"), view.citations)
+}
 
 type AnswerBodyProps = {
   text: string
