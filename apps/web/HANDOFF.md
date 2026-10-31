@@ -1,6 +1,6 @@
 # apps/web — handoff
 
-Next.js (App Router) + TypeScript strict + Tailwind v4 + shadcn/ui (**Base UI**, no Radix). Cliente tipado `openapi-fetch` → BFF `/api` → `services/ai`. Página principal: **Doc Assistant** (documentación de robótica industrial local, no fiscal). Rama `feat/web-polish`.
+Next.js (App Router) + TypeScript strict + Tailwind v4 + shadcn/ui (**Base UI**, no Radix). Cliente tipado `openapi-fetch` → BFF `/api` → `services/ai`. Página principal: **Doc Assistant** con pestañas Base UI **Consulta** / **Facturas**. Rama `feat/web-invoices`.
 
 ## Versiones instaladas
 
@@ -28,18 +28,24 @@ Next.js (App Router) + TypeScript strict + Tailwind v4 + shadcn/ui (**Base UI**,
 ## Capas
 
 1. **Tokens** — variables CSS en `src/app/globals.css` (`:root` / `.dark` + `@theme inline`). Incluye `--highlight` para citas. Sin colores sueltos en componentes.
-2. **Primitivos** — `src/components/ui/*` (shadcn sobre `@base-ui/react`), incl. `skeleton`.
-3. **API tipada** — `src/lib/api/schema.d.ts` (generado) + `client.ts` (`baseUrl: "/api"`). Tipos de respuesta desde el schema; sin DTOs a mano.
-4. **Dominio** — `src/components/domain/*` reciben datos por props; estado de consulta en `src/hooks/use-ask.ts`.
-5. **Página** — `src/app/page.tsx` monta `AskWorkspace` (pregunta → `/ask` → respuesta / rechazo / error + `SourceViewer`).
+2. **Primitivos** — `src/components/ui/*` (shadcn sobre `@base-ui/react`), incl. `skeleton` y `tabs`.
+3. **API tipada** — `src/lib/api/schema.d.ts` (generado) + `client.ts` (`baseUrl: "/api"`) + `upload.ts` (multipart FormData). Tipos desde el schema; sin DTOs a mano.
+4. **Dominio** — `src/components/domain/*` reciben datos por props; hooks `use-ask`, `use-invoices`, `use-document-upload`.
+5. **Página** — `src/app/page.tsx` monta pestañas Consulta (`AskWorkspace`) / Facturas (`InvoicesWorkspace`; lazy al activar la pestaña).
 
-## Flujo ask
+## Flujo ask (pestaña Consulta)
 
 - `QuestionBox` → `api.POST("/ask")`.
-- Estados: vacío (`idle`), skeleton de carga (`AskLoadingSkeleton`), `AskErrorNotice` con **Reintentar**, `RefusalNotice` (icono + razón + aviso de no inventar), `AnswerCard` + `CitationChips`.
+- Estados: vacío (`idle`), skeleton de carga (`AskLoadingSkeleton`), `AskErrorNotice` con **Reintentar**, `RefusalNotice`, `AnswerCard` + `CitationChips`.
 - Layout resultado: respuesta y fuente **lado a lado en `lg+`**, apilados en móvil.
-- Cita activa → `SourceViewer`: página completa a escala, **clic para ampliar/reducir**, fragmento resaltado debajo, **anterior/siguiente** si hay varias citas. Metadatos `doc` / sección / página / `chunk_id` en `font-mono`.
-- Accesible: labels, `aria-pressed` en citas y zoom, región con focus al abrir fuente, `role="status"` / `aria-live`.
+- Cita activa → `SourceViewer`: página a escala, zoom clic, fragmento resaltado, anterior/siguiente.
+- Al pie: `DocumentUploadPanel` → `POST /documents` (PDF); muestra `n_chunks` y «ya indexado» si `created=false`.
+
+## Flujo facturas (pestaña Facturas)
+
+- `UploadDropzone` (PNG/JPG) → `POST /invoices/upload` (multipart tipado). Skeleton al subir; error `{code,message}` con reintento.
+- `InvoiceReviewCard` con `InvoiceUploadResponse`: badge `ok` / `revisar` + motivo; campos del `record` (null → `—  no encontrado`); flag `derivado`; evidencia OCR por campo (`<details>`); imagen `GET /invoices/{id}/image` con zoom. Importes es-ES desde Decimal-string (sin float).
+- Lista compacta `GET /invoices`; clic abre la ficha (reutiliza la respuesta de upload en sesión si existe).
 
 ## Comandos
 
@@ -57,22 +63,21 @@ pnpm e2e
 
 - `gen:api` lee `../../services/ai/openapi.json` y escribe `src/lib/api/schema.d.ts`.
 - Proxy BFF: `src/app/api/[...path]/route.ts` → `AI_SERVICE_URL` (default `http://127.0.0.1:8000`). Ver `.env.example`.
-- `e2e` hace `pnpm build` y Playwright (Chromium). Intercepta `/api/*` con fixtures técnicas (`ACME-DEMO-DS`, §2.1, p. 1); imagen `e2e/fixtures/page-acme-demo-ds.png`. Capturas deterministas en `../../evidence/screenshots/`:
-  - desktop 1280×800: `ask-answer-with-source.png`, `ask-refusal.png`, `ask-error.png`
-  - móvil 390×844: `*-mobile.png` equivalentes
-  Fuente fija en captura para determinismo.
+- `e2e` hace `pnpm build` y Playwright (Chromium). Intercepta `/api/*` con fixtures:
+  - ask: técnicos (`ACME-DEMO-DS`); imagen `e2e/fixtures/page-acme-demo-ds.png`
+  - invoices: `../../evidence/fixtures/invoices/factura_001.png` + JSON coherente; variante `revisar` con nulls
+  - Capturas deterministas en `../../evidence/screenshots/` (espera `document.fonts.ready`; no fuerza fuentes):
+    - desktop 1280×800 / móvil 390×844: `ask-*.png`, `invoice-ok.png`, `invoice-review.png` (+ `-mobile`)
 
 ## shadcn / Base UI
 
-Inicializado con:
-
 ```bash
 pnpm dlx shadcn@latest init --base base --preset nova --css-variables -y --no-monorepo
-pnpm dlx shadcn@latest add card button badge alert separator scroll-area textarea label skeleton -y
+pnpm dlx shadcn@latest add card button badge alert separator scroll-area textarea label skeleton tabs -y
 ```
 
-Tras `add`, sustituir imports `from "cn"` por `@/lib/utils` (ADR-005). Confirmación: `pnpm dlx shadcn@latest info` → `"base": "base"`, style `base-nova`.
+Tras `add`, sustituir imports `from "cn"` por `@/lib/utils` (ADR-005); no dejar la dependencia npm `cn`. Confirmación: `pnpm dlx shadcn@latest info` → `"base": "base"`, style `base-nova`.
 
 ## Fuera de alcance
 
-Sin Storybook. Sin upload/ingest/invoices en la UI de esta fase. Sin push. No editar `services/ai/openapi.json`.
+Sin Storybook. Sin push. No editar `services/ai/openapi.json`.
