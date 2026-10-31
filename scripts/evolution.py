@@ -93,7 +93,9 @@ def main() -> int:
             previous = current
         if not names:
             lines += [
-                "_Sin capturas nuevas en esta versión._" if current else "_Sin capturas en esta versión._",
+                "_Sin capturas nuevas en esta versión._"
+                if current
+                else "_Sin capturas en esta versión._",
                 "",
             ]
             continue
