@@ -99,7 +99,7 @@ def install_models() -> None:
         path = d / m["file"]
         if path.exists() and path.stat().st_size == m["size"]:
             print(
-                f"[setup] modelo presente: {path} (tamaño correcto; sha256 verificado al descargar)"
+                f"[setup] modelo presente: {path} (tamaño correcto; el SHA256 solo se comprueba al descargar)"
             )
             continue
         download(m["url"], path, m["sha256"])

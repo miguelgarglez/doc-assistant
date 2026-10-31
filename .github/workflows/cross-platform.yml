@@ -1,0 +1,56 @@
+# Smoke test multiplataforma. NO ejecutado todavía (sin push). Windows no probado en equipo real.
+name: cross-platform
+on: [workflow_dispatch]
+jobs:
+  smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest] # + windows-11-arm (repo público; sqlite-vec sin wheel win_arm64)
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # evita el rate limit de mise
+      DOC_ASSISTANT_FAKE_LLAMA: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - run: mise run setup -- --no-model
+      - name: sqlite-vec carga en el Python de uv
+        run: uv run --project services/ai python -c "import sqlite3,sqlite_vec;c=sqlite3.connect(':memory:');c.enable_load_extension(True);sqlite_vec.load(c);print(c.execute('select vec_version()').fetchone())"
+      - name: llama-server real responde a --version
+        run: uv run --project services/ai python scripts/setup.py --check-llama
+      - name: arrancar, health, Ctrl-C simulado, sin procesos ni puertos
+        shell: python
+        run: |
+          import os, signal, socket, subprocess, sys, time, urllib.request
+          WIN = os.name == "nt"
+          kw = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if WIN else {"start_new_session": True}
+          p = subprocess.Popen(["uv", "run", "--project", "services/ai", "python", "scripts/dev.py"], **kw)
+          ok = False
+          for _ in range(240):
+              try:
+                  urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=2)
+                  urllib.request.urlopen("http://127.0.0.1:3000/api/health", timeout=2)
+                  ok = True; break
+              except Exception:
+                  time.sleep(1)
+          p.send_signal(signal.CTRL_BREAK_EVENT if WIN else signal.SIGINT)
+          try:
+              p.wait(30)
+          except subprocess.TimeoutExpired:
+              p.kill(); sys.exit("no cerró en 30 s")
+          time.sleep(2)
+          def busy(port):
+              with socket.socket() as s:
+                  return s.connect_ex(("127.0.0.1", port)) == 0
+          ports = [x for x in (8081, 8082, 8083, 8000, 3000) if busy(x)]
+          out = subprocess.run(["powershell", "-NoProfile", "-Command", "Get-CimInstance Win32_Process | Select-Object -ExpandProperty CommandLine"] if WIN else ["ps", "-axo", "command"], capture_output=True, text=True).stdout
+          stray = [n for n in ("fake_llama", "uvicorn", "next-server", "next\\dist\\bin\\next", "next/dist/bin/next") if n in out]
+          print("health:", ok, "puertos:", ports, "procesos:", stray)
+          sys.exit(0 if ok and not ports and not stray else 1)
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: logs-${{ matrix.os }}
+          path: "**/*.log"
