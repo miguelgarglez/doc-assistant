@@ -1,0 +1,131 @@
+{
+  "ground_truth": {
+    "invoice_number": "A120",
+    "issue_date": "2026-09-21",
+    "due_date": "2026-12-31",
+    "seller": {
+      "name": "Mecanizados Ebro, S.L.",
+      "tax_id": "A47512489"
+    },
+    "buyer": {
+      "name": "Talleres Puig, S.A.",
+      "tax_id": "A15944457"
+    },
+    "lines": [
+      {
+        "description": "Producto alimentario",
+        "quantity": "12",
+        "unit_price": "109.51",
+        "discount_pct": "0",
+        "vat_rate": 21,
+        "amount": "1314.12"
+      },
+      {
+        "description": "Licencia de software",
+        "quantity": "8",
+        "unit_price": "62.32",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "498.56"
+      },
+      {
+        "description": "Producto alimentario",
+        "quantity": "11",
+        "unit_price": "264.1",
+        "discount_pct": "0",
+        "vat_rate": 4,
+        "amount": "2905.10"
+      },
+      {
+        "description": "Servicio de mantenimiento",
+        "quantity": "8",
+        "unit_price": "121.3",
+        "discount_pct": "0",
+        "vat_rate": 21,
+        "amount": "970.40"
+      },
+      {
+        "description": "Licencia de software",
+        "quantity": "20",
+        "unit_price": "366.45",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "7329.00"
+      },
+      {
+        "description": "Asesoría técnica",
+        "quantity": "13",
+        "unit_price": "41.53",
+        "discount_pct": "0",
+        "vat_rate": 4,
+        "amount": "539.89"
+      },
+      {
+        "description": "Cable industrial",
+        "quantity": "9",
+        "unit_price": "343.58",
+        "discount_pct": "0",
+        "vat_rate": 21,
+        "amount": "3092.22"
+      },
+      {
+        "description": "Licencia de software",
+        "quantity": "7",
+        "unit_price": "102.75",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "719.25"
+      },
+      {
+        "description": "Asesoría técnica",
+        "quantity": "9",
+        "unit_price": "379.34",
+        "discount_pct": "0",
+        "vat_rate": 4,
+        "amount": "3414.06"
+      }
+    ],
+    "vat_breakdown": [
+      {
+        "rate": 4,
+        "base": "6859.05",
+        "vat": "274.36",
+        "re_rate": "0.5",
+        "re": "34.30"
+      },
+      {
+        "rate": 10,
+        "base": "8546.81",
+        "vat": "854.68",
+        "re_rate": "1.4",
+        "re": "119.66"
+      },
+      {
+        "rate": 21,
+        "base": "5376.74",
+        "vat": "1129.12",
+        "re_rate": "5.2",
+        "re": "279.59"
+      }
+    ],
+    "subtotal": "20782.60",
+    "vat_total": "2258.16",
+    "irpf_rate": null,
+    "irpf_amount": null,
+    "re_total": "433.55",
+    "total": "23474.31",
+    "iban": "ES76 2100 0418 4502 0005 1332"
+  },
+  "axes": [
+    "layout_3",
+    "subtotal_si",
+    "fecha_numerica",
+    "numero_alfanumerico",
+    "total_Total a pagar",
+    "foto",
+    "recargo",
+    "iva_mixto",
+    "nif_invalido"
+  ],
+  "subtotal_printed": true
+}

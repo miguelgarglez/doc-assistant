@@ -8,6 +8,7 @@ from typing import Any
 
 from doc_assistant.adapters import LLM, Embedder, Reranker, build_adapters
 from doc_assistant.config import load_config
+from doc_assistant.invoices import ask_invoices
 from doc_assistant.store import ChunkStore
 from doc_assistant.verifier import verify
 
@@ -100,6 +101,10 @@ def ask(
         embedder = embedder or e
         reranker = reranker or r
         llm = llm or l
+
+    invoice_result = ask_invoices(config_path, question, llm=llm)
+    if invoice_result is not None:
+        return invoice_result
 
     dim = getattr(embedder, "dim", None) or cfg.embeddings.dim or 8
     store = ChunkStore(cfg.db, dim=dim)

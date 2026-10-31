@@ -41,6 +41,7 @@ def test_config_swap_changes_ports(tmp_path: Path) -> None:
     cfg_a = {
         "db": str(tmp_path / "a.db"),
         "docs": str(tmp_path / "docs"),
+        "data_dir": str(tmp_path / "data"),
         "llm": {
             "base_url": "http://127.0.0.1:8081",
             "endpoint": "/v1/chat/completions",

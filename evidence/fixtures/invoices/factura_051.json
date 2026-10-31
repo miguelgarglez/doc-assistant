@@ -1,0 +1,83 @@
+{
+  "ground_truth": {
+    "invoice_number": "A150",
+    "issue_date": "2026-03-23",
+    "due_date": "2026-12-31",
+    "seller": {
+      "name": "Mecanizados Ebro, S.L.",
+      "tax_id": "A14837885"
+    },
+    "buyer": {
+      "name": "Talleres Puig, S.A.",
+      "tax_id": "A56025992"
+    },
+    "lines": [
+      {
+        "description": "Material de oficina",
+        "quantity": "13",
+        "unit_price": "379.84",
+        "discount_pct": "0",
+        "vat_rate": 21,
+        "amount": "4937.92"
+      },
+      {
+        "description": "Asesoría técnica",
+        "quantity": "11",
+        "unit_price": "118.53",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "1303.83"
+      },
+      {
+        "description": "Producto alimentario",
+        "quantity": "11",
+        "unit_price": "344.57",
+        "discount_pct": "0",
+        "vat_rate": 4,
+        "amount": "3790.27"
+      }
+    ],
+    "vat_breakdown": [
+      {
+        "rate": 4,
+        "base": "3790.27",
+        "vat": "151.61",
+        "re_rate": "0.5",
+        "re": "18.95"
+      },
+      {
+        "rate": 10,
+        "base": "1303.83",
+        "vat": "130.38",
+        "re_rate": "1.4",
+        "re": "18.25"
+      },
+      {
+        "rate": 21,
+        "base": "4937.92",
+        "vat": "1036.96",
+        "re_rate": "5.2",
+        "re": "256.77"
+      }
+    ],
+    "subtotal": "10032.02",
+    "vat_total": "1318.95",
+    "irpf_rate": null,
+    "irpf_amount": null,
+    "re_total": "293.97",
+    "total": "11644.94",
+    "iban": "ES76 2100 0418 4502 0005 1332"
+  },
+  "axes": [
+    "layout_3",
+    "subtotal_si",
+    "fecha_numerica",
+    "numero_alfanumerico",
+    "total_Total a pagar",
+    "foto",
+    "recargo",
+    "iva_mixto",
+    "nif_invalido"
+  ],
+  "subtotal_printed": true
+}

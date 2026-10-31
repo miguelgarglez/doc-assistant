@@ -1,0 +1,51 @@
+{
+  "ground_truth": {
+    "invoice_number": "F-2026-001",
+    "issue_date": "2026-01-01",
+    "due_date": "2026-12-31",
+    "seller": {
+      "name": "María Soler García",
+      "tax_id": "59516774L"
+    },
+    "buyer": {
+      "name": "Talleres Puig, S.A.",
+      "tax_id": "A49117963"
+    },
+    "lines": [
+      {
+        "description": "Producto alimentario",
+        "quantity": "2",
+        "unit_price": "281.94",
+        "discount_pct": "10",
+        "vat_rate": 21,
+        "amount": "507.49"
+      }
+    ],
+    "vat_breakdown": [
+      {
+        "rate": 21,
+        "base": "507.49",
+        "vat": "106.57"
+      }
+    ],
+    "subtotal": "507.49",
+    "vat_total": "106.57",
+    "irpf_rate": 15,
+    "irpf_amount": "76.12",
+    "re_total": null,
+    "total": "537.94",
+    "iban": null
+  },
+  "axes": [
+    "layout_1",
+    "subtotal_si",
+    "fecha_numerica",
+    "numero_guion",
+    "total_TOTAL",
+    "limpio",
+    "irpf_15",
+    "descuento",
+    "sin_iban"
+  ],
+  "subtotal_printed": true
+}

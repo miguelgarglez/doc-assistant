@@ -1,5 +1,6 @@
 db: data/doc-assistant.db
 docs: data/documents
+data_dir: data
 llm:
   base_url: http://127.0.0.1:8081
   endpoint: /v1/chat/completions
@@ -16,5 +17,9 @@ reranker:
   endpoint: /v1/rerank
   model: rerank-local
   timeout_s: 90
+ocr:
+  base_url: http://127.0.0.1:11434
+  model: glm-ocr
+  timeout_s: 300
 top_k: 5
 answer_mode: decide_first

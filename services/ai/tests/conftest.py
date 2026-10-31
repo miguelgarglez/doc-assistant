@@ -59,6 +59,7 @@ def config_path(tmp_path: Path) -> Path:
     cfg = {
         "db": str(tmp_path / "test.db"),
         "docs": str(tmp_path / "docs"),
+        "data_dir": str(tmp_path / "data"),
         "llm": {
             "base_url": "http://127.0.0.1:8081",
             "endpoint": "/v1/chat/completions",
