@@ -150,3 +150,21 @@ Probado: mise run check OK, e2e 11 passed, auditoría de publicación 0 hallazgo
 ![v0.6.1 invoice-ok](v0.6.1/invoice-ok.png)
 ![v0.6.1 invoice-review-mobile](v0.6.1/invoice-review-mobile.png)
 ![v0.6.1 invoice-review](v0.6.1/invoice-review.png)
+
+## v0.7.0 · 2026-10-31 14:14 +0100 · commit `3f99b6d`
+
+**v0.7.0 — Paquete completo probado y revisión #13/#14/#19/#23**
+
+Qué cambió: visor por páginas del fragmento (#23); CI en push/PR (#19); cierre de procesos huérfanos (#14); aviso de OCR no listo (#13, parcial); licencias en licenses/; smoke real con factura y puertos.
+Qué se probó: mise run check OK; e2e 12 passed; package --smoke real OK (4,09 GB, setup sin descargas, pregunta con cita, factura extraída, puertos liberados).
+
+![v0.7.0 ask-answer-with-source-mobile](v0.7.0/ask-answer-with-source-mobile.png)
+![v0.7.0 ask-answer-with-source](v0.7.0/ask-answer-with-source.png)
+![v0.7.0 ask-error-mobile](v0.7.0/ask-error-mobile.png)
+![v0.7.0 ask-error](v0.7.0/ask-error.png)
+![v0.7.0 ask-refusal-mobile](v0.7.0/ask-refusal-mobile.png)
+![v0.7.0 ask-refusal](v0.7.0/ask-refusal.png)
+![v0.7.0 invoice-ok-mobile](v0.7.0/invoice-ok-mobile.png)
+![v0.7.0 invoice-ok](v0.7.0/invoice-ok.png)
+![v0.7.0 invoice-review-mobile](v0.7.0/invoice-review-mobile.png)
+![v0.7.0 invoice-review](v0.7.0/invoice-review.png)
