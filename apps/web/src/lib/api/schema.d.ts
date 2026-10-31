@@ -140,6 +140,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ingest/jobs/{job_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ingest Events */
+        get: operations["ingest_events_ingest_jobs__job_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sources/{source_id}/pages/{n}/highlight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Page Highlight */
+        get: operations["page_highlight_sources__source_id__pages__n__highlight_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sources/{source_id}": {
         parameters: {
             query?: never;
@@ -259,6 +293,14 @@ export interface components {
             answer: string;
             /** Citations */
             citations: components["schemas"]["Citation"][];
+            /** Segments */
+            segments?: components["schemas"]["Segment"][];
+            /**
+             * Inline
+             * @default none
+             * @enum {string}
+             */
+            inline: "model" | "rules" | "template" | "none";
             /** Reason */
             reason: string;
             /** Suggestions */
@@ -451,6 +493,49 @@ export interface components {
             /** Fichero */
             fichero?: string | null;
         };
+        /**
+         * PageHighlight
+         * @description Where a cited quote sits on a page. `reason` says why there are no rectangles.
+         */
+        PageHighlight: {
+            /** Page */
+            page: number;
+            /** Found */
+            found: boolean;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "ok" | "not_found" | "no_positions" | "no_file";
+            /** Rects */
+            rects?: components["schemas"]["Rect"][];
+        };
+        /**
+         * Rect
+         * @description A rectangle as fractions of the page, origin at the top left.
+         */
+        Rect: {
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+            /** W */
+            w: number;
+            /** H */
+            h: number;
+        };
+        /**
+         * Segment
+         * @description A piece of the answer and the citations that support it.
+         *
+         *     `refs` are positions in `citations`. The `text` of all segments concatenates to the answer.
+         */
+        Segment: {
+            /** Text */
+            text: string;
+            /** Refs */
+            refs: number[];
+        };
         /** Source */
         Source: {
             /** Id */
@@ -552,6 +637,14 @@ export interface components {
             answer: string;
             /** Citations */
             citations: components["schemas"]["Citation"][];
+            /** Segments */
+            segments?: components["schemas"]["Segment"][];
+            /**
+             * Inline
+             * @default none
+             * @enum {string}
+             */
+            inline: "model" | "rules" | "template" | "none";
             /** Reason */
             reason: string;
             /** Suggestions */
@@ -634,6 +727,25 @@ export interface components {
             text: string;
         };
         StreamEvent: components["schemas"]["StepEvent"] | components["schemas"]["TokenEvent"] | components["schemas"]["CitationsEvent"] | components["schemas"]["RefusalEvent"] | components["schemas"]["DoneEvent"] | components["schemas"]["ErrorEvent"];
+        /**
+         * IngestStageEvent
+         * @description One step of an upload being processed (`event: stage`).
+         */
+        IngestStageEvent: {
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "received" | "reading" | "ocr" | "extracting" | "indexing" | "done" | "error";
+            /** Label */
+            label: string;
+            /** Seq */
+            seq: number;
+            /** Detail */
+            detail?: {
+                [key: string]: unknown;
+            };
+        };
     };
     responses: never;
     parameters: never;
@@ -747,7 +859,9 @@ export interface operations {
     };
     upload_document_documents_post: {
         parameters: {
-            query?: never;
+            query?: {
+                job?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -931,6 +1045,80 @@ export interface operations {
             };
         };
     };
+    ingest_events_ingest_jobs__job_id__events_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Server-Sent Events, one `stage` event per step until `done` or `error`. Follow it with the id sent as `?job=` on the upload. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["IngestStageEvent"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    page_highlight_sources__source_id__pages__n__highlight_get: {
+        parameters: {
+            query: {
+                quote: string;
+            };
+            header?: never;
+            path: {
+                source_id: string;
+                n: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageHighlight"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     delete_source_sources__source_id__delete: {
         parameters: {
             query?: never;
@@ -1091,7 +1279,9 @@ export interface operations {
     };
     invoices_upload_invoices_upload_post: {
         parameters: {
-            query?: never;
+            query?: {
+                job?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
