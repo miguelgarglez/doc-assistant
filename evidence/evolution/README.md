@@ -560,7 +560,7 @@ Las capturas con facturas reales de esta integración son locales y no se public
 
 _Sin capturas nuevas en esta versión._
 
-## v0.13.1 · 2026-10-31 22:37 +0100 · commit `eb7c592`
+## v0.13.1 · 2026-10-31 22:37 +0100 · commit `f1bbf8d`
 
 **v0.13.1 · Aclaración de facturas con tarjeta propia y vista previa de cita anclada (ADR-013)**
 
