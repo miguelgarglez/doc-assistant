@@ -612,3 +612,31 @@ Qué se probó
 ![v0.13.1 cita-vista-previa-390x844-industrial-light](v0.13.1/cita-vista-previa-390x844-industrial-light.png)
 ![v0.13.1 cita-vista-previa-390x844-neutral-dark](v0.13.1/cita-vista-previa-390x844-neutral-dark.png)
 ![v0.13.1 cita-vista-previa-390x844-neutral-light](v0.13.1/cita-vista-previa-390x844-neutral-light.png)
+
+## v0.13.2 · 2026-10-31 23:44 +0100 · commit `19079a2`
+
+**v0.13.2 — La vista previa de la cita ya no tapa el composer**
+
+Qué cambió:
+- La tarjeta de la cita inline usa el elemento de scroll del hilo como límite de colisión. Con una cita al final del hilo se abre hacia arriba, centrada en el marcador, y termina antes del composer; se oculta si el marcador sale del hilo. Si no cabe en ninguna dirección, se ciñe al hilo con scroll interno.
+- Un solo punto de entrada (InlineCitationCardBody) para marcadores inline y pastillas. Sin cambios de contrato.
+
+Qué se probó:
+- mise run check → OK (225 tests del servicio, 14 de scripts, contrato sin deriva, lint, tipos, build).
+- Playwright 142/142 en tres pasadas seguidas con axe. Los 3 tests nuevos de geometría fallan sin el arreglo (solape de 45, 85 y 45 px) y pasan con él.
+- Medido con el kit real (solo en local): solape de 40 px antes y 0 después en 1440x900; 12 px y 0 en 390x844. Con backend simulado: 46 o 47 px y 0 px en los 12 tamaños y temas.
+
+Antes y después con el mismo guion y backend simulado: `evidence/comparison-v0.13.1-v0.13.2/`.
+
+![v0.13.2 cita-final-hilo-1280x720-industrial-dark](v0.13.2/cita-final-hilo-1280x720-industrial-dark.png)
+![v0.13.2 cita-final-hilo-1280x720-industrial-light](v0.13.2/cita-final-hilo-1280x720-industrial-light.png)
+![v0.13.2 cita-final-hilo-1280x720-neutral-dark](v0.13.2/cita-final-hilo-1280x720-neutral-dark.png)
+![v0.13.2 cita-final-hilo-1280x720-neutral-light](v0.13.2/cita-final-hilo-1280x720-neutral-light.png)
+![v0.13.2 cita-final-hilo-1440x900-industrial-dark](v0.13.2/cita-final-hilo-1440x900-industrial-dark.png)
+![v0.13.2 cita-final-hilo-1440x900-industrial-light](v0.13.2/cita-final-hilo-1440x900-industrial-light.png)
+![v0.13.2 cita-final-hilo-1440x900-neutral-dark](v0.13.2/cita-final-hilo-1440x900-neutral-dark.png)
+![v0.13.2 cita-final-hilo-1440x900-neutral-light](v0.13.2/cita-final-hilo-1440x900-neutral-light.png)
+![v0.13.2 cita-final-hilo-390x844-industrial-dark](v0.13.2/cita-final-hilo-390x844-industrial-dark.png)
+![v0.13.2 cita-final-hilo-390x844-industrial-light](v0.13.2/cita-final-hilo-390x844-industrial-light.png)
+![v0.13.2 cita-final-hilo-390x844-neutral-dark](v0.13.2/cita-final-hilo-390x844-neutral-dark.png)
+![v0.13.2 cita-final-hilo-390x844-neutral-light](v0.13.2/cita-final-hilo-390x844-neutral-light.png)
