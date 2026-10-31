@@ -60,7 +60,7 @@ def test_filter_value_braces_and_null_op():
             "filtro_valor": "{20000}",
         },
     )
-    assert r["answer"] == "Facturas: A1"
+    assert r["reason"] == "filtro_sin_valor"
     r = run_plan(
         db,
         {"kind": "contar", "filtro_campo": "irpf_importe", "filtro_op": ">", "filtro_valor": None},

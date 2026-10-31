@@ -36,6 +36,9 @@ class AppConfig(BaseModel):
     embeddings: EndpointConfig
     reranker: EndpointConfig
     ocr: OcrConfig = Field(default_factory=OcrConfig)
+    upload_pdf_max_bytes: int = Field(default=25 * 1024 * 1024, gt=0)
+    upload_image_max_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
+    upload_pdf_max_pages: int = Field(default=200, gt=0)
     top_k: int = Field(default=5, gt=0)
     answer_mode: Literal["decide_first", "evidence_first"] = "decide_first"
     path: Path = Path("config.yaml")

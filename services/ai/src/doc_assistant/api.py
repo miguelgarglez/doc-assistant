@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Any
 
+import pypdfium2 as pdfium
 from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
@@ -92,6 +93,31 @@ class InvoiceUploadResponse(BaseModel):
     fichero: str | None = None
 
 
+def read_upload(file: UploadFile, limit: int) -> bytes | None:
+    blocks = []
+    size = 0
+    while block := file.file.read(min(65536, limit + 1 - size)):
+        size += len(block)
+        if size > limit:
+            return None
+        blocks.append(block)
+    return b"".join(blocks)
+
+
+def upload_error(code: str, message: str, status: int) -> JSONResponse:
+    return JSONResponse(
+        status_code=status, content=ErrorBody(code=code, message=message).model_dump()
+    )
+
+
+def safe_upload_directory(base: Path, name: str) -> bool:
+    directory = base / name
+    return directory.resolve().is_relative_to(base) and (
+        not directory.is_dir()
+        or all(child.resolve().is_relative_to(base) for child in directory.iterdir())
+    )
+
+
 def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -149,9 +175,9 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
     @app.post(
         "/documents",
         response_model=DocumentUploadResponse,
-        responses={400: {"model": ErrorBody}, 502: {"model": ErrorBody}},
+        responses={400: {"model": ErrorBody}, 413: {"model": ErrorBody}, 502: {"model": ErrorBody}},
     )
-    async def upload_document(file: Annotated[UploadFile, File()]) -> Any:
+    def upload_document(file: Annotated[UploadFile, File()], request: Request) -> Any:
         filename = file.filename or "document.pdf"
         if not filename.lower().endswith(".pdf"):
             return JSONResponse(
@@ -160,7 +186,12 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
                     code="invalid_file", message="Only PDF uploads are accepted"
                 ).model_dump(),
             )
-        data = await file.read()
+        cfg = request.app.state.config
+        if not safe_upload_directory(cfg.data_dir, "documents"):
+            return upload_error("invalid_directory", "Upload path escapes data_dir", 400)
+        data = read_upload(file, cfg.upload_pdf_max_bytes)
+        if data is None:
+            return upload_error("upload_too_large", "PDF exceeds upload limit", 413)
         if not data:
             return JSONResponse(
                 status_code=400,
@@ -171,6 +202,16 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
                 status_code=400,
                 content=ErrorBody(code="invalid_file", message="File is not a PDF").model_dump(),
             )
+        try:
+            pdf = pdfium.PdfDocument(data)
+            try:
+                pages = len(pdf)
+            finally:
+                pdf.close()
+        except pdfium.PdfiumError:
+            return upload_error("invalid_file", "Invalid PDF", 400)
+        if pages > cfg.upload_pdf_max_pages:
+            return upload_error("upload_too_large", "PDF exceeds page limit", 413)
         return save_and_ingest_pdf(config_path, data, filename)
 
     @app.post("/ask", response_model=AskResponse, responses={502: {"model": ErrorBody}})
@@ -220,9 +261,9 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
     @app.post(
         "/invoices/upload",
         response_model=InvoiceUploadResponse,
-        responses={400: {"model": ErrorBody}, 502: {"model": ErrorBody}},
+        responses={400: {"model": ErrorBody}, 413: {"model": ErrorBody}, 502: {"model": ErrorBody}},
     )
-    async def invoices_upload(file: Annotated[UploadFile, File()]) -> Any:
+    def invoices_upload(file: Annotated[UploadFile, File()], request: Request) -> Any:
         filename = file.filename or "factura.png"
         lower = filename.lower()
         if not lower.endswith((".png", ".jpg", ".jpeg")):
@@ -232,7 +273,12 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
                     code="invalid_file", message="Only PNG/JPG invoice images are accepted"
                 ).model_dump(),
             )
-        data = await file.read()
+        cfg = request.app.state.config
+        if not safe_upload_directory(cfg.data_dir, "invoices"):
+            return upload_error("invalid_directory", "Upload path escapes data_dir", 400)
+        data = read_upload(file, cfg.upload_image_max_bytes)
+        if data is None:
+            return upload_error("upload_too_large", "Image exceeds upload limit", 413)
         if not data:
             return JSONResponse(
                 status_code=400,

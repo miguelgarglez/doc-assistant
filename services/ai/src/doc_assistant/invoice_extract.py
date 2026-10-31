@@ -52,7 +52,7 @@ def parse_es_decimal(value: Any) -> Decimal | None:
     if value is None:
         return None
     raw = str(value).replace("€", "").replace("%", "").replace(" ", "")
-    if not raw:
+    if not re.fullmatch(r"[+-]?(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d+)?|[+-]?\d+\.\d+", raw):
         return None
     if "," in raw:
         raw = raw.replace(".", "").replace(",", ".")
@@ -213,8 +213,10 @@ def extract_text_fields(ocr: str, llm: LLM) -> tuple[dict[str, str | None], dict
             evidence[key] = None
         else:
             text = str(value).strip()
-            fields[key] = text
             evidence[key] = _evidence_line(ocr, text)
+            fields[key] = text if evidence[key] else None
+            if evidence[key] is None:
+                evidence[key] = ""
     return fields, evidence
 
 
@@ -236,6 +238,10 @@ def extract_invoice(image: bytes, *, ocr: OcrPort, llm: LLM) -> dict[str, Any]:
     ocr_text = ocr.extract(image)
     amounts, amount_evidence, flags = extract_amounts(ocr_text)
     text_fields, text_evidence = extract_text_fields(ocr_text, llm)
+    for record_field, source_field in RECORD_MAP.items():
+        if text_evidence[source_field] == "":
+            flags[record_field] = "sin_evidencia"
+            text_evidence[source_field] = None
     record = to_invoice_record(text_fields, amounts)
     estado, motivo = check_gates(amounts)
     evidencias: dict[str, str | None] = {
