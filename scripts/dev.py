@@ -22,7 +22,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from _common import IS_WIN, ROOT, llama_exe, models_dir
+from _common import IS_WIN, ROOT, llama_exe, models_dir, ocr_problem
 
 GRACE_S = 5.0
 LOOPBACK = "127.0.0.1"
@@ -303,6 +303,7 @@ def main() -> int:
     atexit.register(stop_all)
 
     procs = plan(a.dev, a.ai_port, a.web_port, with_llm=not a.no_llm)
+    with_ocr = not a.no_llm and os.environ.get("DOC_ASSISTANT_FAKE_LLAMA") != "1"
     reused = [p for p in procs if p.reuse_if_running and port_busy(p.port)]
     procs = [p for p in procs if p not in reused]
     for p in reused:
@@ -329,6 +330,10 @@ def main() -> int:
             start(p)
             wait_healthy(p)
             print(f"[dev] {p.name} OK", flush=True)
+        if with_ocr:
+            why = ocr_problem(shutil.which("ollama"))
+            if why:
+                print(f"[dev] AVISO: Facturas NO disponible: {why}", flush=True)
         print(
             f"[dev] Listo: http://{LOOPBACK}:{a.web_port}  (Ctrl-C para salir)",
             flush=True,

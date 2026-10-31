@@ -65,3 +65,25 @@ def llama_exe() -> Path:
     name = "llama-server.exe" if IS_WIN else "llama-server"
     hits = sorted(VENDOR.rglob(name)) if VENDOR.exists() else []
     return hits[0] if hits else VENDOR / name
+
+
+OCR_URL = "http://127.0.0.1:11434"
+OCR_MODEL = "glm-ocr"
+OCR_HOWTO = "instala Ollama (https://ollama.com) y ejecuta 'ollama pull glm-ocr'"
+
+
+def ocr_problem(ollama_path: str | None, url: str = OCR_URL, timeout: float = 2) -> str | None:
+    """None si el OCR de facturas está listo; si no, el motivo en una frase (#13)."""
+    import urllib.request
+
+    if not ollama_path:
+        return f"no encuentro 'ollama' en el PATH; {OCR_HOWTO}"
+    try:
+        with urllib.request.urlopen(f"{url}/api/tags", timeout=timeout) as r:
+            tags = json.loads(r.read().decode("utf-8"))
+    except (OSError, ValueError):
+        return f"Ollama no responde en {url}; arráncalo ('ollama serve') o {OCR_HOWTO}"
+    names = {str(m.get("name", "")).split(":")[0] for m in tags.get("models", [])}
+    if OCR_MODEL not in names:
+        return f"Ollama no tiene el modelo '{OCR_MODEL}'; ejecuta 'ollama pull {OCR_MODEL}'"
+    return None
