@@ -5,6 +5,7 @@ import { useState } from "react"
 import { AnswerCard } from "@/components/domain/AnswerCard"
 import { AskErrorNotice } from "@/components/domain/AskErrorNotice"
 import { AskLoadingSkeleton } from "@/components/domain/AskLoadingSkeleton"
+import { DocumentUploadPanel } from "@/components/domain/DocumentUploadPanel"
 import { QuestionBox } from "@/components/domain/QuestionBox"
 import { RefusalNotice } from "@/components/domain/RefusalNotice"
 import { SourceViewer } from "@/components/domain/SourceViewer"
@@ -111,6 +112,8 @@ export function AskWorkspace() {
           />
         </section>
       ) : null}
+
+      <DocumentUploadPanel />
     </div>
   )
 }
