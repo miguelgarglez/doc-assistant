@@ -2,13 +2,25 @@
 
 from __future__ import annotations
 
+import json
 import time
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-from doc_assistant.adapters import LLM, Embedder, Reranker, build_adapters
+from doc_assistant.adapters import (
+    LLM,
+    AdapterError,
+    Embedder,
+    Reranker,
+    StreamingLLM,
+    build_adapters,
+)
 from doc_assistant.config import load_config
 from doc_assistant.invoices import ask_invoices
+from doc_assistant.meta import answer_meta, classify, suggestions_from
+from doc_assistant.partial_json import FieldStreamer
+from doc_assistant.sources import list_sources
 from doc_assistant.store import ChunkStore
 from doc_assistant.verifier import verify
 
@@ -60,6 +72,12 @@ EVIDENCE_FIRST_PROMPT = (
 
 NO_INFO = "No dispongo de esa información en los documentos"
 MAX_QUESTION_CHARS = 1000
+ROUTE_LABELS = {
+    "capabilities": "Pregunta sobre lo que puedo hacer",
+    "inventory": "Pregunta sobre las fuentes disponibles",
+    "document": "Pregunta sobre el contenido de un documento",
+    "rag": "Pregunta sobre el contenido de las fuentes",
+}
 
 
 def _union_candidates(vec: list[tuple[str, float]], bm: list[tuple[str, float]]) -> list[str]:
@@ -70,14 +88,52 @@ def _union_candidates(vec: list[tuple[str, float]], bm: list[tuple[str, float]])
     return seen
 
 
-def ask(
+Event = tuple[str, dict[str, Any]]
+
+
+def _step(sid: str, status: str, label: str, **extra: Any) -> Event:
+    return ("step", {"id": sid, "status": status, "label": label, **extra})
+
+
+def _refusal(
+    reason: str,
+    latencies: dict[str, float],
+    raw: Any = None,
+    *,
+    answer: str = NO_INFO,
+    suggestions: list[dict[str, Any]] | None = None,
+    **extra: Any,
+) -> dict[str, Any]:
+    return {
+        "ok": False,
+        "answer": answer,
+        "citations": [],
+        "reason": reason,
+        "suggestions": suggestions or [],
+        "latencies": latencies,
+        "raw": raw,
+        **extra,
+    }
+
+
+def _chunked(text: str, size: int = 24) -> list[str]:
+    return [text[i : i + size] for i in range(0, len(text), size)]
+
+
+def ask_events(
     config_path: str | Path,
     question: str,
     *,
     embedder: Embedder | None = None,
     reranker: Reranker | None = None,
     llm: LLM | None = None,
-) -> dict[str, Any]:
+    stream: bool = False,
+) -> Iterator[Event]:
+    """Run the pipeline as a sequence of events; the last one is ("result", dict).
+
+    `step` and `token` events are progress only. The result is the single source
+    of truth: tokens are provisional until verification has passed.
+    """
     q = (question or "").strip()
     if not q or len(q) > MAX_QUESTION_CHARS:
         why = "pregunta_vacia" if not q else "pregunta_demasiado_larga"
@@ -86,31 +142,84 @@ def ask(
             if not q
             else f"La pregunta es demasiado larga (máx. {MAX_QUESTION_CHARS} caracteres)."
         )
-        return {
-            "ok": False,
-            "answer": msg,
-            "citations": [],
-            "reason": why,
-            "latencies": {},
-            "raw": None,
-        }
+        yield ("result", _refusal(why, {}, answer=msg))
+        return
     question = q
     cfg = load_config(config_path)
+    latencies: dict[str, float] = {}
+
+    t = time.perf_counter()
+    yield _step("route", "running", "Analizando la pregunta")
+    sources = list_sources(cfg)
+    intent, matched = classify(question, sources)
+    latencies["route"] = round(time.perf_counter() - t, 4)
+    yield _step(
+        "route",
+        "done",
+        ROUTE_LABELS[intent],
+        data={"intent": intent},
+        elapsed_s=latencies["route"],
+    )
+    if intent != "rag":
+        t = time.perf_counter()
+        yield _step("meta", "running", "Leyendo el índice de fuentes")
+        result = answer_meta(cfg, intent, matched, sources)
+        latencies["meta"] = round(time.perf_counter() - t, 4)
+        yield _step(
+            "meta",
+            "done",
+            f"{len(sources)} fuentes en el índice",
+            data={"n": len(sources)},
+            elapsed_s=latencies["meta"],
+        )
+        for piece in _chunked(result["answer"]):
+            yield ("token", {"text": piece})
+        result["latencies"] = latencies
+        yield ("result", result)
+        return
+
     if embedder is None or reranker is None or llm is None:
         e, r, l = build_adapters(cfg, fake=False)
         embedder = embedder or e
         reranker = reranker or r
         llm = llm or l
 
-    invoice_result = ask_invoices(config_path, question, llm=llm)
-    if invoice_result is not None:
-        return invoice_result
+    if any(s["kind"] == "invoice" for s in sources):
+        t = time.perf_counter()
+        yield _step("invoices", "running", "Comprobando si es una consulta de facturas")
+        invoice_result = ask_invoices(config_path, question, llm=llm)
+        latencies["invoices"] = round(time.perf_counter() - t, 4)
+        yield _step(
+            "invoices",
+            "done",
+            "Consulta de facturas" if invoice_result else "No es una consulta de facturas",
+            elapsed_s=latencies["invoices"],
+        )
+        if invoice_result is not None:
+            invoice_result.setdefault("suggestions", [])
+            invoice_result["latencies"] = latencies
+            if invoice_result["ok"]:
+                for piece in _chunked(invoice_result["answer"]):
+                    yield ("token", {"text": piece})
+            yield ("result", invoice_result)
+            return
+
+    if not any(s["n_chunks"] for s in sources):
+        yield (
+            "result",
+            _refusal(
+                "empty_index",
+                latencies,
+                answer="Todavía no hay documentos indexados. Sube PDFs en Fuentes y vuelve a preguntar.",
+            ),
+        )
+        return
 
     dim = getattr(embedder, "dim", None) or cfg.embeddings.dim or 8
     store = ChunkStore(cfg.db, dim=dim)
-    latencies: dict[str, float] = {}
 
     t0 = time.perf_counter()
+    yield _step("retrieve", "running", "Buscando fragmentos relevantes")
     q_emb = embedder.embed([question])[0]
     latencies["embed"] = round(time.perf_counter() - t0, 4)
 
@@ -123,8 +232,16 @@ def ask(
     cand_chunks = store.get_many(cand_ids)
     ordered = [cand_chunks[i] for i in cand_ids if i in cand_chunks]
     docs = [c["text"] for c in ordered]
+    yield _step(
+        "retrieve",
+        "done",
+        f"{len(ordered)} fragmentos candidatos",
+        data={"n": len(ordered)},
+        elapsed_s=round(time.perf_counter() - t0, 4),
+    )
 
     t2 = time.perf_counter()
+    yield _step("rerank", "running", "Reordenando por relevancia")
     if docs:
         ranked = reranker.rerank(question, docs)
         top_idx = [i for i, _ in ranked[: cfg.top_k]]
@@ -132,6 +249,17 @@ def ask(
     else:
         top_chunks = []
     latencies["rerank"] = round(time.perf_counter() - t2, 4)
+    yield _step(
+        "rerank",
+        "done",
+        f"{len(top_chunks)} fragmentos seleccionados",
+        data={
+            "n": len(top_chunks),
+            "top": [{"doc": c["display_doc"], "section": c["section"]} for c in top_chunks],
+        },
+        elapsed_s=latencies["rerank"],
+    )
+    suggestions = suggestions_from(top_chunks)
 
     context_blocks = []
     retrieved_text: dict[str, str] = {}
@@ -145,53 +273,77 @@ def ask(
     user_msg = f"Pregunta: {question}\n\nFragmentos:\n" + (
         "\n---\n".join(context_blocks) if context_blocks else "(ninguno)"
     )
+    messages = [
+        {
+            "role": "system",
+            "content": EVIDENCE_FIRST_PROMPT
+            if cfg.answer_mode == "evidence_first"
+            else SYSTEM_PROMPT,
+        },
+        {"role": "user", "content": user_msg},
+    ]
+    schema = EVIDENCE_FIRST_SCHEMA if cfg.answer_mode == "evidence_first" else ANSWER_SCHEMA
 
     t3 = time.perf_counter()
-    raw = llm.chat(
-        [
-            {
-                "role": "system",
-                "content": EVIDENCE_FIRST_PROMPT
-                if cfg.answer_mode == "evidence_first"
-                else SYSTEM_PROMPT,
-            },
-            {"role": "user", "content": user_msg},
-        ],
-        schema=EVIDENCE_FIRST_SCHEMA if cfg.answer_mode == "evidence_first" else ANSWER_SCHEMA,
-    )
+    yield _step("generate", "running", "Redactando la respuesta con los fragmentos")
+    if stream and isinstance(llm, StreamingLLM):
+        streamer = FieldStreamer("answer")
+        parts: list[str] = []
+        for delta in llm.chat_stream(messages, schema):
+            parts.append(delta)
+            text = streamer.feed(delta)
+            if text:
+                yield ("token", {"text": text})
+        try:
+            raw = json.loads("".join(parts))
+        except ValueError as e:
+            raise AdapterError("Contenido LLM no es JSON válido (stream)") from e
+        if not isinstance(raw, dict):
+            raise AdapterError("Contenido LLM no es un objeto JSON (stream)")
+    else:
+        raw = llm.chat(messages, schema=schema)
     latencies["llm"] = round(time.perf_counter() - t3, 4)
+    yield _step("generate", "done", "Respuesta redactada", elapsed_s=latencies["llm"])
 
     t4 = time.perf_counter()
+    yield _step("verify", "running", "Verificando citas contra los fragmentos")
     if (
         not raw.get("answerable")
         or not isinstance(raw.get("answer"), str)
         or not raw["answer"].strip()
     ):
         latencies["verify"] = round(time.perf_counter() - t4, 4)
-        return {
-            "ok": False,
-            "answer": NO_INFO,
-            "citations": [],
-            "reason": "llm_unanswerable",
-            "latencies": latencies,
-            "raw": raw,
-        }
+        yield _step("verify", "done", "Sin respaldo en las fuentes", elapsed_s=latencies["verify"])
+        yield ("result", _refusal("llm_unanswerable", latencies, raw, suggestions=suggestions))
+        return
 
     citations = raw.get("citations") or []
     answer = raw.get("answer")
-    result = verify(answer, citations, retrieved_text)
+    checked = verify(answer, citations, retrieved_text)
     latencies["verify"] = round(time.perf_counter() - t4, 4)
 
-    if not result.ok:
-        return {
-            "ok": False,
-            "answer": NO_INFO,
-            "citations": [],
-            "reason": f"verify:{result.reason}",
-            "latencies": latencies,
-            "raw": raw,
-            "verify_details": result.details,
-        }
+    if not checked.ok:
+        yield _step(
+            "verify", "done", "La respuesta no pasa la verificación", elapsed_s=latencies["verify"]
+        )
+        yield (
+            "result",
+            _refusal(
+                f"verify:{checked.reason}",
+                latencies,
+                raw,
+                suggestions=suggestions,
+                verify_details=checked.details,
+            ),
+        )
+        return
+    yield _step(
+        "verify",
+        "done",
+        f"{len(citations)} citas verificadas",
+        data={"n_citations": len(citations)},
+        elapsed_s=latencies["verify"],
+    )
 
     enriched = []
     for cit in citations:
@@ -208,14 +360,35 @@ def ask(
             }
         )
 
-    return {
-        "ok": True,
-        "answer": answer,
-        "citations": enriched,
-        "reason": "verified",
-        "latencies": latencies,
-        "raw": raw,
-    }
+    yield (
+        "result",
+        {
+            "ok": True,
+            "answer": answer,
+            "citations": enriched,
+            "reason": "verified",
+            "suggestions": [],
+            "latencies": latencies,
+            "raw": raw,
+        },
+    )
+
+
+def ask(
+    config_path: str | Path,
+    question: str,
+    *,
+    embedder: Embedder | None = None,
+    reranker: Reranker | None = None,
+    llm: LLM | None = None,
+) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for kind, data in ask_events(
+        config_path, question, embedder=embedder, reranker=reranker, llm=llm
+    ):
+        if kind == "result":
+            result = data
+    return result
 
 
 def format_ask_text(result: dict[str, Any]) -> str:
