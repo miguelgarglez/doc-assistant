@@ -1,6 +1,6 @@
 # Versionado
 
-- Tags **anotados** `vMAJOR.MINOR.PATCH`, semver 0.x, solo locales (sin remoto ni push).
+- Tags **anotados** `vMAJOR.MINOR.PATCH`, semver 0.x, se empujan al repo público solo tras pasar la auditoría de publicación (0 hallazgos).
 - **Cuándo se saca un tag:** al cerrar un hito del CHECKPOINT que esté fusionado en `main` y con `mise run check` en verde (y `pnpm e2e` si toca la web). Un tag por hito, sobre el commit que lo cierra.
   - MINOR: capacidad nueva visible (nuevo flujo, endpoint, empaquetado).
   - PATCH: solo correcciones sin cambio de comportamiento esperado.

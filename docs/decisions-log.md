@@ -31,4 +31,5 @@
 - Encargados a 09-py-review-fixes (Codex terra, rama fix/py-review), cada uno con su test: #2 #3 #4 #5 #6 #7 #8 #9 #10 #11 #12 #15 #17 #20 #21 #22.
 - #18 queda resuelto por 08-web-invoices (subida de facturas y PDF conectada).
 - No se aplican ahora (limitaciones documentadas): #13 Ollama/glm-ocr no lo instala setup (decisión de Miguel pendiente: runtime OCR del ZIP); #14 descendientes de un padre ya muerto (los grupos de proceso cubren el caso normal; Job Objects fuera de alcance); #19 CI en PR (el workflow es manual a propósito: no hay push); #23 fragmentos multipágina (abre la primera página).
+- Actualización 31-oct 14:30: #14 resuelto (el cierre mata los grupos iniciados aunque su líder haya muerto; test que falla con el código anterior), #23 resuelto (el visor recorre las páginas del fragmento; e2e), #19 resuelto (workflow `ci` en push/PR: check + e2e), #13 parcial (setup y start comprueban Ollama + glm-ocr y avisan "Facturas NO disponible"; instalarlo o empaquetarlo depende del runtime OCR, decisión de Miguel). En Windows, #14 sigue limitado a `taskkill /T` (sin Job Objects).
 - Fuera de alcance: no se amplía el verificador.

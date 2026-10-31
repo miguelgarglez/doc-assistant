@@ -2,6 +2,12 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
+## v0.7.0 · 2026-10-31 14:35
+- Visor: recorre todas las páginas de un fragmento citado (#23). CI en push/PR con check + e2e (#19).
+- Cierre robusto de procesos huérfanos (#14). Setup/start avisan si el OCR de facturas no está listo (#13, parcial).
+- Paquete: textos de licencia en `licenses/`; el smoke real sube una factura y comprueba puertos liberados.
+- Probado: check OK (11 tests scripts), e2e 12 passed, `mise run package --smoke real` OK.
+
 ## v0.6.1 · 2026-10-31 14:05
 - Historial reescrito para publicar (nombre público, fixtures neutros, capturas regeneradas por commit); tags recreados en los commits equivalentes. Galería con nota de regeneración.
 - Probado: check OK, e2e 11 passed; auditoría de publicación 0 hallazgos.

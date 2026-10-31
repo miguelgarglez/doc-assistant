@@ -53,3 +53,10 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Copia completa antes (bundle + mirror + snapshot del árbol fuera del repo, nada borrado). Reescritura con git-filter-repo en un clon aparte: nombres y rutas al nombre público, líneas con id/valor de documento del kit neutralizadas, fixture antigua y `.DS_Store` fuera, y las capturas de cada commit regeneradas ejecutando el e2e de ese mismo commit (30 imágenes). Los tags v0.1.0–v0.6.0 se recrearon en los commits equivalentes. El repo local se alineó con `reset` (rama `pre-rewrite/main` y tags `pre-rewrite/*` solo locales).
 - Qué se probó: auditoría de publicación (kit por SHA256, patrones en contenido/rutas/mensajes, emails, gitleaks, binarios) → 0 hallazgos; control positivo sobre la copia antigua → 194. `mise run check` → OK; e2e → 11 passed.
 - Decisión clave y por qué: reescribir en un clon y alinear al final deja el original intacto en la copia si algo falla.
+
+## 14:35 · Paquete completo probado y revisión #13/#14/#19/#23 (v0.7.0)
+- `mise run package --smoke real`: ZIP de 4,09 GB (191 ficheros + 3 binarios + 3 modelos) en 9 s; en una carpeta temporal limpia: setup sin descargas (19 s), arranque, PDF subido, "¿Qué alcance tiene el sensor?" → "4 m" con cita (3 s), factura sintética subida y extraída (24 s), puertos 3000/8000/8081–8083 liberados; total 72 s (1:24 con el empaquetado).
+- Licencias revisadas en las fichas: Qwen3.5-4B Apache-2.0, bge-m3 MIT, bge-reranker-v2-m3 Apache-2.0, llama.cpp MIT; textos añadidos en `licenses/` (los repos BAAI no publican fichero LICENSE).
+- #14, #23 y #19 resueltos con tests; #13 parcial (aviso claro), lo demás depende del runtime OCR.
+- Qué se probó: `mise run check` → OK; e2e → 12 passed; test de #14 falla con el código anterior.
+- Decisión clave y por qué: avisar en vez de instalar Ollama, porque el runtime OCR está aún por decidir.
