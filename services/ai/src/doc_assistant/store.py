@@ -78,6 +78,7 @@ class ChunkStore:
             CREATE TABLE IF NOT EXISTS chunks (
                 chunk_id TEXT PRIMARY KEY,
                 doc TEXT NOT NULL,
+                display_doc TEXT NOT NULL,
                 section TEXT NOT NULL,
                 heading TEXT,
                 title TEXT,
@@ -111,16 +112,19 @@ class ChunkStore:
             )
         self.db.commit()
 
-    def upsert(self, chunks: list[dict[str, Any]], embeddings: list[list[float]]) -> None:
+    def upsert(
+        self, chunks: list[dict[str, Any]], embeddings: list[list[float]], *, commit: bool = True
+    ) -> None:
         if len(chunks) != len(embeddings):
             raise ValueError("chunks y embeddings deben tener la misma longitud")
         for c, e in zip(chunks, embeddings):
             self.db.execute(
                 """
-                INSERT INTO chunks(chunk_id, doc, section, heading, title, pages, body, text)
-                VALUES(?,?,?,?,?,?,?,?)
+                INSERT INTO chunks(chunk_id, doc, display_doc, section, heading, title, pages, body, text)
+                VALUES(?,?,?,?,?,?,?,?,?)
                 ON CONFLICT(chunk_id) DO UPDATE SET
                     doc=excluded.doc,
+                    display_doc=excluded.display_doc,
                     section=excluded.section,
                     heading=excluded.heading,
                     title=excluded.title,
@@ -131,6 +135,7 @@ class ChunkStore:
                 (
                     c["chunk_id"],
                     c["doc"],
+                    c.get("display_doc", c["doc"]),
                     c["section"],
                     c.get("heading"),
                     c.get("title"),
@@ -149,7 +154,8 @@ class ChunkStore:
                 "INSERT INTO vec(chunk_id, emb) VALUES(?, ?)",
                 (c["chunk_id"], serialize_f32(e)),
             )
-        self.db.commit()
+        if commit:
+            self.db.commit()
 
     def replace_document(
         self,
@@ -157,6 +163,8 @@ class ChunkStore:
         chunks: list[dict[str, Any]],
         embeddings: list[list[float]],
         pages: list[bytes],
+        *,
+        commit: bool = True,
     ) -> None:
         """Replace all derived state for a document in one transaction."""
         if len(chunks) != len(embeddings):
@@ -175,7 +183,7 @@ class ChunkStore:
                 "INSERT INTO source_pages VALUES (?, ?, ?)",
                 [(doc, i, data) for i, data in enumerate(pages, 1)],
             )
-            self.upsert(chunks, embeddings)
+            self.upsert(chunks, embeddings, commit=commit)
         except Exception:
             self.db.rollback()
             raise

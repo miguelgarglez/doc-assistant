@@ -141,7 +141,15 @@ def test_upload_indexes_sql_and_image(config_path: Path) -> None:
     assert row["emisor"] == gt["seller"]["name"]
     db.con.close()
     store = ChunkStore(cfg.db, dim=8)
-    assert store.page("F-2026-001", 1) is not None
+    assert (
+        store.page(
+            __import__("doc_assistant.chunking", fromlist=["invoice_doc_id"]).invoice_doc_id(
+                "F-2026-001"
+            ),
+            1,
+        )
+        is not None
+    )
     assert store.count() > 0
     store.db.close()
 

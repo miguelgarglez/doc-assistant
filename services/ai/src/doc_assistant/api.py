@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from doc_assistant.adapters import AdapterError
 from doc_assistant.ask import ask
+from doc_assistant.chunking import invoice_doc_id, pdf_doc_id
 from doc_assistant.config import load_config
 from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
 from doc_assistant.invoices import InvoiceDB, invoice_image, upload_invoice
@@ -55,6 +56,7 @@ class Citation(BaseModel):
     chunk_id: str
     quote: str
     doc: str
+    doc_id: str
     section: str
     pages: list[int]
     fragment: str
@@ -82,6 +84,11 @@ class Invoice(BaseModel):
     recargo_total: str | None = None
     importe_total: str | None = None
     iban: str | None = None
+
+
+class InvoiceListItem(Invoice):
+    estado: str
+    motivo: str | None = None
 
 
 class InvoiceUploadResponse(BaseModel):
@@ -219,7 +226,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         return ask(config_path, payload.question)
 
     @app.get(
-        "/sources/{doc_id}/pages/{n}",
+        "/sources/{doc_id:path}/pages/{n}",
         responses={200: {"content": {"image/png": {}}}, 404: {"model": ErrorBody}},
     )
     def source_page(doc_id: str, n: int, request: Request) -> Response:
@@ -227,6 +234,13 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         store = ChunkStore(cfg.db, cfg.embeddings.dim)
         try:
             png = store.page(doc_id, n)
+            if png is None and not doc_id.startswith(("pdf-", "inv-")):
+                matches = [
+                    page
+                    for key in (pdf_doc_id(doc_id), invoice_doc_id(doc_id))
+                    if (page := store.page(key, n)) is not None
+                ]
+                png = matches[0] if len(matches) == 1 else None
         finally:
             store.db.close()
         if png is None:
@@ -238,25 +252,18 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
             )
         return Response(content=png, media_type="image/png")
 
-    @app.get("/invoices", response_model=list[Invoice])
+    @app.get("/invoices", response_model=list[InvoiceListItem])
     def invoices(request: Request) -> Any:
         db = InvoiceDB(str(request.app.state.config.db))
         try:
             return [
-                Invoice.model_validate({k: row.get(k) for k in Invoice.model_fields})
+                InvoiceListItem.model_validate(
+                    {**row, "estado": "ok" if row["cuadra"] == "1" else "revisar"}
+                )
                 for row in db.rows()
             ]
         finally:
             db.con.close()
-
-    @app.post("/invoices", response_model=Invoice)
-    def put_invoice(payload: Invoice, request: Request) -> Invoice:
-        db = InvoiceDB(str(request.app.state.config.db))
-        try:
-            db.upsert(payload.model_dump())
-        finally:
-            db.con.close()
-        return payload
 
     @app.post(
         "/invoices/upload",
@@ -310,7 +317,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         )
 
     @app.get(
-        "/invoices/{invoice_id}/image",
+        "/invoices/{invoice_id:path}/image",
         responses={200: {"content": {"image/png": {}}}, 404: {"model": ErrorBody}},
     )
     def get_invoice_image(invoice_id: str) -> Response:

@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -42,16 +43,33 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def download(url: str, dest: Path, expected: str) -> None:
+def download(url: str, dest: Path, expected: str, size: int | None = None) -> None:
     """Descarga con reanudación (.part + Range) y verificación SHA256."""
     tmp = dest.with_name(dest.name + ".part")
     start = tmp.stat().st_size if tmp.exists() else 0
+    if start and size is not None and start >= size:
+        if start == size and sha256(tmp) == expected:
+            tmp.replace(dest)
+            return
+        tmp.replace(tmp.with_name(tmp.name + ".bad"))
+        start = 0
     req = urllib.request.Request(url, headers={"Range": f"bytes={start}-"} if start else {})
     print(
         f"[setup] descargando {url}" + (f" (reanudo desde {start / 1e9:.2f} GB)" if start else ""),
         flush=True,
     )
-    with urllib.request.urlopen(req, timeout=60) as r:
+    try:
+        response = urllib.request.urlopen(req, timeout=60)
+    except urllib.error.HTTPError as exc:
+        if exc.code != 416 or not start:
+            raise
+        if sha256(tmp) == expected:
+            tmp.replace(dest)
+            return
+        tmp.replace(tmp.with_name(tmp.name + ".bad"))
+        response = urllib.request.urlopen(urllib.request.Request(url), timeout=60)
+        start = 0
+    with response as r:
         mode = "ab" if start and r.status == 206 else "wb"
         with tmp.open(mode) as f:
             shutil.copyfileobj(r, f, 1 << 20)
@@ -79,14 +97,15 @@ def run(cmd: list[str], cwd: Path) -> None:
 
 
 def install_llama() -> None:
-    if llama_exe().exists():
+    cfg = ASSETS["llama_cpp"]
+    marker = VENDOR / "VERSION"
+    if llama_exe().exists() and marker.is_file() and marker.read_text().strip() == cfg["tag"]:
         print(f"[setup] llama-server ya presente: {llama_exe()}")
         return
-    cfg = ASSETS["llama_cpp"]
     plat, ext = llama_platform()
     url = cfg["url"].format(tag=cfg["tag"], plat=plat, ext=ext)
-    VENDOR.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory() as td:
+    VENDOR.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=VENDOR.parent) as td:
         local = ARCHIVES / url.rsplit("/", 1)[1]
         if local.exists() and sha256(local) == cfg["sha256"][plat]:
             print(f"[setup] llama-server desde el paquete: {local.name} (SHA256 OK, sin descarga)")
@@ -94,12 +113,27 @@ def install_llama() -> None:
         else:
             archive = Path(td) / f"llama.{ext}"
             download(url, archive, cfg["sha256"][plat])
+        staging = Path(td) / "llama"
+        staging.mkdir()
         if ext == "zip":
             with zipfile.ZipFile(archive) as z:
-                z.extractall(VENDOR)  # zip de Windows: plano (exe + dll)
+                z.extractall(staging)  # zip de Windows: plano (exe + dll)
         else:
             with tarfile.open(archive) as t:
-                t.extractall(VENDOR, filter="data")
+                t.extractall(staging, filter="data")
+        executable = "llama-server.exe" if IS_WIN else "llama-server"
+        if not any(staging.rglob(executable)):
+            raise SystemExit("[setup] el archivo no contiene llama-server")
+        (staging / "VERSION").write_text(str(cfg["tag"]) + "\n")
+        backup = Path(td) / "previous"
+        if VENDOR.exists():
+            VENDOR.rename(backup)
+        try:
+            staging.rename(VENDOR)
+        except Exception:
+            if backup.exists():
+                backup.rename(VENDOR)
+            raise
 
 
 def check_llama() -> None:
@@ -151,10 +185,16 @@ def install_models(d: Path, verify: bool, yes: bool) -> None:
             raise SystemExit(
                 "[setup] más de 1 GB y sin terminal: repite con --yes o indica --models-dir"
             )
-        if input("[setup] ¿Continuar? [s/N] ").strip().lower() not in {"s", "si", "sí", "y", "yes"}:
+        if input("[setup] ¿Continuar? [s/N] ").strip().lower() not in {
+            "s",
+            "si",
+            "sí",
+            "y",
+            "yes",
+        }:
             raise SystemExit("[setup] cancelado. Usa --models-dir <ruta> si ya tienes los modelos.")
     for m in missing:
-        download(str(m["url"]), d / str(m["file"]), str(m["sha256"]))
+        download(str(m["url"]), d / str(m["file"]), str(m["sha256"]), int(str(m["size"])))
 
 
 def main() -> int:
@@ -163,7 +203,9 @@ def main() -> int:
     ap.add_argument("--check-llama", action="store_true", help="solo comprobar llama-server")
     ap.add_argument("--models-dir", help="carpeta con los GGUF (se guarda en .env.local)")
     ap.add_argument(
-        "--verify", action="store_true", help="verificar SHA256 de los modelos existentes (lento)"
+        "--verify",
+        action="store_true",
+        help="verificar SHA256 de los modelos existentes (lento)",
     )
     ap.add_argument("--yes", action="store_true", help="no preguntar antes de descargar (CI)")
     a = ap.parse_args()

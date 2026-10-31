@@ -200,7 +200,8 @@ def ask(
             {
                 "chunk_id": cit["chunk_id"],
                 "quote": cit["quote"],
-                "doc": meta.get("doc"),
+                "doc": meta.get("display_doc"),
+                "doc_id": meta.get("doc"),
                 "section": meta.get("section"),
                 "pages": meta.get("pages"),
                 "fragment": meta.get("text"),

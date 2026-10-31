@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from doc_assistant.adapters import FakeEmbedder
 from doc_assistant.api import create_app
+from doc_assistant.chunking import pdf_doc_id
 from doc_assistant.config import load_config
 from doc_assistant.ingest import ingest_pdfs
 from doc_assistant.store import ChunkStore
@@ -19,7 +20,7 @@ def test_ingest_replaces_old_chunks_and_renders_pages(
     cfg = load_config(config_path)
     store = ChunkStore(cfg.db, dim=8)
     assert store.count() == first["n_chunks"]
-    assert store.page("manual", 1).startswith(b"\x89PNG")
+    assert store.page(pdf_doc_id("manual"), 1).startswith(b"\x89PNG")
     from reportlab.pdfgen.canvas import Canvas
 
     canvas = Canvas(str(synthetic_pdf))
@@ -33,14 +34,13 @@ def test_ingest_replaces_old_chunks_and_renders_pages(
     assert all(store.get(cid) is None for cid in first["chunk_ids"])
     store.db.close()
     with TestClient(create_app(config_path)) as client:
-        assert client.get("/sources/manual/pages/1").headers["content-type"] == "image/png"
-        assert client.get("/sources/manual/pages/2").status_code == 404
-        assert client.get("/health").json() == {"status": "ok"}
         assert (
-            client.post("/invoices", json={"numero": "SYN-1", "importe_total": "12"}).status_code
-            == 200
+            client.get(f"/sources/{pdf_doc_id('manual')}/pages/1").headers["content-type"]
+            == "image/png"
         )
-        assert client.get("/invoices").json()[0]["numero"] == "SYN-1"
+        assert client.get(f"/sources/{pdf_doc_id('manual')}/pages/2").status_code == 404
+        assert client.get("/health").json() == {"status": "ok"}
+        assert client.post("/invoices", json={"numero": "SYN-1"}).status_code == 405
 
 
 def test_invalid_config_fails_at_startup(tmp_path: Path) -> None:
@@ -66,7 +66,7 @@ def test_documents_upload_sanitizes_and_is_idempotent_by_hash(
         assert first.status_code == 200
         body = first.json()
         assert body["created"] is True
-        assert body["doc_id"] == "evil_name"
+        assert body["doc_id"] == pdf_doc_id("evil_name")
         assert body["path"] == "documents/evil_name.pdf"
         assert body["n_chunks"] > 0
         second = client.post(

@@ -48,7 +48,8 @@ def test_chunk_invoice_fields_and_lines(invoice_json: Path) -> None:
     chunks = chunk_invoice(data)
     assert chunks
     docs = {c["doc"] for c in chunks}
-    assert docs == {"FAC-2024-001"}
+    assert all(doc.startswith("inv-") for doc in docs)
+    assert {c["display_doc"] for c in chunks} == {"FAC-2024-001"}
 
     by_section = {c["section"]: c for c in chunks}
     assert "fecha" in by_section
@@ -62,4 +63,4 @@ def test_chunk_invoice_fields_and_lines(invoice_json: Path) -> None:
 
     for c in chunks:
         assert len(c["chunk_id"]) == 12
-        assert c["text"].startswith("[FAC-2024-001 ·")
+        assert c["text"].startswith("[inv-")

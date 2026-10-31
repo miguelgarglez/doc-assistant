@@ -13,7 +13,7 @@ from typing import Any
 import pypdfium2 as pdfium
 
 from doc_assistant.adapters import Embedder, build_adapters
-from doc_assistant.chunking import chunk_invoice, chunk_pdf
+from doc_assistant.chunking import chunk_invoice, chunk_pdf, pdf_doc_id
 from doc_assistant.config import load_config
 from doc_assistant.store import ChunkStore
 
@@ -82,7 +82,7 @@ def ingest_pdfs(
             continue
         seen_hashes[digest] = pdf.name
         try:
-            chunks = chunk_pdf(pdf, doc=pdf.stem)
+            chunks = chunk_pdf(pdf)
         except Exception as exc:  # noqa: BLE001 — isolate malformed PDFs
             warnings.append(f"no se pudo leer {pdf.name}: {type(exc).__name__}")
             continue
@@ -100,7 +100,7 @@ def ingest_pdfs(
         except Exception as exc:  # noqa: BLE001 — isolate rendering failures
             warnings.append(f"no se pudo renderizar {pdf.name}: {type(exc).__name__}")
             continue
-        documents.append((pdf.stem, chunks, images))
+        documents.append((pdf_doc_id(pdf.stem), chunks, images))
         all_chunks.extend(chunks)
     extract_s = time.perf_counter() - t_extract
 
@@ -182,7 +182,7 @@ def save_and_ingest_pdf(
         path.write_bytes(data)
         created = True
     result = ingest_pdfs(config_path, path, embedder=embedder)
-    result["doc_id"] = path.stem
+    result["doc_id"] = pdf_doc_id(path.stem)
     result["path"] = str(path.relative_to(cfg.data_dir))
     result["content_hash"] = digest
     result["created"] = created
