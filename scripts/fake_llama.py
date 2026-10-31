@@ -16,6 +16,16 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _stream(self, content: str) -> None:
+        """SSE como llama-server con stream:true: deltas de contenido y [DONE]."""
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.end_headers()
+        for i in range(0, len(content), 8):
+            chunk = {"choices": [{"index": 0, "delta": {"content": content[i : i + 8]}}]}
+            self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
+        self.wfile.write(b"data: [DONE]\n\n")
+
     def do_GET(self) -> None:
         self._send({"status": "ok"})
 
@@ -39,6 +49,9 @@ class Handler(BaseHTTPRequestHandler):
         else:
             # JSON válido para el json_schema de /ask: rechazo explícito, recorre todo el pipeline.
             refusal = json.dumps({"answerable": False, "answer": None, "citations": []})
+            if req.get("stream"):
+                self._stream(refusal)
+                return
             self._send({"choices": [{"message": {"role": "assistant", "content": refusal}}]})
 
     def log_message(self, *_: object) -> None:

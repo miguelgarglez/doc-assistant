@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import json
 import math
 import os
 import struct
+from collections.abc import Iterator
 from typing import Any, Protocol, runtime_checkable
 
 import requests
@@ -39,6 +41,13 @@ class Reranker(Protocol):
 @runtime_checkable
 class LLM(Protocol):
     def chat(self, messages: list[dict[str, str]], schema: dict[str, Any]) -> dict[str, Any]: ...
+
+
+@runtime_checkable
+class StreamingLLM(LLM, Protocol):
+    def chat_stream(
+        self, messages: list[dict[str, str]], schema: dict[str, Any]
+    ) -> Iterator[str]: ...
 
 
 class FakeEmbedder:
@@ -96,6 +105,11 @@ class FakeLLM:
             self._i += 1
             return out
         return self._response
+
+    def chat_stream(self, messages: list[dict[str, str]], schema: dict[str, Any]) -> Iterator[str]:
+        text = json.dumps(self.chat(messages, schema), ensure_ascii=False)
+        for i in range(0, len(text), 7):
+            yield text[i : i + 7]
 
 
 class OllamaOCR:
@@ -279,8 +293,6 @@ class HttpLLM:
             raise AdapterError(f"Formato inesperado de chat en {self.url}") from e
         if isinstance(content, dict):
             return content
-        import json
-
         try:
             parsed = json.loads(content)
             if not isinstance(parsed, dict):
@@ -288,6 +300,42 @@ class HttpLLM:
             return parsed
         except (TypeError, ValueError) as e:
             raise AdapterError(f"Contenido LLM no es JSON válido desde {self.url}") from e
+
+    def chat_stream(self, messages: list[dict[str, str]], schema: dict[str, Any]) -> Iterator[str]:
+        """Yield content deltas from llama-server's OpenAI-compatible SSE stream."""
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {"name": "answer", "schema": schema},
+            },
+            "temperature": 0,
+            "stream": True,
+        }
+        try:
+            with requests.post(self.url, json=payload, timeout=self.timeout_s, stream=True) as r:
+                r.raise_for_status()
+                for raw in r.iter_lines(decode_unicode=False):
+                    line = raw.decode("utf-8").strip() if raw else ""
+                    if not line.startswith("data:"):
+                        continue
+                    data = line[5:].strip()
+                    if data == "[DONE]":
+                        return
+                    try:
+                        delta = json.loads(data)["choices"][0].get("delta") or {}
+                    except (ValueError, KeyError, IndexError, TypeError) as e:
+                        raise AdapterError(f"Evento de stream inesperado en {self.url}") from e
+                    content = delta.get("content")
+                    if isinstance(content, str) and content:
+                        yield content
+        except requests.Timeout as e:
+            raise AdapterError(f"Timeout al contactar {self.url} ({self.timeout_s}s)") from e
+        except requests.ConnectionError as e:
+            raise AdapterError(f"No responde el servidor en {self.url}") from e
+        except requests.HTTPError as e:
+            raise AdapterError(f"HTTP {e.response.status_code} en {self.url}") from e
 
 
 def build_ocr(cfg: AppConfig, *, fake: bool = False, text: str = "") -> OcrPort:
