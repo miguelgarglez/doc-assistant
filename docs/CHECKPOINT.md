@@ -20,6 +20,9 @@
 - **31-oct 12:48 · Setup no redescarga modelos** (prioridad de Miguel). La carpeta de modelos se resuelve en este orden: `--models-dir` > `DOC_ASSISTANT_MODELS_DIR` > `.env.local` > `./models`. Setup guarda la ruta elegida en `.env.local`.
   - Qué se probó: `mise run setup --models-dir <carpeta de modelos> --verify` → 3 modelos "SHA256 verificado", "no hay nada que descargar", ruta guardada en `.env.local`. Después `mise run start` sin variables → "modelos: … (origen: .env.local)", todo OK; Ctrl-C → puertos libres. 5 tests nuevos del orden de resolución (verdes). El `.part` de 417 MB de la descarga parada está en `_trash/` (no se ha borrado).
   - Decisión clave y por qué: solo se descarga lo que falta, con reanudación, y pide confirmación si son más de 1 GB (`--yes` en CI), para que nadie se baje 4 GB por error. Comando para tu Mac: una vez `DOC_ASSISTANT_MODELS_DIR=<carpeta de modelos> mise run setup`; después solo `mise run start`.
+- **31-oct 12:47 · Página conectada al API real** (fusionado feat/web-phase2). Cliente tipado generado del contrato; pregunta → respuesta con citas; al pulsar una cita se abre la página y el fragmento resaltado; rechazo y error visibles.
+  - Qué se probó: `mise run check` → OK; `pnpm e2e` → 3 passed (respuesta con fuente, rechazo, error) y las 3 capturas de `evidence/screenshots/` salen idénticas al regenerarlas (git sin cambios).
+  - Decisión clave y por qué: los tests de UI usan respuestas simuladas del API (no modelos), para que las capturas sean reproducibles en cualquier máquina. Pendiente: los textos hablaban de "revisión fiscal" y la tipografía era toda monoespaciada; se está corrigiendo (agente 06).
 
 ## Sigue
 1. Auditar 29 vs 81 tests del slice. 2. Conectar la página al API real con cliente tipado (openapi-fetch). 3. Facturas (subida, extracción con nulos, InvoiceReviewCard). 4. Revisión independiente (gpt-6.1-sol). 5. architecture.md / scaling-deployment.md / evidence/.
