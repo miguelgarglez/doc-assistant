@@ -1,18 +1,16 @@
 const AI_SERVICE_URL =
   process.env.AI_SERVICE_URL ?? "http://127.0.0.1:8000"
 
+// Solo estas cabeceras llegan al servicio de IA (sin cookies ni Authorization).
+const FORWARDED_REQUEST_HEADERS = ["content-type", "accept", "accept-language"]
+
 const HOP_BY_HOP = new Set([
   "connection",
   "keep-alive",
-  "proxy-authenticate",
-  "proxy-authorization",
-  "te",
-  "trailers",
   "transfer-encoding",
   "upgrade",
-  "host",
   "content-length",
-  "expect",
+  "content-encoding",
 ])
 
 type RouteContext = {
@@ -21,16 +19,23 @@ type RouteContext = {
 
 async function proxyRequest(request: Request, context: RouteContext) {
   const { path } = await context.params
-  const incoming = new URL(request.url)
-  const target = new URL(path.join("/"), ensureTrailingSlash(AI_SERVICE_URL))
-  target.search = incoming.search
+  const base = new URL(ensureTrailingSlash(AI_SERVICE_URL))
+  // Cada segmento se recodifica: un segmento como "http%3A%2F%2Fx" no puede
+  // convertirse en URL absoluta ni salir del servicio de IA (SSRF).
+  const target = new URL(path.map(encodeURIComponent).join("/"), base)
+  if (target.origin !== base.origin || !target.pathname.startsWith(base.pathname)) {
+    return Response.json(
+      { code: "invalid_path", message: "Ruta no permitida" },
+      { status: 400 },
+    )
+  }
+  target.search = new URL(request.url).search
 
   const headers = new Headers()
-  request.headers.forEach((value, key) => {
-    if (!HOP_BY_HOP.has(key.toLowerCase())) {
-      headers.set(key, value)
-    }
-  })
+  for (const name of FORWARDED_REQUEST_HEADERS) {
+    const value = request.headers.get(name)
+    if (value) headers.set(name, value)
+  }
 
   const init: RequestInit = {
     method: request.method,
