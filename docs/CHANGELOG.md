@@ -2,6 +2,11 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
+## v0.13.2 · 2026-10-31
+- La vista previa de una cita ya no tapa el composer. Calculaba las colisiones contra la ventana y el composer queda fuera del hilo pero dentro de la ventana, así que una cita al final del hilo se abría hacia abajo y lo cubría (40 px medidos con el kit real, 46 o 47 px en las capturas sintéticas). Ahora el límite de colisión es el elemento de scroll del hilo: la tarjeta se abre hacia arriba, sigue centrada en el marcador y se oculta si este sale del hilo. Si ni arriba ni abajo cabe entera, se ciñe al hilo y desplaza su contenido.
+- Sin cambios de contrato ni del servicio.
+- Probado: `mise run check` OK con 225 tests del servicio. Playwright 142/142 en tres pasadas con axe sin violaciones serias ni críticas. Los 3 tests nuevos de geometría fallan sin el arreglo y pasan con él. Antes y después con el kit real (solo en local) y con backend simulado (`evidence/comparison-v0.13.1-v0.13.2/`).
+
 ## v0.13.1 · 2026-10-31
 - Aclaración de facturas con tarjeta propia (ADR-013). Si una pregunta no dice de qué factura habla, el chat enseña «¿De qué factura?» con las candidatas como botones (número, fecha, partes y total, solo si existen). Un clic reenvía la pregunta ya desambiguada. Se mueve con teclado. Antes salía «Sin evidencia suficiente».
 - Contrato: nuevo evento SSE `clarification` y `done.clarification` (hasta 5 candidatas con `question`). Una aclaración deja de ser un rechazo. OpenAPI y cliente regenerados.

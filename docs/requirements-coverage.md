@@ -63,6 +63,11 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 | N3 | Huecos del enunciado decididos | `docs/open-gaps.md` | Cumplido | — |
 | N5 | ZIP con código, README y arquitectura | `mise run package` | Parcial | Solo se ha probado el smoke falso, sin modelos. El paquete completo con smoke real está pendiente. |
 
+**v0.13.2.**
+- Mejoran E-A3/E-A4 y R1.5: la vista previa de una cita ya no tapa el composer cuando la cita está al final del hilo (límite de colisión en el hilo, tests de geometría). E-B3 suma las capturas antes y después. No cambia el estado de ninguna fila.
+- Pendientes: B5 sigue parcial hasta tener un gold aprobado; E-B1 sigue en "no"; el humo con modelos reales desde el ZIP está en `_agents/ui6/PROGRESO.md`, no en el repositorio.
+- Recuento final de 31 filas: 17 cumplidas, 10 parciales y 4 no.
+
 **v0.13.1 (ADR-013).**
 - Mejoran R1.5, B5 y E-A3/E-A4: la ambigüedad de facturas es una aclaración con candidatas reales y la vista previa de cita queda anclada. E-B3 suma las capturas nuevas. No cambia el estado de ninguna fila.
 - Pendientes: B5 sigue parcial hasta tener un gold aprobado; E-B1 sigue en "no"; las candidatas de persona para listas, conteos y sumas están sin hacer.
