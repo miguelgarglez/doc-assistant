@@ -19,6 +19,14 @@ from decimal import Decimal
 from typing import Any
 
 from doc_assistant.adapters import AdapterError
+from doc_assistant.invoice_fields import (
+    FIELD_SPECS,
+    display_value,
+    format_eur,
+    labels_for,
+    noun_phrase,
+    prune_unasked,
+)
 from doc_assistant.invoice_index import (
     AMOUNT_COLS,
     DATE_COLS,
@@ -34,22 +42,7 @@ from doc_assistant.invoice_index import (
     resolve_party,
 )
 
-FIELDS = {
-    "numero": "número",
-    "fecha_emision": "fecha de emisión",
-    "fecha_vencimiento": "fecha de vencimiento",
-    "emisor": "emisor",
-    "nif_emisor": "NIF del emisor",
-    "cliente": "cliente",
-    "nif_cliente": "NIF del cliente",
-    "base_imponible_total": "base imponible",
-    "cuota_iva_total": "cuota de IVA",
-    "irpf_tipo": "tipo de IRPF",
-    "irpf_importe": "retención IRPF",
-    "recargo_total": "recargo de equivalencia",
-    "importe_total": "importe total",
-    "iban": "IBAN",
-}
+FIELDS = {key: spec.label for key, spec in FIELD_SPECS.items()}
 NUMERIC = set(AMOUNT_COLS)
 FILTERABLE = [*AMOUNT_COLS, *DATE_COLS]
 INTENTS = ["valor", "lista", "contar", "sumar", "documentos"]
@@ -294,23 +287,8 @@ def _looks_numberish(s: str) -> bool:
     return bool(re.search(r"\d", s))
 
 
-FIELD_PHRASE = {
-    "numero": "el número",
-    "fecha_emision": "la fecha de emisión",
-    "fecha_vencimiento": "la fecha de vencimiento",
-    "emisor": "el emisor",
-    "nif_emisor": "el NIF del emisor",
-    "cliente": "el cliente",
-    "nif_cliente": "el NIF del cliente",
-    "base_imponible_total": "la base imponible",
-    "cuota_iva_total": "la cuota de IVA",
-    "irpf_tipo": "el tipo de IRPF",
-    "irpf_importe": "la retención IRPF",
-    "recargo_total": "el recargo de equivalencia",
-    "importe_total": "el importe total",
-    "iban": "el IBAN",
-}
 MAX_CANDIDATES = 5
+SUMMARY_FIELDS = ["importe_total", "fecha_emision", "emisor", "cliente"]
 CLARIFY_PROMPT = "¿De qué factura?"
 
 
@@ -320,14 +298,15 @@ def followup_fields(plan: Plan, question: str) -> list[str]:
     if plan.intent != "valor":
         return []
     asked = [c for c in (plan.campos or lexical_fields(question, None)) if c != "numero"]
-    return asked[:3]
+    return prune_unasked(asked, question)[:3]
 
 
-def followup_question(fields: list[str], numero: str) -> str:
-    """The original question with the invoice named, written from the fields asked."""
+def followup_question(fields: list[str], numero: str, question: str = "") -> str:
+    """The original question with the invoice named, written from the fields asked and
+    with the question's own words for them."""
     if not fields:
         return f"¿Qué datos tiene la factura {numero}?"
-    nouns = [FIELD_PHRASE[c] for c in fields]
+    nouns = [noun_phrase(c, question) for c in fields]
     joined = nouns[0] if len(nouns) == 1 else ", ".join(nouns[:-1]) + " y " + nouns[-1]
     verb = "Cuál es" if len(nouns) == 1 else "Cuáles son"
     return f"¿{verb} {joined} de la factura {numero}?"
@@ -340,6 +319,7 @@ def _candidates_answer(
     why: str,
     fields: list[str],
     detail: str | None = None,
+    question: str = "",
 ) -> dict[str, Any]:
     """Ambiguity: the real candidate invoices, as structured data plus a plain-text fallback."""
     rows = _rows(con, numeros[:MAX_CANDIDATES])
@@ -361,8 +341,8 @@ def _candidates_answer(
                     "emisor": r.get("emisor"),
                     "cliente": r.get("cliente"),
                     "fecha": r.get("fecha_emision"),
-                    "total": r.get("importe_total"),
-                    "question": followup_question(fields, r["numero"]),
+                    "total": _shown(r, "importe_total"),
+                    "question": followup_question(fields, r["numero"], question),
                 }
                 for r in rows
             ],
@@ -417,7 +397,7 @@ def select(con: sqlite3.Connection, plan: Plan, question: str) -> Selection:
         if len(hits) > 1:
             text = f"Varias facturas encajan con «{numero}»."
             sel.stop = _candidates_answer(
-                con, hits, text, "factura_ambigua", followup_fields(plan, question), text
+                con, hits, text, "factura_ambigua", followup_fields(plan, question), text, question
             )
             return sel
         sel.numeros, sel.label = hits, f"Factura {hits[0]}"
@@ -448,7 +428,7 @@ def select(con: sqlite3.Connection, plan: Plan, question: str) -> Selection:
         names = " o ".join(f"{p.nombre}" + (f" ({p.nif})" if p.nif else "") for p in parties[:5])
         text = f"Hay varias personas o empresas que encajan: {names}."
         sel.stop = _candidates_answer(
-            con, nums, text, "parte_ambigua", followup_fields(plan, question), text
+            con, nums, text, "parte_ambigua", followup_fields(plan, question), text, question
         )
         return sel
     p = parties[0]
@@ -600,6 +580,15 @@ def execute(con: sqlite3.Connection, plan: Plan, question: str) -> dict[str, Any
     return result
 
 
+def _shown(r: dict[str, Any], c: str) -> str | None:
+    v = r.get(c)
+    return None if v in (None, "") else display_value(c, v)
+
+
+def _pairs(r: dict[str, Any], fields: list[str], labels: dict[str, str]) -> str:
+    return "; ".join(f"{labels[c]}: {_shown(r, c)}" for c in fields if _shown(r, c) is not None)
+
+
 def _shape(
     con: sqlite3.Connection,
     plan: Plan,
@@ -614,47 +603,42 @@ def _shape(
             return _refuse("sin_resultados", "Ninguna factura cumple la condición.")
         if not has_selector and len(numeros) > 1:
             return _candidates_answer(
-                con, numeros, CLARIFY_PROMPT, "aclaracion", followup_fields(plan, question)
+                con,
+                numeros,
+                CLARIFY_PROMPT,
+                "aclaracion",
+                followup_fields(plan, question),
+                question=question,
             )
         if len(numeros) > MAX_VALUES:
             text = f"Hay {len(numeros)} facturas{scope}; acota por número o fecha."
             return _candidates_answer(
-                con, numeros, text, "aclaracion", followup_fields(plan, question), text
+                con, numeros, text, "aclaracion", followup_fields(plan, question), text, question
             )
         rows = _rows(con, numeros)
-        campos = _role_fields(
-            plan.campos or lexical_fields(question, sel.rol), sel.rol, question
-        ) or [
-            "importe_total",
-            "fecha_emision",
-            "emisor",
-            "cliente",
-        ]
+        asked = prune_unasked(
+            plan.campos or lexical_fields(question, sel.rol), question, party_role=sel.rol
+        )
+        campos = _role_fields(asked, sel.rol, question) or SUMMARY_FIELDS
         campos = [c for c in campos if c != "numero"] or ["importe_total"]
+        labels = labels_for(campos, question)
         lines, cits, elements = [], [], []
         for r in rows:
-            got = [c for c in campos if r.get(c) is not None]
+            got = [c for c in campos if _shown(r, c) is not None]
             if not got:
                 continue
+            missing = [labels[c] for c in campos if c not in got]
             lines.append(
                 f"Factura {r['numero']}: "
-                + "; ".join(f"{FIELDS[c]}: {r[c]}" for c in got)
-                + (
-                    "; sin dato de " + ", ".join(FIELDS[c] for c in campos if c not in got)
-                    if len(got) < len(campos)
-                    else ""
-                )
+                + _pairs(r, got, labels)
+                + ("; sin dato de " + ", ".join(missing) if missing else "")
             )
-            selectors = [c for c in sel.selector_fields if c not in got and r.get(c)]
-            refs = [_cit(r, c) for c in got + selectors]
-            extra = "; ".join(f"{FIELDS[c]}: {r[c]}" for c in selectors)
-            elements.append(
-                {"text": lines[-1] + ("; " + extra if extra else ""), "citations": refs}
-            )
+            refs = [_cit(r, c) for c in got]
+            elements.append({"text": lines[-1], "citations": refs})
             cits += refs
         if not lines:
-            missing = ",".join(campos)
-            return _refuse("campo_ausente:" + missing, "Ese dato no consta en la factura.")
+            missing_keys = ",".join(campos)
+            return _refuse("campo_ausente:" + missing_keys, "Ese dato no consta en la factura.")
         head = f"{sel.label} tiene {len(rows)} facturas. " if sel.party and len(rows) > 1 else ""
         return {
             "ok": True,
@@ -667,23 +651,18 @@ def _shape(
         }
     if plan.intent == "contar":
         rows = _rows(con, numeros[:50])
-        tag = sel.selector_fields[0] if sel.selector_fields else "numero"
         n = len(numeros)
+        headline = f"{n} factura{'s' if n != 1 else ''}{scope}"
         return {
             "ok": True,
             "reason": "sql",
-            "answer": f"{n} factura{'s' if n != 1 else ''}{scope}" + _warning(rows),
-            "headline": f"{n} factura{'s' if n != 1 else ''}{scope}",
+            "answer": headline + _warning(rows),
+            "headline": headline,
             "elements": [
-                {
-                    "text": f"Factura {r['numero']}"
-                    + (f": {FIELDS[tag]}: {r[tag]}" if tag != "numero" else ""),
-                    "citations": [_cit(r, tag)],
-                }
-                for r in rows
+                {"text": f"Factura {r['numero']}", "citations": [_cit(r, "numero")]} for r in rows
             ],
             "review": [r["numero"] for r in rows if r.get("cuadra") == "0"],
-            "citations": [_cit(r, tag) for r in rows],
+            "citations": [_cit(r, "numero") for r in rows],
         }
     if plan.intent == "sumar":
         c = (plan.campos or ["importe_total"])[0]
@@ -697,14 +676,20 @@ def _shape(
             return _refuse("suma_datos_incompletos", "Alguna factura no tiene ese importe.")
         total = sum((v for v in vals if v is not None), Decimal(0))
         n = len(rows)
+        label = labels_for([c], question)[c]
+        headline = (
+            f"Suma de {label}{scope}: {format_eur(total)} en {n} factura{'s' if n != 1 else ''}"
+        )
         return {
             "ok": True,
             "reason": "sql",
-            "answer": f"Suma de {FIELDS[c]}{scope}: {total} EUR en {n} factura{'s' if n != 1 else ''}"
-            + _warning(rows),
-            "headline": f"Suma de {FIELDS[c]}{scope}: {total} EUR en {n} factura{'s' if n != 1 else ''}",
+            "answer": headline + _warning(rows),
+            "headline": headline,
             "elements": [
-                {"text": f"Factura {r['numero']}: {FIELDS[c]}: {r[c]}", "citations": [_cit(r, c)]}
+                {
+                    "text": f"Factura {r['numero']}: {label}: {_shown(r, c)}",
+                    "citations": [_cit(r, c)],
+                }
                 for r in rows
             ],
             "review": [r["numero"] for r in rows if r.get("cuadra") == "0"],
@@ -720,7 +705,7 @@ def _shape(
             "citations": [],
         }
     rows = _rows(con, numeros[:MAX_LIST])
-    shown = [c for c in plan.campos if c != "numero"][:3]
+    asked = prune_unasked([c for c in plan.campos if c != "numero"], question)
     filt = [
         f
         for f, col in {**AMOUNT_COLS, **DATE_COLS}.items()
@@ -728,14 +713,17 @@ def _shape(
     ] + list(plan.tiene)
     if plan.desde or plan.hasta:
         filt.append("fecha_emision")
-    shown = list(dict.fromkeys(shown + filt + sel.selector_fields))[:4]
+    shown = list(dict.fromkeys(asked[:3] + filt))[:4]
+    labels = labels_for(shown, question)
     parts = []
     for r in rows:
-        extra = "; ".join(f"{FIELDS[c]}: {r[c]}" for c in shown if r.get(c) is not None)
+        extra = _pairs(r, shown, labels)
         parts.append(r["numero"] + (f" ({extra})" if extra else ""))
     more = f" y {len(numeros) - MAX_LIST} más" if len(numeros) > MAX_LIST else ""
     cits = [
-        _cit(r, c) for r in rows for c in ([c for c in shown if r.get(c) is not None] or ["numero"])
+        _cit(r, c)
+        for r in rows
+        for c in ([c for c in shown if _shown(r, c) is not None] or ["numero"])
     ]
     return {
         "ok": True,

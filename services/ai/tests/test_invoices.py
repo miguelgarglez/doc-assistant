@@ -3,6 +3,7 @@
 import pytest
 
 from doc_assistant.adapters import AdapterError, FakeLLM
+from doc_assistant.invoice_fields import FIELD_SPECS
 from doc_assistant.invoice_query import (
     is_invoice_question,
     plan_and_run,
@@ -76,7 +77,7 @@ def test_party_variants_resolve_to_one_invoice(parte):
     r = run_plan(
         make(LUCIA, TECNO), {"intent": "valor", "parte": parte, "campos": ["importe_total"]}
     )
-    assert r["ok"] and "1706.60" in r["answer"] and nums(r) == ["FAC-2026-0042"]
+    assert r["ok"] and "1.706,60 €" in r["answer"] and nums(r) == ["FAC-2026-0042"]
 
 
 @pytest.mark.parametrize(
@@ -143,7 +144,7 @@ def test_party_with_several_invoices_gets_one_value_per_invoice():
         {"intent": "valor", "parte": "Atlántida", "campos": ["importe_total"]},
         "total de las facturas emitidas a Atlántida",
     )
-    assert r["ok"] and "1706.60" in r["answer"] and "99.00" in r["answer"]
+    assert r["ok"] and "1.706,60 €" in r["answer"] and "99,00 €" in r["answer"]
     assert nums(r) == ["FAC-2026-0042", "LM-7"] and "2026/0317" not in r["answer"]
 
 
@@ -190,7 +191,7 @@ def test_amount_filters_accept_spanish_and_english_formats(valor):
     r = run_plan(
         con, {"intent": "lista", "filtros": [{"campo": "importe_total", "op": ">", "valor": valor}]}
     )
-    assert r["ok"] and nums(r) == ["FAC-2026-0042"] and "1706.60" in r["answer"]
+    assert r["ok"] and nums(r) == ["FAC-2026-0042"] and "1.706,60 €" in r["answer"]
     r = run_plan(
         con, {"intent": "lista", "filtros": [{"campo": "importe_total", "op": "<", "valor": valor}]}
     )
@@ -220,7 +221,7 @@ def test_count_sum_and_has():
         == "1 factura de Lucía Martín Ortega"
     )
     r = run_plan(con, {"intent": "sumar", "parte": "Atlántida", "campos": ["importe_total"]})
-    assert "1805.60" in r["answer"] and nums(r) == ["FAC-2026-0042", "LM-7"]
+    assert "1.805,60 €" in r["answer"] and nums(r) == ["FAC-2026-0042", "LM-7"]
     r = run_plan(con, {"intent": "lista", "tiene": ["irpf_importe"]})
     assert nums(r) == ["FAC-2026-0042"]
 
@@ -357,7 +358,7 @@ def test_years_come_from_the_question_not_the_model():
         "campos": ["importe_total"],
     }
     r = run_plan(con, plan, "total de la factura del NIF 12345678 K de marzo")
-    assert r["ok"] and "1706.60" in r["answer"]
+    assert r["ok"] and "1.706,60 €" in r["answer"]
     r = run_plan(con, plan, "total de la factura del NIF 12345678 K de marzo de 2025")
     assert not r["ok"]
 
@@ -372,7 +373,7 @@ def test_filters_settle_an_ambiguous_name():
         "fecha_hasta": "2025-03-07",
     }
     r = run_plan(con, plan, "total de la factura de Lucía del 7 de marzo")
-    assert r["ok"] and "1706.60" in r["answer"] and "99.00" not in r["answer"]
+    assert r["ok"] and "1.706,60 €" in r["answer"] and "99,00 €" not in r["answer"]
 
 
 def test_longer_role_cue_wins():
@@ -416,7 +417,7 @@ def test_v2_answers_keep_inline_citations_and_valid_markdown(config_path, intent
     if intent == "valor":
         assert "sin dato de IBAN" in result["answer"]
     if intent == "sumar":
-        assert "1805.60 EUR en 2 facturas" in result["answer"]
+        assert "1.805,60 € en 2 facturas" in result["answer"]
 
 
 def test_v2_value_escapes_data_and_retains_clarification(config_path):
@@ -436,7 +437,7 @@ def test_v2_value_escapes_data_and_retains_clarification(config_path):
         "total de factura 4. [F]*_1",
         llm=FakeLLM({"intent": "valor", "numero": "4. [F]*_1", "campos": ["importe_total"]}),
     )
-    assert result is not None and result["ok"] and "1706.60" in result["answer"]
+    assert result is not None and result["ok"] and "1.706,60 €" in result["answer"]
     assert "\\[F\\]\\*\\_1" in result["answer"]
     assert_valid_markdown(result["answer"])
     assert_segments_tile(result)
@@ -517,7 +518,7 @@ def test_clarification_lists_real_candidates_with_a_disambiguated_question(confi
         "emisor": "Lucía Martín Ortega",
         "cliente": "Editorial Atlántida, S.L.",
         "fecha": "07 marzo 2026",
-        "total": "1706.60",
+        "total": "1.706,60 €",
         "question": "¿Cuál es el importe total de la factura FAC-2026-0042?",
     }
     assert by_doc["2026/0317"]["question"] == "¿Cuál es el importe total de la factura 2026/0317?"
@@ -558,9 +559,9 @@ def test_clarification_truncates_to_five_and_counts_all(config_path):
 
 
 def test_followup_question_is_built_from_the_fields_asked():
-    from doc_assistant.invoice_query import FIELD_PHRASE, FIELDS, followup_question
+    from doc_assistant.invoice_query import FIELDS, followup_question
 
-    assert set(FIELD_PHRASE) == set(FIELDS)
+    assert set(FIELD_SPECS) == set(FIELDS)
     assert (
         followup_question(["importe_total"], "A-1")
         == "¿Cuál es el importe total de la factura A-1?"

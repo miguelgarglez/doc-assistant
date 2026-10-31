@@ -207,7 +207,7 @@ def test_api_invoice_upload_and_ask(config_path: Path, monkeypatch: pytest.Monke
         llm=plan_llm,
     )
     assert result["ok"] is True
-    assert "23474.31" in result["answer"]
+    assert "23.474,31 €" in result["answer"]
     assert result["citations"][0]["doc"] == "A120"
     assert result["citations"][0]["section"] == "importe_total"
     assert result["citations"][0]["fragment"]

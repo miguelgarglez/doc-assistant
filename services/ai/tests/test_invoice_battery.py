@@ -1,0 +1,469 @@
+"""Synthetic invoice battery: the whole /ask path for invoices with the plan the model would
+write. Each case states what the answer must contain, what it must not, and the invariants
+that make an answer false: an amount not stored in a selected invoice, a raw decimal, a field
+nobody asked for, a citation the text does not show.
+
+Set DOC_ASSISTANT_LIVE_LLM=http://127.0.0.1:<port> to run the same questions against a real
+llama-server (the plan then comes from the model, so only the invariants are checked)."""
+
+from __future__ import annotations
+
+import os
+import re
+from dataclasses import dataclass, field
+from typing import Any
+
+import pytest
+
+from doc_assistant.adapters import FakeLLM, HttpLLM
+from doc_assistant.config import load_config
+from doc_assistant.invoice_fields import format_eur
+from doc_assistant.invoices import InvoiceDB, ask_invoices
+
+AMOUNT_FIELDS = (
+    "base_imponible_total",
+    "cuota_iva_total",
+    "irpf_importe",
+    "recargo_total",
+    "importe_total",
+)
+
+INVOICES = [
+    {
+        "numero": "FAC-2026-0042",
+        "emisor": "Lucía Martín Ortega",
+        "nif_emisor": "12345678-K",
+        "cliente": "Editorial Atlántida, S.L.",
+        "nif_cliente": "B-81234567",
+        "fecha_emision": "07 marzo 2026",
+        "base_imponible_total": "1610.00",
+        "cuota_iva_total": "338.10",
+        "irpf_tipo": "15",
+        "irpf_importe": "241.50",
+        "importe_total": "1706.60",
+    },
+    {
+        "numero": "2026/0317",
+        "emisor": "DeltaSistemas Ibérica, S.L.",
+        "nif_emisor": "B-82345678",
+        "cliente": "Cafetería El Plaza, S.C.P.",
+        "nif_cliente": "J-03456789",
+        "fecha_emision": "14/02/2026",
+        "base_imponible_total": "1350.00",
+        "cuota_iva_total": "283.50",
+        "importe_total": "1633.50",
+    },
+    {
+        "numero": "LM-7",
+        "emisor": "Lucía Marín Ruiz",
+        "nif_emisor": "23456781-B",
+        "cliente": "Editorial Atlántida, S.L.",
+        "fecha_emision": "2026-04-02",
+        "importe_total": "99.00",
+    },
+    {
+        "numero": "T-100",
+        "emisor": "Talleres Sur, S.A.",
+        "cliente": "Taller Norte, S.L.",
+        "fecha_emision": "2026-01-15",
+        "fecha_vencimiento": "2026-02-15",
+        "base_imponible_total": "3000.00",
+        "cuota_iva_total": "630.00",
+        "importe_total": "3630.00",
+        "iban": "ES9121000418450200051332",
+    },
+    {
+        "numero": "T-101",
+        "emisor": "Talleres Sur, S.A.",
+        "cliente": "Editorial Atlántida, S.L.",
+        "fecha_emision": "2026-02-20",
+        "base_imponible_total": "10716.00",
+        "cuota_iva_total": "2592.59",
+        "importe_total": "12345.67",
+    },
+    {
+        "numero": "R-5",
+        "emisor": "Ana Ruiz Pérez",
+        "nif_emisor": "45678912-Z",
+        "cliente": "Cafetería El Plaza, S.C.P.",
+        "fecha_emision": "2026-03-03",
+        "importe_total": "1000000.50",
+    },
+    {
+        "numero": "RV-9",
+        "emisor": "Revisiones Rápidas, S.L.",
+        "cliente": "Taller Norte, S.L.",
+        "fecha_emision": "2026-05-09",
+        "importe_total": "50.00",
+        "_cuadra": "0",
+    },
+]
+
+
+@dataclass
+class Case:
+    question: str
+    plan: dict[str, Any]
+    kind: str = "answer"  # answer | clarify | refuse
+    want: tuple[str, ...] = ()
+    forbid: tuple[str, ...] = ()
+    reason: str | None = None
+    note: str = field(default="", repr=False)
+
+
+def value(question: str, numero: str, campos: list[str], **kw: Any) -> Case:
+    return Case(question, {"intent": "valor", "numero": numero, "campos": campos}, **kw)
+
+
+CASES = [
+    value(
+        "¿Cuál es el precio final de la factura FAC-2026-0042?",
+        "FAC-2026-0042",
+        ["importe_total"],
+        want=("Factura FAC-2026-0042: precio final: 1.706,60 €",),
+        forbid=("Lucía", "emisor", "importe total", "1706"),
+    ),
+    value(
+        "importe total de la factura FAC-2026-0042",
+        "FAC-2026-0042",
+        ["importe_total"],
+        want=("Factura FAC-2026-0042: importe total: 1.706,60 €",),
+        forbid=("Lucía", "emisor"),
+    ),
+    value(
+        "total de la factura 2026/0317",
+        "2026/0317",
+        ["importe_total"],
+        want=("Factura 2026/0317: total: 1.633,50 €",),
+        forbid=("importe total", "Delta", "Plaza"),
+    ),
+    Case(
+        "total de la factura de Lucía Martín",
+        {"intent": "valor", "parte": "Lucía Martín", "campos": ["importe_total"]},
+        want=("Factura FAC-2026-0042: total: 1.706,60 €",),
+        forbid=("emisor", "Lucía"),
+    ),
+    value(
+        "total de la factura FAC-2026-0042",
+        "FAC-2026-0042",
+        ["importe_total", "emisor", "cliente"],
+        want=("total: 1.706,60 €",),
+        forbid=("emisor", "cliente", "Lucía", "Atlántida"),
+        note="the model added fields nobody asked for",
+    ),
+    value(
+        "total y emisor de la factura FAC-2026-0042",
+        "FAC-2026-0042",
+        ["importe_total", "emisor"],
+        want=("total: 1.706,60 €; emisor: Lucía Martín Ortega",),
+        forbid=("cliente",),
+    ),
+    value(
+        "¿Cuánto IVA lleva la factura 2026/0317?",
+        "2026/0317",
+        ["cuota_iva_total"],
+        want=("IVA: 283,50 €",),
+        forbid=("cuota de IVA", "total"),
+    ),
+    value(
+        "base imponible e IVA de la factura FAC-2026-0042",
+        "FAC-2026-0042",
+        ["base_imponible_total", "cuota_iva_total"],
+        want=("base imponible: 1.610,00 €; IVA: 338,10 €",),
+    ),
+    value(
+        "retención IRPF de la factura FAC-2026-0042",
+        "FAC-2026-0042",
+        ["irpf_tipo", "irpf_importe"],
+        want=("retención IRPF: 241,50 €",),
+        forbid=("15 %", "tipo"),
+    ),
+    value(
+        "tipo de IRPF de la factura FAC-2026-0042",
+        "FAC-2026-0042",
+        ["irpf_tipo"],
+        want=("tipo de IRPF: 15 %",),
+        forbid=("€",),
+    ),
+    value(
+        "total de la factura R-5",
+        "R-5",
+        ["importe_total"],
+        want=("total: 1.000.000,50 €",),
+    ),
+    value(
+        "total de la factura T-101",
+        "T-101",
+        ["importe_total"],
+        want=("total: 12.345,67 €",),
+    ),
+    value(
+        "IBAN de la factura T-100",
+        "T-100",
+        ["iban"],
+        want=("IBAN: ES9121000418450200051332",),
+        forbid=("€",),
+    ),
+    value(
+        "IBAN de la factura FAC-2026-0042",
+        "FAC-2026-0042",
+        ["iban"],
+        kind="refuse",
+        reason="campo_ausente:iban",
+    ),
+    value(
+        "total y IBAN de la factura FAC-2026-0042",
+        "FAC-2026-0042",
+        ["importe_total", "iban"],
+        want=("total: 1.706,60 €; sin dato de IBAN",),
+    ),
+    value(
+        "fecha de vencimiento de la factura T-100",
+        "T-100",
+        ["fecha_vencimiento"],
+        want=("fecha de vencimiento: 2026-02-15",),
+    ),
+    value(
+        "datos de la factura FAC-2026-0042",
+        "FAC-2026-0042",
+        [],
+        want=(
+            "importe total: 1.706,60 €",
+            "fecha de emisión: 07 marzo 2026",
+            "emisor: Lucía Martín Ortega",
+            "cliente: Editorial Atlántida, S.L.",
+        ),
+        note="nothing specific asked: the key data",
+    ),
+    Case(
+        "total de las facturas de Talleres Sur",
+        {"intent": "valor", "parte": "Talleres Sur", "campos": ["importe_total"]},
+        want=(
+            "Talleres Sur, S.A. tiene 2 facturas.",
+            "Factura T-100: total: 3.630,00 €",
+            "Factura T-101: total: 12.345,67 €",
+        ),
+        forbid=("emisor",),
+    ),
+    Case(
+        "suma del IVA de Talleres Sur",
+        {"intent": "sumar", "parte": "Talleres Sur", "campos": ["cuota_iva_total"]},
+        want=("Suma de IVA de Talleres Sur, S.A.: 3.222,59 € en 2 facturas",),
+        forbid=("EUR",),
+    ),
+    Case(
+        "suma de los importes de Talleres Sur",
+        {"intent": "sumar", "parte": "Talleres Sur", "campos": ["importe_total"]},
+        want=("15.975,67 € en 2 facturas",),
+        forbid=("EUR", "15975"),
+    ),
+    Case(
+        "¿Cuántas facturas ha emitido Talleres Sur?",
+        {"intent": "contar", "parte": "Talleres Sur"},
+        want=("2 facturas de Talleres Sur, S.A.",),
+        forbid=("€", "emisor"),
+    ),
+    Case(
+        "facturas de más de 1000 euros",
+        {
+            "intent": "lista",
+            "filtros": [{"campo": "importe_total", "op": ">", "valor": "1000"}],
+        },
+        want=(
+            "FAC-2026-0042 (importe total: 1.706,60 €)",
+            "2026/0317 (importe total: 1.633,50 €)",
+            "T-101 (importe total: 12.345,67 €)",
+            "R-5 (importe total: 1.000.000,50 €)",
+        ),
+        forbid=("LM-7", "RV-9", "emisor"),
+    ),
+    Case(
+        "facturas de Talleres Sur",
+        {"intent": "lista", "parte": "Talleres Sur"},
+        want=("Facturas de Talleres Sur, S.A.:", "- T-100", "- T-101"),
+        forbid=("emisor", "€"),
+    ),
+    Case(
+        "facturas de marzo de 2026",
+        {"intent": "lista", "fecha_desde": "2026-03-01", "fecha_hasta": "2026-03-31"},
+        want=(
+            "FAC-2026-0042 (fecha de emisión: 07 marzo 2026)",
+            "R-5 (fecha de emisión: 2026-03-03)",
+        ),
+        forbid=("T-100", "emisor"),
+    ),
+    Case(
+        "facturas con IRPF",
+        {"intent": "lista", "tiene": ["irpf_importe"]},
+        want=("FAC-2026-0042 (IRPF: 241,50 €)",),
+        forbid=("T-100",),
+    ),
+    Case(
+        "¿Cuál es el precio final de la factura?",
+        {"intent": "valor", "campos": ["importe_total"]},
+        kind="clarify",
+        reason="invoice:aclaracion",
+        want=("¿Cuál es el precio final de la factura FAC-2026-0042?", "1.706,60 €"),
+        forbid=("1706.60", "importe total"),
+    ),
+    Case(
+        "total de Lucía",
+        {"intent": "valor", "parte": "Lucía", "campos": ["importe_total"]},
+        kind="clarify",
+        reason="invoice:parte_ambigua",
+        want=("¿Cuál es el total de la factura LM-7?", "99,00 €"),
+    ),
+    value(
+        "total de la factura FAC-9999",
+        "FAC-9999",
+        ["importe_total"],
+        kind="refuse",
+        reason="invoice:factura_no_encontrada",
+        want=("No hay ninguna factura con número FAC-9999",),
+    ),
+    Case(
+        "total de las facturas de Pedro Gómez",
+        {"intent": "valor", "parte": "Pedro Gómez", "campos": ["importe_total"]},
+        kind="refuse",
+        reason="invoice:parte_no_encontrada",
+    ),
+    Case(
+        "facturas emitidas a Talleres Sur",
+        {"intent": "lista", "parte": "Talleres Sur"},
+        kind="refuse",
+        reason="invoice:parte_rol_distinto",
+    ),
+    Case(
+        "total de Lucai Martn",
+        {"intent": "valor", "parte": "Lucai Martn", "campos": ["importe_total"]},
+        want=("total: 1.706,60 €",),
+        forbid=("99,00",),
+    ),
+    Case(
+        "total de la factura del NIF 45678912 Z",
+        {"intent": "valor", "parte": "45678912 Z", "campos": ["importe_total"]},
+        want=("Factura R-5: total: 1.000.000,50 €",),
+    ),
+    value(
+        "total de la factura 2026/317",
+        "2026/317",
+        ["importe_total"],
+        want=("Factura 2026/0317: total: 1.633,50 €",),
+    ),
+    Case(
+        "NIF del cliente de la factura FAC-2026-0042",
+        {"intent": "valor", "numero": "FAC-2026-0042", "campos": ["nif_cliente"]},
+        want=("NIF del cliente: B-81234567",),
+        forbid=("12345678-K", "€"),
+    ),
+    value(
+        "total de la factura RV-9",
+        "RV-9",
+        ["importe_total"],
+        want=("total: 50,00 €", "Nota: facturas pendientes de revisión: RV-9"),
+    ),
+]
+
+MONEY = re.compile(r"-?\d{1,3}(?:\.\d{3})*,\d{2,} €")
+RAW_DECIMAL = re.compile(r"(?<![\d.,])\d+\.\d{1,2}(?![\d.])")
+
+
+@pytest.fixture
+def battery_config(config_path):
+    db = InvoiceDB(str(load_config(config_path).db))
+    try:
+        for row in INVOICES:
+            row = dict(row)
+            cuadra = row.pop("_cuadra", "1")
+            db.upsert(row, cuadra=cuadra)
+    finally:
+        db.con.close()
+    return config_path
+
+
+def stored_amounts() -> set[str]:
+    return {
+        shown
+        for row in INVOICES
+        for f in AMOUNT_FIELDS
+        if f in row and (shown := format_eur(row[f]))
+    }
+
+
+def assert_no_false_answer(question: str, result: dict[str, Any]) -> None:
+    """The invariants that hold for every answer, whoever wrote the plan."""
+    text = result["answer"]
+    assert not RAW_DECIMAL.search(text), f"raw decimal in {text!r}"
+    assert " EUR" not in text, f"EUR instead of the symbol in {text!r}"
+    if result["ok"] and result["reason"] != "sql_vacio":
+        sums = {m for m in MONEY.findall(text)} - stored_amounts()
+        if not re.search(r"(?i)\bsuma\b", text):
+            assert not sums, f"amounts that no invoice stores: {sums} in {text!r}"
+        for citation in result["citations"]:
+            if citation["section"] != "numero":
+                assert citation["fragment"] in text, f"citation not shown in {text!r}"
+        assert_asked_fields_only(question, result)
+
+
+def assert_asked_fields_only(question: str, result: dict[str, Any]) -> None:
+    from doc_assistant.invoice_fields import asks_for
+
+    q = question.lower()
+    for citation in result["citations"]:
+        field_name = citation["section"]
+        if field_name in ("numero", "emisor", "cliente") or field_name.startswith("nif_"):
+            continue
+        assert asks_for(field_name, q) or "datos" in q or "más de" in q or "marzo" in q, (
+            f"{field_name} cited without being asked in {question!r}"
+        )
+
+
+def run(config_path, case: Case):
+    return ask_invoices(config_path, case.question, llm=FakeLLM(case.plan))
+
+
+@pytest.mark.parametrize("case", CASES, ids=[c.question for c in CASES])
+def test_battery(battery_config, case: Case):
+    result = run(battery_config, case)
+    assert result is not None
+    text = result["answer"]
+    if case.kind == "answer":
+        assert result["ok"], text
+    elif case.kind == "clarify":
+        assert not result["ok"] and result["clarification"], text
+        text += " " + " ".join(
+            f"{c['question']} {c['total'] or ''}" for c in result["clarification"]["candidates"]
+        )
+    else:
+        assert not result["ok"] and not result["clarification"], text
+    if case.reason:
+        assert result["reason"] == case.reason or result["reason"].endswith(case.reason)
+    for piece in case.want:
+        assert piece in text, f"{piece!r} not in {text!r}"
+    for piece in case.forbid:
+        assert piece not in text, f"{piece!r} found in {text!r}"
+    assert_no_false_answer(case.question, result)
+
+
+def test_battery_has_no_false_answer_and_covers_every_intent():
+    kinds = {c.kind for c in CASES}
+    intents = {c.plan["intent"] for c in CASES}
+    assert kinds == {"answer", "clarify", "refuse"}
+    assert intents == {"valor", "lista", "contar", "sumar"}
+    assert len(CASES) >= 30
+
+
+LIVE = os.environ.get("DOC_ASSISTANT_LIVE_LLM")
+
+
+@pytest.mark.skipif(not LIVE, reason="DOC_ASSISTANT_LIVE_LLM not set")
+@pytest.mark.parametrize("case", CASES, ids=[c.question for c in CASES])
+def test_battery_with_a_real_model(battery_config, case: Case):
+    assert LIVE is not None
+    llm = HttpLLM(LIVE.rstrip("/") + "/v1/chat/completions", "llm-local", 120)
+    result = ask_invoices(battery_config, case.question, llm=llm)
+    assert result is not None
+    assert_no_false_answer(case.question, result)
+    if case.kind == "answer" and result["ok"]:
+        for piece in case.forbid:
+            assert piece not in result["answer"], f"{piece!r} in {result['answer']!r}"

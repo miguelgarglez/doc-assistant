@@ -17,6 +17,7 @@ from doc_assistant.answer_markup import AnswerBuilder, md_escape
 from doc_assistant.chunking import chunk_invoice, invoice_doc_id
 from doc_assistant.config import load_config
 from doc_assistant.invoice_extract import extract_invoice
+from doc_assistant.invoice_fields import display_value
 from doc_assistant.invoice_index import norm_key, sync_derived
 from doc_assistant.invoice_query import FIELDS, is_invoice_question, plan_and_run
 from doc_assistant.store import SCHEMA_VERSION, ChunkStore, ensure_schema
@@ -240,7 +241,7 @@ def ask_invoices(
     raw = raws[-1] if raws else None
     citations = []
     for cit in result.get("citations") or []:
-        fragment = "" if cit.get("valor") is None else str(cit.get("valor"))
+        fragment = "" if cit.get("valor") is None else display_value(cit["campo"], cit.get("valor"))
         citations.append(
             {
                 "chunk_id": f"{cit.get('numero')}:{cit.get('campo')}",
