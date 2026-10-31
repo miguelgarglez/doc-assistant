@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 const STORAGE_KEY = "doc-assistant.question-history"
 const MAX = 40
@@ -24,6 +24,10 @@ export function useQuestionHistory() {
   const [items, setItems] = useState<string[]>(() => readStored())
   const [cursor, setCursor] = useState<number | null>(null)
 
+  useEffect(() => {
+    try { window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(items)) } catch { /* El historial sigue disponible en memoria. */ }
+  }, [items])
+
   const push = useCallback((question: string) => {
     const trimmed = question.trim()
     if (!trimmed) return
@@ -32,7 +36,6 @@ export function useQuestionHistory() {
         trimmed,
         ...current.filter((item) => item !== trimmed),
       ].slice(0, MAX)
-      window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next))
       return next
     })
     setCursor(null)

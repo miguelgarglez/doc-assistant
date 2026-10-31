@@ -39,13 +39,15 @@ function applyDom(theme: ThemeName, mode: ColorMode) {
 
 function readStoredTheme(): ThemeName {
   if (typeof window === "undefined") return DEFAULT_THEME
-  const stored = window.localStorage.getItem(THEME_STORAGE_KEY)
+  let stored: string | null = null
+  try { stored = window.localStorage.getItem(THEME_STORAGE_KEY) } catch {}
   return isThemeName(stored) ? stored : DEFAULT_THEME
 }
 
 function readStoredMode(): ColorMode {
   if (typeof window === "undefined") return DEFAULT_MODE
-  const stored = window.localStorage.getItem(MODE_STORAGE_KEY)
+  let stored: string | null = null
+  try { stored = window.localStorage.getItem(MODE_STORAGE_KEY) } catch {}
   return isColorMode(stored) ? stored : DEFAULT_MODE
 }
 
@@ -66,12 +68,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const setTheme = useCallback((next: ThemeName) => {
-    window.localStorage.setItem(THEME_STORAGE_KEY, next)
+    try { window.localStorage.setItem(THEME_STORAGE_KEY, next) } catch {}
     setThemeState(next)
   }, [])
 
   const setMode = useCallback((next: ColorMode) => {
-    window.localStorage.setItem(MODE_STORAGE_KEY, next)
+    try { window.localStorage.setItem(MODE_STORAGE_KEY, next) } catch {}
     setModeState(next)
   }, [])
 

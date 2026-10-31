@@ -3,7 +3,7 @@ import { DM_Sans, IBM_Plex_Mono, Manrope, Space_Grotesk } from "next/font/google
 
 import { ThemeProvider } from "@/components/theme/theme-provider"
 import { ToastProvider } from "@/components/ui/toast"
-import { DEFAULT_THEME } from "@/lib/theme"
+import { DEFAULT_THEME, THEME_NAMES, COLOR_MODES, THEME_STORAGE_KEY, MODE_STORAGE_KEY } from "@/lib/theme"
 
 import "./globals.css"
 
@@ -42,6 +42,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${industrialDisplay.variable} ${industrialSans.variable} ${neutralSans.variable} ${plexMono.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)}),m=localStorage.getItem(${JSON.stringify(MODE_STORAGE_KEY)}),r=document.documentElement;if(${JSON.stringify(THEME_NAMES)}.includes(t))r.dataset.theme=t;if(${JSON.stringify(COLOR_MODES)}.includes(m)){r.classList.toggle('dark',m==='dark');r.style.colorScheme=m}}catch(e){}})()` }} />
+      </head>
       <body className="flex min-h-full flex-col">
         <ThemeProvider>
           <ToastProvider>{children}</ToastProvider>
