@@ -1,18 +1,32 @@
+import fs from "node:fs"
+import path from "node:path"
+
 import type { AskResponse, ErrorBody } from "../src/lib/api/types"
+
+export const DEMO_QUESTION = "¿Cuál es la carga útil máxima del GR-50?"
 
 export const askAnswerWithCitation = {
   ok: true,
   answer:
-    "El IVA soportado en material de oficina es deducible si la factura cumple los requisitos formales.",
+    "La carga útil máxima del end-effector GR-50 es de 12 kg (ISO 9409-1), según la ficha técnica ACME-DEMO-DS.",
   citations: [
     {
-      chunk_id: "chunk-iva-1",
-      quote: "requisitos formales de la factura",
-      doc: "Manual IVA 2024",
-      section: "§3.2",
-      pages: [14],
+      chunk_id: "chunk-acme-ds-2-1",
+      quote: "Carga útil máxima: 12 kg",
+      doc: "ACME-DEMO-DS",
+      section: "2.1",
+      pages: [1],
       fragment:
-        "Las facturas deben cumplir los requisitos formales de la factura y el gasto ha de estar afecto a la actividad.",
+        "2.1 Capacidad de carga útil. Carga útil máxima: 12 kg (ISO 9409-1). Momento máximo en brida: 45 N·m.",
+    },
+    {
+      chunk_id: "chunk-acme-ds-flange",
+      quote: "ISO 9409-1-50-4-M6",
+      doc: "ACME-DEMO-DS",
+      section: "2.1",
+      pages: [1],
+      fragment:
+        "Interfaz brida: ISO 9409-1-50-4-M6. Grado de protección IP54. Temperatura de trabajo 0 … 45 °C.",
     },
   ],
   reason: "",
@@ -22,7 +36,7 @@ export const askRefusal = {
   ok: false,
   answer: "",
   citations: [],
-  reason: "La consulta pide una estrategia de elusión fiscal.",
+  reason: "No hay pasajes indexados que respondan a la consulta.",
 } as const satisfies AskResponse
 
 export const askError = {
@@ -30,6 +44,7 @@ export const askError = {
   message: "El modelo no está disponible.",
 } as const satisfies ErrorBody
 
-/** 64×40 PNG gris sólido (determinista para capturas). */
-export const PAGE_PNG_BASE64 =
-  "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"
+/** Página sintética de ficha técnica (generada, no checkerboard). */
+export const PAGE_PNG = fs.readFileSync(
+  path.join(process.cwd(), "e2e", "fixtures", "page-acme-demo-ds.png")
+)
