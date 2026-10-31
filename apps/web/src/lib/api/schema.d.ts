@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Document */
+        post: operations["upload_document_documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ask": {
         parameters: {
             query?: never;
@@ -90,6 +107,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/invoices/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invoices Upload */
+        post: operations["invoices_upload_invoices_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/invoices/{invoice_id}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Invoice Image */
+        get: operations["get_invoice_image_invoices__invoice_id__image_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -110,6 +161,16 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** Body_invoices_upload_invoices_upload_post */
+        Body_invoices_upload_invoices_upload_post: {
+            /** File */
+            file: string;
+        };
+        /** Body_upload_document_documents_post */
+        Body_upload_document_documents_post: {
+            /** File */
+            file: string;
+        };
         /** Citation */
         Citation: {
             /** Chunk Id */
@@ -124,6 +185,27 @@ export interface components {
             pages: number[];
             /** Fragment */
             fragment: string;
+        };
+        /** DocumentUploadResponse */
+        DocumentUploadResponse: {
+            /** N Chunks */
+            n_chunks: number;
+            /** Chunk Ids */
+            chunk_ids: string[];
+            /** Warnings */
+            warnings: string[];
+            /** Timings */
+            timings: {
+                [key: string]: number;
+            };
+            /** Doc Id */
+            doc_id: string;
+            /** Path */
+            path: string;
+            /** Content Hash */
+            content_hash: string;
+            /** Created */
+            created: boolean;
         };
         /** ErrorBody */
         ErrorBody: {
@@ -141,7 +223,7 @@ export interface components {
         IngestRequest: {
             /**
              * Directory
-             * Format: path
+             * @default
              */
             directory: string;
         };
@@ -188,6 +270,24 @@ export interface components {
             importe_total?: string | null;
             /** Iban */
             iban?: string | null;
+        };
+        /** InvoiceUploadResponse */
+        InvoiceUploadResponse: {
+            record: components["schemas"]["Invoice"];
+            /** Estado */
+            estado: string;
+            /** Motivo */
+            motivo?: string | null;
+            /** Evidencias */
+            evidencias: {
+                [key: string]: string | null;
+            };
+            /** Flags */
+            flags?: {
+                [key: string]: string;
+            };
+            /** Fichero */
+            fichero?: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -255,8 +355,68 @@ export interface operations {
                     "application/json": components["schemas"]["IngestResponse"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    upload_document_documents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_document_documents_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentUploadResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -408,6 +568,98 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Invoice"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invoices_upload_invoices_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_invoices_upload_invoices_upload_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceUploadResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    get_invoice_image_invoices__invoice_id__image_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/png": unknown;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
             /** @description Validation Error */
