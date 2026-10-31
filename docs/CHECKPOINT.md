@@ -41,3 +41,10 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - La corrida live detectó un índice SQLite antiguo sin la columna `display_doc` → 500. Ahora el esquema lleva `PRAGMA user_version` y un índice de otra versión se aparta a `.bak` (no se borra) y se recrea.
 - Qué se probó: `mise run check` → OK (55 + 7 tests); `pnpm e2e` → 11 passed (13:28); `mise run evidence --live --no-screenshots` (13:30) → 6/6 facturas ok sin discrepancias (11–18 s), 2 preguntas de documento con cita, total 537.94 con cita, 2 rechazos; puertos libres después. `mise run package --no-models --smoke fake` → OK (antes de la ronda 2; pendiente repetir y la corrida con modelos).
 - Decisión clave y por qué: un índice es derivado (se reconstruye reingestando), así que versionarlo y apartarlo es más simple y seguro que escribir migraciones.
+
+## 13:42 · Nombre público doc-assistant y documentación para Miguel (v0.6.0)
+- Renombrado a `doc-assistant`: paquete `doc_assistant`, variables `DOC_ASSISTANT_*` (`.env.local` actualizado), título de la UI "Doc Assistant", fixture e2e neutra (ACME-DEMO-DS, creada desde HTML en `e2e/fixtures/src`), pie de página genérico en el troceado. Se quitaron de los docs las referencias a documentos y valores del kit. `.DS_Store` deja de versionarse.
+- Nuevos: `docs/requirements-coverage.md` (17 cumplidas, 10 parciales, 4 no), `docs/open-gaps.md` y el escalado a toda la empresa en `scaling-deployment.md`, con las costuras propuestas sin aplicar.
+- Auditoría para publicar: ningún fichero del kit está en el historial (SHA256 comparados: 0 coincidencias), ni modelos, binarios, `.env` o secretos. Pero los commits anteriores contienen el nombre de la empresa y, en el CHECKPOINT de 12:40, un id de documento y un valor del kit → **no se publica** sin reescribir la historia (pendiente de Miguel).
+- Qué se probó: `mise run check` → OK; `mise run evidence` → 11 passed, capturas regeneradas.
+- Decisión clave y por qué: renombrar en HEAD es reversible; reescribir la historia, no. Por eso queda para Miguel.

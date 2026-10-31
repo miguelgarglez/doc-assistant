@@ -11,6 +11,10 @@ scripts/
   dev.py             arranque único: llama x3 → IA → web; Ctrl-C limpio
   check.py           ruff, mypy, pytest, contrato sin drift, eslint, tsc, build
   fake_llama.py      simula llama-server (CI)
+  package.py         ZIP64 de entrega + smoke al descomprimir
+  evidence.py        capturas e2e; --live corrida real con fixtures
+  evolution.py       galería por tag (evidence/evolution)
+NOTICE               licencias de modelos y llama.cpp
 services/ai/         doc_assistant (FastAPI): api, ask, verifier, ingest, chunking,
                      store (SQLite+sqlite-vec), invoices, adapters (puertos), config
                      openapi.json = contrato (fuente de verdad)
@@ -21,8 +25,9 @@ apps/web/            Next.js 16 + TS strict
   src/components/domain/           AnswerCard, CitationChip, SourceViewer, RefusalNotice,
                                    InvoiceReviewCard, UploadDropzone
 .github/workflows/cross-platform.yml   smoke Win/Linux/Mac (no ejecutado)
-docs/                ADRs, CHECKPOINT, estructura; architecture y scaling (pendientes)
-evidence/            evidencia regenerable (pendiente)
-vendor/, models/     binarios y GGUF (git-ignorados)
+docs/                ADRs, CHECKPOINT, CHANGELOG, versioning, architecture, scaling,
+                     requirements-coverage, open-gaps, reviews/
+evidence/            screenshots/, live/, fixtures/ (sintéticos), evolution/ (por tag)
+vendor/, models/     binarios, archives/ y GGUF (git-ignorados)
 _trash/              en vez de borrar (git-ignorado)
 ```
