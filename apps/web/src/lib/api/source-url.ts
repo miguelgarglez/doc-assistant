@@ -14,3 +14,8 @@ export function citationPage(
 export function invoiceImageUrl(invoiceId: string): string {
   return `/api/invoices/${encodeURIComponent(invoiceId)}/image`
 }
+
+/** Invoice citations point at an extracted field of an image, not at a PDF page. */
+export function isInvoiceCitation(citation: { doc_id: string }): boolean {
+  return citation.doc_id.startsWith("inv-")
+}
