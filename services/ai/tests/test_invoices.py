@@ -299,3 +299,37 @@ def test_citations_only_from_selected_invoices():
         r = run_plan(con, plan, q)
         assert r["ok"] and set(nums(r)) <= set(r["selected"])
         assert all(c["valor"] not in (None, "") for c in r["citations"])
+
+
+def test_identity_fields_follow_the_selecting_party_unless_a_role_is_named():
+    con = make(LUCIA)
+    r = run_plan(
+        con, {"intent": "valor", "parte": "Lucía", "campos": ["nif_cliente"]}, "NIF de Lucía"
+    )
+    assert r["ok"] and "12345678-K" in r["answer"] and "B-81234567" not in r["answer"]
+    r = run_plan(
+        con,
+        {"intent": "valor", "parte": "Lucía", "campos": ["nif_cliente"]},
+        "NIF del cliente de Lucía",
+    )
+    assert r["ok"] and "B-81234567" in r["answer"]
+
+
+def test_plan_with_only_intent_is_valid():
+    plan, errors = validate_plan({"intent": "lista"})
+    assert plan is not None and not errors
+
+
+def test_number_without_leading_zeros():
+    con = make(LUCIA, TECNO)
+    r = run_plan(con, {"intent": "valor", "numero": "FAC-2026-42", "campos": ["importe_total"]})
+    assert r["ok"] and nums(r) == ["FAC-2026-0042"]
+    r = run_plan(con, {"intent": "valor", "numero": "2026/317", "campos": ["importe_total"]})
+    assert r["ok"] and nums(r) == ["2026/0317"]
+
+
+def test_router_matches_whole_words_and_fuzzy_names():
+    con = make(LUCIA, TECNO)
+    assert not is_invoice_question("¿Puedo usar la pinza en una zona con atmósfera explosiva?", con)
+    assert is_invoice_question("total de Lucai Martn", con)
+    assert is_invoice_question("¿Cuánto IVA lleva?", con)

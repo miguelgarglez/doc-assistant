@@ -492,4 +492,20 @@ def resolve_number(con: sqlite3.Connection, text: str) -> list[str]:
         cuts = {len("".join(groups[i:])) for i in range(len(groups))}
         if len(n) in cuts:
             out.append(numero)
-    return sorted(out)
+    if out:
+        return sorted(out)
+    # leading zeros dropped ('FAC-2026-42'): compare digit groups by value, tail-aligned
+    want = _loose_groups(text)
+    if len(want) < 2 and not (want and len(want[0]) >= 3):
+        return []
+    hits = []
+    for (numero,) in con.execute("SELECT numero FROM facturas_q"):
+        have = _loose_groups(numero)
+        if len(have) >= len(want) and have[-len(want) :] == want:
+            hits.append(numero)
+    return sorted(hits)
+
+
+def _loose_groups(s: str) -> list[str]:
+    groups = re.findall(r"[a-z]+|\d+", fold(s))
+    return [g.lstrip("0") or "0" if g.isdigit() else g for g in groups]

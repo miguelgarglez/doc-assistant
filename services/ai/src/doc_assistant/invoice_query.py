@@ -81,16 +81,9 @@ PLAN_SCHEMA: dict[str, Any] = {
         "fecha_hasta": {"type": ["string", "null"]},
         "tiene": {"type": "array", "items": {"type": "string", "enum": list(FIELDS)}},
     },
-    "required": [
-        "intent",
-        "numero",
-        "parte",
-        "campos",
-        "filtros",
-        "fecha_desde",
-        "fecha_hasta",
-        "tiene",
-    ],
+    # Only intent is required: omitted keys mean "not asked", and every omitted key is
+    # a dozen tokens the model does not have to generate (~115 ms each on a laptop).
+    "required": ["intent"],
 }
 
 PLAN_PROMPT = (
@@ -108,18 +101,17 @@ PLAN_PROMPT = (
     "ambas iguales.\n"
     "- tiene: campos que deben existir ('con IRPF' -> [irpf_importe]).\n"
     "Campos: " + ", ".join(f"{k} ({v})" for k, v in FIELDS.items()) + "\n"
-    "Ejemplos:\n"
-    "'total de la factura de Ana Ruiz' -> {intent: valor, numero: null, parte: 'Ana Ruiz', "
-    "campos: [importe_total], filtros: [], fecha_desde: null, fecha_hasta: null, tiene: []}\n"
-    "'IVA de la F-12' -> {intent: valor, numero: 'F-12', parte: null, campos: [cuota_iva_total], ...}\n"
+    "Omite las claves que no apliquen.\nEjemplos:\n"
+    "'total de la factura de Ana Ruiz' -> {intent: valor, parte: 'Ana Ruiz', campos: [importe_total]}\n"
+    "'IVA de la F-12' -> {intent: valor, numero: 'F-12', campos: [cuota_iva_total]}\n"
     "'facturas de más de 500 euros' -> {intent: lista, filtros: [{campo: importe_total, op: '>', "
-    "valor: '500'}], ...}\n"
+    "valor: '500'}]}\n"
     "'¿cuántas facturas de marzo de 2025?' -> {intent: contar, fecha_desde: '2025-03-01', "
-    "fecha_hasta: '2025-03-31', ...}\n"
+    "fecha_hasta: '2025-03-31'}\n"
     "'suma del IVA de las facturas de Talleres Sur' -> {intent: sumar, parte: 'Talleres Sur', "
-    "campos: [cuota_iva_total], ...}\n"
-    "'¿qué facturas tienen IRPF?' -> {intent: lista, tiene: [irpf_importe], ...}\n"
-    "'¿cómo se calibra el sensor?' -> {intent: documentos, ...}"
+    "campos: [cuota_iva_total]}\n"
+    "'¿qué facturas tienen IRPF?' -> {intent: lista, tiene: [irpf_importe]}\n"
+    "'¿cómo se calibra el sensor?' -> {intent: documentos}"
 )
 
 ROLE_CUES = {
@@ -128,9 +120,13 @@ ROLE_CUES = {
         "emitidas a",
         "emitido a",
         "a nombre de",
-        "cliente",
+        "cliente es",
+        "cuyo cliente",
         "recibida",
         "recibidas",
+        "recibio",
+        "recibido",
+        "ha recibido",
         "facturada a",
         "facturadas a",
         "facturado a",
@@ -139,8 +135,10 @@ ROLE_CUES = {
         "emitida por",
         "emitidas por",
         "emitido por",
-        "emisor",
-        "emisora",
+        "emisor es",
+        "cuyo emisor",
+        "emisora es",
+        "cuya emisora",
         "proveedor",
         "ha emitido",
         "han emitido",
@@ -151,9 +149,10 @@ ROLE_CUES = {
         "de parte de",
     ),
 }
+# Whole words only: 'iva' must not fire on 'explosiva'.
 ROUTE_WORDS = (
-    "factura",
-    "fra ",
+    "fra",
+    "fras",
     "irpf",
     "iva",
     "emisor",
@@ -176,14 +175,17 @@ def role_cue(question: str) -> str | None:
 def is_invoice_question(question: str, con: sqlite3.Connection) -> bool:
     """SQL path if the question names invoices, an invoice number, a NIF or a known party."""
     q = f" {fold(question)} "
-    if any(w in q for w in ROUTE_WORDS):
+    if " factur" in q or any(f" {w} " in q for w in ROUTE_WORDS):
         return True
     if NIF_RE.search(question) and resolve_nif(con, NIF_RE.search(question).group(0)):  # type: ignore[union-attr]
         return True
     for tok in re.findall(r"[0-9A-Za-z][0-9A-Za-z/\-]*\d[0-9A-Za-z/\-]*", question):
         if re.search(r"[A-Za-z/\-]", tok) and resolve_number(con, tok):
             return True
-    return bool(set(q.split()) & party_tokens(con))
+    if set(q.split()) & party_tokens(con):
+        return True
+    # typos in a name ('Lucai Martn'): two fuzzy token hits on one party
+    return any(p.matched >= 2 for p in resolve_party(con, question))
 
 
 # --- plan validation -------------------------------------------------------------
@@ -436,18 +438,17 @@ def _cit(r: dict[str, Any], c: str) -> dict[str, Any]:
     return {"numero": r["numero"], "campo": c, "valor": r.get(c)}
 
 
-def _role_fields(campos: list[str], rol: str | None) -> list[str]:
-    """'NIF de Lucía' when Lucía is the issuer means nif_emisor, not both NIFs."""
-    if not rol:
+ROLE_WORDS = {"emisor", "emisora", "cliente", "proveedor", "destinatario", "receptor"}
+
+
+def _role_fields(campos: list[str], rol: str | None, question: str) -> list[str]:
+    """'NIF de Lucía' when Lucía is the issuer means nif_emisor: unless the question names
+    a role, identity fields (name, NIF) refer to the party that selected the invoice."""
+    if not rol or ROLE_WORDS & set(fold(question).split()):
         return campos
     other = "cliente" if rol == "emisor" else "emisor"
-    drop = {other, f"nif_{other}"}
-    pairs = [("emisor", "cliente"), ("nif_emisor", "nif_cliente")]
-    out = list(campos)
-    for a, b in pairs:
-        if a in out and b in out:
-            out = [c for c in out if c not in drop]
-    return out
+    swap = {other: rol, f"nif_{other}": f"nif_{rol}"}
+    return list(dict.fromkeys(swap.get(c, c) for c in campos))
 
 
 def execute(con: sqlite3.Connection, plan: Plan, question: str) -> dict[str, Any]:
@@ -458,13 +459,18 @@ def execute(con: sqlite3.Connection, plan: Plan, question: str) -> dict[str, Any
         plan.filtros or plan.desde or plan.hasta or plan.tiene
     )
     numeros = query_numeros(con, plan, sel)
-    result = _shape(con, plan, sel, numeros, has_selector)
+    result = _shape(con, plan, sel, numeros, has_selector, question)
     result["selected"] = numeros
     return result
 
 
 def _shape(
-    con: sqlite3.Connection, plan: Plan, sel: Selection, numeros: list[str], has_selector: bool
+    con: sqlite3.Connection,
+    plan: Plan,
+    sel: Selection,
+    numeros: list[str],
+    has_selector: bool,
+    question: str,
 ) -> dict[str, Any]:
     scope = f" de {sel.label}" if sel.party else ""
     if plan.intent == "valor":
@@ -480,7 +486,7 @@ def _shape(
                 "aclaracion",
             )
         rows = _rows(con, numeros)
-        campos = _role_fields(plan.campos, sel.rol) or [
+        campos = _role_fields(plan.campos, sel.rol, question) or [
             "importe_total",
             "fecha_emision",
             "emisor",
