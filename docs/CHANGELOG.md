@@ -2,6 +2,14 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
+## v0.12.0 · 2026-10-31
+- Respuestas panorámicas con Markdown válido (listas planas, párrafos separados) generado por un único constructor (`answer_markup`) y comprobado con tests sobre el HTML resultante. Se revisaron también factura, capacidades, documento y rechazo.
+- Solo se citan las fuentes que sostienen la respuesta: «¿qué facturas tengo?» pasa de 44 citas a 5, una por factura; al terminar se descartan las citas que ninguna frase usa.
+- Citas inline: marcadores numéricos pegados a la frase con vista previa al pasar el ratón y el desplegable «N fuentes» debajo. El contrato `done` añade `segments` e `inline`. Por defecto asigna el servicio con reglas verificables; el modo `model` (el LLM emite los segmentos) queda como opción porque en gold-v2 contestó 3 preguntas sin respaldo (ADR-011).
+- Visor a pantalla completa con zoom, arrastre, navegación entre citas (←/→) y páginas (↑/↓), Esc para cerrar y el fragmento resaltado en la página (`GET /sources/{id}/pages/{n}/highlight`, sin migración). En facturas muestra el campo extraído y explica que no hay posiciones.
+- Añadir fuentes: botón grande y modal con zona de suelta; aviso persistente (Sonner) con el estado real de cada archivo, errores en español con reintento y «Ver en Fuentes». Nuevo `GET /ingest/jobs/{id}/events` (SSE) y parámetro `?job=` en las subidas.
+- Probado: `mise run check` correcto (146 tests del servicio, 14 de scripts, contrato sin deriva); Playwright 118 pruebas en tres pasadas seguidas más 4 contra el stack real; axe sin violaciones serias o críticas en rutas, temas y modos; gold-v2 (borrador) sin empeoramiento: 24/33 respondidas, 11/11 rechazadas, 0 sin respaldo; capturas en 1440x900, 1280x720 y 390x844 con fuentes sintéticas.
+
 ## v0.11.0 · 2026-10-31
 - Chat reconstruido sobre AI SDK (`useChat` con un `ChatTransport` propio para `/ask/stream`) y AI Elements adaptados a Base UI: Prompt Input con adjuntos (pegar o arrastrar PDF o imagen), mensajes con Markdown (Streamdown), traza de pasos plegable, píldoras de cita y fuentes plegables que abren el fragmento, Shimmer, sugerencias, copiar y regenerar. Decisión por componente en ADR-010.
 - Layout de aplicación a 100dvh: navegación fija, el hilo es el único scroll, composer anclado; visor de citas lateral (hoja inferior en móvil).

@@ -87,3 +87,10 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Un fallo no reproducido: en una pasada lanzada a la vez que las capturas reales (CPU saturada) fallaron dos pruebas de Sistema por tiempo; sin carga, 77/77 tres veces.
 - Decisión clave y por qué: las citas se muestran como píldoras tras la respuesta y una lista de fuentes plegable, no por frase, porque el verificador valida la respuesta entera y alinear frases con fragmentos sería una heurística sin base.
 - Pendiente: teclado virtual real en móvil, facturas reales de extremo a extremo en la nueva Fuentes (solo con respuestas simuladas), citas por frase.
+
+## 19:30 · Citas inline, visor a pantalla completa y subida con progreso (v0.12.0)
+- Qué cambió: Markdown válido en respuestas panorámicas y citas acotadas a lo que sostiene la respuesta; marcadores inline con vista previa; visor modal con resaltado del fragmento; modal «Añadir fuentes» y aviso persistente con las etapas reales de ingesta por SSE (ADR-011).
+- Qué se probó: `mise run check` → OK (146 tests del servicio, 14 de scripts); Playwright 118 de 118, tres pasadas seguidas, con axe en rutas, temas y modos (también visor, diálogo de subida y aviso); gold-v2 en borrador, antes y después: respondidas 23/33 → 24/33, rechazadas correctas 11/11 → 11/11, sin respaldo 0 → 0, marcador inline en 24/24 respuestas con cita; modo `model`: 26/33, 8/11 y 3 sin respaldo, por eso no es el valor por defecto. Resaltado verificado sobre un PDF real; subida real con OCR, duplicado y archivo no admitido.
+- Decisión clave y por qué: el valor por defecto de las citas inline es la asignación por reglas, no el LLM de 4B, porque el modo `model` dejó pasar respuestas sin respaldo; el resaltado se calcula al vuelo, sin migrar el índice.
+- Pendiente: resaltar una región en facturas (exige guardar las cajas del OCR), teclado virtual real en móvil, medir la latencia de `rules` sin otras cargas, repetir la medida con el gold aprobado.
+
