@@ -11,7 +11,7 @@
 - **31-oct 12:30 · Arranque unificado verificado** (5ede52f). `mise run start` levanta 3 llama-server, el servicio IA y la web, en orden y con comprobación de salud.
   - Qué se probó: `mise run start` + Ctrl-C (SIGINT) → "todos los procesos cerrados" en ~1 s; `lsof` puertos 8081-8083/8000/3000 libres; `pgrep` sin huérfanos (con modelos reales y con `DOC_ASSISTANT_FAKE_LLAMA=1`). Puerto ocupado → mensaje claro y código 2. `mise run setup` descargó llama.cpp b12020 y su SHA256 coincidió.
   - Decisión clave y por qué: mise + scripts Python sin shell, porque es lo único que funciona igual en Mac, Linux y Windows sin Docker (ADR-003/004). Windows preparado (CI escrito, no ejecutado), no probado.
-- **31-oct 12:32 · Contrato y check** (4588e84). `openapi.json` sale del servicio; los tipos TS se generan de él.
+- **31-oct 12:32 · Contrato y check** (e9ca554). `openapi.json` sale del servicio; los tipos TS se generan de él.
   - Qué se probó: `mise run check` → "[check] OK" (ruff, mypy, 29 tests, contrato sin drift, eslint, tsc, next build).
   - Decisión clave y por qué: si el contrato y los tipos TS se desincronizan, el check falla; así la web nunca usa un API que no existe.
 - **31-oct 12:40 · Primera pregunta real extremo a extremo** (a través del proxy de Next, con los PDFs de prueba, sin commitearlos).
@@ -48,3 +48,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Auditoría para publicar: ningún fichero del kit está en el historial (SHA256 comparados: 0 coincidencias), ni modelos, binarios, `.env` o secretos. Pero los commits anteriores contienen el nombre de la empresa y, en el CHECKPOINT de 12:40, un id de documento y un valor del kit → **no se publica** sin reescribir la historia (pendiente de Miguel).
 - Qué se probó: `mise run check` → OK; `mise run evidence` → 11 passed, capturas regeneradas.
 - Decisión clave y por qué: renombrar en HEAD es reversible; reescribir la historia, no. Por eso queda para Miguel.
+
+## 14:05 · Historial reescrito y auditado para publicar (v0.6.1)
+- Copia completa antes (bundle + mirror + snapshot del árbol fuera del repo, nada borrado). Reescritura con git-filter-repo en un clon aparte: nombres y rutas al nombre público, líneas con id/valor de documento del kit neutralizadas, fixture antigua y `.DS_Store` fuera, y las capturas de cada commit regeneradas ejecutando el e2e de ese mismo commit (30 imágenes). Los tags v0.1.0–v0.6.0 se recrearon en los commits equivalentes. El repo local se alineó con `reset` (rama `pre-rewrite/main` y tags `pre-rewrite/*` solo locales).
+- Qué se probó: auditoría de publicación (kit por SHA256, patrones en contenido/rutas/mensajes, emails, gitleaks, binarios) → 0 hallazgos; control positivo sobre la copia antigua → 194. `mise run check` → OK; e2e → 11 passed.
+- Decisión clave y por qué: reescribir en un clon y alinear al final deja el original intacto en la copia si algo falla.

@@ -2,9 +2,13 @@
 
 Generado por `mise run evolution` (scripts/evolution.py) desde los tags anotados de git.
 Las capturas son las que estaban versionadas en ese tag (`git show <tag>:evidence/screenshots/…`);
-el texto es el mensaje del tag. Nada se recrea a posteriori.
+el texto es el mensaje del tag.
 
-## v0.1.0 · 2026-10-31 12:32 +0100 · commit `4588e84`
+Nota de honestidad: al publicar se reescribió el historial (nombre público y fixtures neutros).
+Las capturas versionadas de cada commit se regeneraron entonces ejecutando el e2e del código
+de ese mismo commit, porque las originales mostraban la marca y fixtures anteriores.
+
+## v0.1.0 · 2026-10-31 12:32 +0100 · commit `e9ca554`
 
 **v0.1.0 — Build reproducible: mise + scripts Python, arranque único y contrato**
 
@@ -21,7 +25,7 @@ Qué se probó (CHECKPOINT 12:24–12:32):
 
 _Sin capturas en esta versión._
 
-## v0.2.0 · 2026-10-31 12:40 +0100 · commit `5798de1`
+## v0.2.0 · 2026-10-31 12:40 +0100 · commit `5f182b4`
 
 **v0.2.0 — Primera pregunta real extremo a extremo**
 
@@ -37,7 +41,7 @@ Qué se probó (CHECKPOINT 12:40, prueba de humo, no evaluación):
 
 _Sin capturas en esta versión._
 
-## v0.3.0 · 2026-10-31 12:50 +0100 · commit `f6b06c7`
+## v0.3.0 · 2026-10-31 12:50 +0100 · commit `7068e08`
 
 **v0.3.0 — Web conectada al API real y setup sin redescargas**
 
@@ -56,7 +60,7 @@ Qué se probó (CHECKPOINT 12:47–12:48):
 ![v0.3.0 ask-error](v0.3.0/ask-error.png)
 ![v0.3.0 ask-refusal](v0.3.0/ask-refusal.png)
 
-## v0.4.0 · 2026-10-31 13:12 +0100 · commit `a1855f2`
+## v0.4.0 · 2026-10-31 13:12 +0100 · commit `3ec2f47`
 
 **v0.4.0 — Fase 2: auditoría de tests, documentos, facturas y pulido web**
 
@@ -79,7 +83,7 @@ Qué se probó (CHECKPOINT 13:16):
 ![v0.4.0 ask-refusal-mobile](v0.4.0/ask-refusal-mobile.png)
 ![v0.4.0 ask-refusal](v0.4.0/ask-refusal.png)
 
-## v0.5.0 · 2026-10-31 13:33 +0100 · commit `713e8b0`
+## v0.5.0 · 2026-10-31 13:33 +0100 · commit `d0ce091`
 
 **v0.5.0 — Revisión aplicada, facturas en la web, empaquetado y evidencia regenerable**
 
@@ -105,7 +109,7 @@ Qué se probó (CHECKPOINT 13:33):
 ![v0.5.0 invoice-review-mobile](v0.5.0/invoice-review-mobile.png)
 ![v0.5.0 invoice-review](v0.5.0/invoice-review.png)
 
-## v0.6.0 · 2026-10-31 13:41 +0100 · commit `072a00d`
+## v0.6.0 · 2026-10-31 13:41 +0100 · commit `30ed6f5`
 
 **v0.6.0 — Nombre público doc-assistant, cobertura de requisitos, huecos y escalado**
 

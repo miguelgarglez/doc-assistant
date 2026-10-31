@@ -45,7 +45,11 @@ def main() -> int:
         "",
         "Generado por `mise run evolution` (scripts/evolution.py) desde los tags anotados de git.",
         "Las capturas son las que estaban versionadas en ese tag (`git show <tag>:evidence/screenshots/…`);",
-        "el texto es el mensaje del tag. Nada se recrea a posteriori.",
+        "el texto es el mensaje del tag.",
+        "",
+        "Nota de honestidad: al publicar se reescribió el historial (nombre público y fixtures neutros).",
+        "Las capturas versionadas de cada commit se regeneraron entonces ejecutando el e2e del código",
+        "de ese mismo commit, porque las originales mostraban la marca y fixtures anteriores.",
         "",
     ]
     found = tags()
