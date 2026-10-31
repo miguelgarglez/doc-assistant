@@ -104,3 +104,27 @@ Qué se probó (CHECKPOINT 13:33):
 ![v0.5.0 invoice-ok](v0.5.0/invoice-ok.png)
 ![v0.5.0 invoice-review-mobile](v0.5.0/invoice-review-mobile.png)
 ![v0.5.0 invoice-review](v0.5.0/invoice-review.png)
+
+## v0.6.0 · 2026-10-31 13:41 +0100 · commit `072a00d`
+
+**v0.6.0 — Nombre público doc-assistant, cobertura de requisitos, huecos y escalado**
+
+Qué cambió:
+- Renombrado a doc-assistant (paquete doc_assistant, DOC_ASSISTANT_*, UI "Doc Assistant", fixture e2e neutra, pie genérico en el troceado).
+- docs/requirements-coverage.md, docs/open-gaps.md; scaling-deployment.md ampliado a toda la empresa.
+- .DS_Store fuera de git; docs/repo-structure actualizado.
+
+Qué se probó (CHECKPOINT 13:42):
+- mise run check → OK; mise run evidence → 11 passed.
+- Auditoría: 0 ficheros del kit en el historial; el historial aún contiene el nombre antiguo y referencias a un documento del kit (no publicado).
+
+![v0.6.0 ask-answer-with-source-mobile](v0.6.0/ask-answer-with-source-mobile.png)
+![v0.6.0 ask-answer-with-source](v0.6.0/ask-answer-with-source.png)
+![v0.6.0 ask-error-mobile](v0.6.0/ask-error-mobile.png)
+![v0.6.0 ask-error](v0.6.0/ask-error.png)
+![v0.6.0 ask-refusal-mobile](v0.6.0/ask-refusal-mobile.png)
+![v0.6.0 ask-refusal](v0.6.0/ask-refusal.png)
+![v0.6.0 invoice-ok-mobile](v0.6.0/invoice-ok-mobile.png)
+![v0.6.0 invoice-ok](v0.6.0/invoice-ok.png)
+![v0.6.0 invoice-review-mobile](v0.6.0/invoice-review-mobile.png)
+![v0.6.0 invoice-review](v0.6.0/invoice-review.png)
