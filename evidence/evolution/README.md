@@ -132,3 +132,21 @@ Qué se probó (CHECKPOINT 13:42):
 ![v0.6.0 invoice-ok](v0.6.0/invoice-ok.png)
 ![v0.6.0 invoice-review-mobile](v0.6.0/invoice-review-mobile.png)
 ![v0.6.0 invoice-review](v0.6.0/invoice-review.png)
+
+## v0.6.1 · 2026-10-31 14:02 +0100 · commit `0652ef0`
+
+**v0.6.1 — Historial reescrito y auditado para publicar**
+
+Nombre público y fixtures neutros en todo el historial; capturas regeneradas por commit; tags recreados.
+Probado: mise run check OK, e2e 11 passed, auditoría de publicación 0 hallazgos.
+
+![v0.6.1 ask-answer-with-source-mobile](v0.6.1/ask-answer-with-source-mobile.png)
+![v0.6.1 ask-answer-with-source](v0.6.1/ask-answer-with-source.png)
+![v0.6.1 ask-error-mobile](v0.6.1/ask-error-mobile.png)
+![v0.6.1 ask-error](v0.6.1/ask-error.png)
+![v0.6.1 ask-refusal-mobile](v0.6.1/ask-refusal-mobile.png)
+![v0.6.1 ask-refusal](v0.6.1/ask-refusal.png)
+![v0.6.1 invoice-ok-mobile](v0.6.1/invoice-ok-mobile.png)
+![v0.6.1 invoice-ok](v0.6.1/invoice-ok.png)
+![v0.6.1 invoice-review-mobile](v0.6.1/invoice-review-mobile.png)
+![v0.6.1 invoice-review](v0.6.1/invoice-review.png)
