@@ -97,7 +97,13 @@ const step = (id: string, status: "running" | "done", label: string, elapsed_s?:
   { id, status, label, data: {}, elapsed_s: elapsed_s ?? null },
 ]
 
-export function answerEvents(text = "La carga útil máxima es de 12 kg.", citations = [CITATION]): SseEvent[] {
+export type Segment = { text: string; refs: number[] }
+
+export function answerEvents(
+  text = "La carga útil máxima es de 12 kg.",
+  citations = [CITATION],
+  segments: Segment[] = []
+): SseEvent[] {
   return [
     step("retrieve", "running", "Buscando fragmentos relevantes"),
     step("retrieve", "done", "4 fragmentos candidatos", 0.05),
@@ -107,7 +113,10 @@ export function answerEvents(text = "La carga útil máxima es de 12 kg.", citat
     step("verify", "running", "Verificando citas contra los fragmentos"),
     step("verify", "done", "1 cita verificada", 0.01),
     ["citations", { citations }],
-    ["done", { ok: true, answer: text, citations, reason: "", suggestions: [], timings: { total: 1.3 } }],
+    [
+      "done",
+      { ok: true, answer: text, citations, segments, reason: "", suggestions: [], inline: segments.length > 0 ? "rules" : "none", timings: { total: 1.3 } },
+    ],
   ]
 }
 
@@ -128,11 +137,16 @@ export function refusalEvents(provisional = "Texto sin verificar"): SseEvent[] {
         suggestions: [{ doc: "ACME-DEMO-DS", doc_id: "pdf-acme-demo-ds", section: "3", heading: "Dimensiones", pages: [1] }],
       },
     ],
-    ["done", { ok: false, answer, citations: [], reason: "verify:numbers", suggestions: [], timings: { total: 0.9 } }],
+    ["done", { ok: false, answer, citations: [], reason: "verify:numbers", suggestions: [], inline: "none", timings: { total: 0.9 } }],
   ]
 }
 
+export type Highlight = { page: number; found: boolean; reason: "ok" | "not_found" | "no_positions" | "no_file"; rects?: { x: number; y: number; w: number; h: number }[] }
+
+export const FOUND: Highlight = { page: 1, found: true, reason: "ok", rects: [{ x: 0.12, y: 0.32, w: 0.5, h: 0.03 }] }
+
 export type BackendOptions = {
+  highlight?: (quote: string) => Highlight
   sources?: Source[]
   ask?: (route: Route, question: string) => Promise<void> | void
 }
@@ -161,6 +175,10 @@ export async function mockBackend(page: Page, options: BackendOptions = {}) {
       ],
     })
   )
+  await page.route("**/api/sources/*/pages/*/highlight*", (route) => {
+    const quote = new URL(route.request().url()).searchParams.get("quote") ?? ""
+    return route.fulfill({ json: options.highlight ? options.highlight(quote) : FOUND })
+  })
   await page.route("**/api/sources/*/pages/*", (route) => route.fulfill({ contentType: "image/png", body: PAGE_PNG }))
   await page.route("**/api/sources/*", async (route) => {
     if (route.request().method() === "DELETE") {

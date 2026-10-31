@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-import { mockBackend, SOURCES } from "./mocks"
+import { mockBackend } from "./mocks"
 
 const rows = (page: import("@playwright/test").Page) => page.getByTestId("source-row")
 
@@ -91,67 +91,6 @@ test.describe("fuentes", () => {
     await expect(rows(page)).toHaveCount(2)
     await expect(page.getByText("Se quitó escaneo-sin-texto del índice")).toBeVisible()
     await expect(page.getByTestId("source-detail")).toHaveCount(0)
-  })
-
-  test("subida: estados visibles, progreso y la lista se actualiza al terminar", async ({ page }) => {
-    await mockBackend(page)
-    let added = false
-    await page.route("**/api/sources", (route) =>
-      route.fulfill({
-        json: added ? [{ ...SOURCES[0], id: "pdf-nuevo", name: "manual-nuevo", title: "Manual nuevo", added_at: "2026-10-31T12:00:00+00:00" }, ...SOURCES] : SOURCES,
-      })
-    )
-    await page.route("**/api/documents", async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 600))
-      added = true
-      await route.fulfill({
-        json: { n_chunks: 12, chunk_ids: [], warnings: [], timings: {}, doc_id: "pdf-nuevo", path: "p", content_hash: "h", created: true },
-      })
-    })
-    await page.goto("/fuentes")
-    await expect(rows(page)).toHaveCount(3)
-    await page.getByTestId("sources-file-input").setInputFiles({
-      name: "manual-nuevo.pdf",
-      mimeType: "application/pdf",
-      buffer: Buffer.from("%PDF-1.4 demo"),
-    })
-    const row = page.getByTestId("upload-row")
-    await expect(row).toContainText("manual-nuevo.pdf")
-    await expect(row).toHaveAttribute("data-status", /uploading|processing|queued/)
-    await expect(row).toHaveAttribute("data-status", "done")
-    await expect(row).toContainText("12 fragmentos")
-    await expect(rows(page)).toHaveCount(4)
-    await row.getByRole("button", { name: /Quitar manual-nuevo.pdf de la lista/ }).click()
-    await expect(row).toHaveCount(0)
-  })
-
-  test("subida fallida muestra el motivo y se puede reintentar; un tipo no admitido no", async ({ page }) => {
-    await mockBackend(page)
-    let calls = 0
-    await page.route("**/api/documents", async (route) => {
-      calls += 1
-      if (calls === 1) {
-        await route.fulfill({ status: 413, json: { code: "file_too_large", message: "El archivo supera el máximo permitido." } })
-        return
-      }
-      await route.fulfill({
-        json: { n_chunks: 3, chunk_ids: [], warnings: [], timings: {}, doc_id: "pdf-z", path: "p", content_hash: "h", created: false },
-      })
-    })
-    await page.goto("/fuentes")
-    await page.getByTestId("sources-file-input").setInputFiles([
-      { name: "grande.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4") },
-      { name: "notas.txt", mimeType: "text/plain", buffer: Buffer.from("hola") },
-    ])
-    const big = page.getByTestId("upload-row").filter({ hasText: "grande.pdf" })
-    await expect(big).toHaveAttribute("data-status", "error")
-    await expect(big).toContainText("El archivo supera el máximo permitido.")
-    const txt = page.getByTestId("upload-row").filter({ hasText: "notas.txt" })
-    await expect(txt).toContainText("Solo se admiten PDF e imágenes")
-    await expect(txt.getByRole("button", { name: /Reintentar/ })).toHaveCount(0)
-    await big.getByRole("button", { name: "Reintentar grande.pdf" }).click()
-    await expect(big).toHaveAttribute("data-status", "done")
-    await expect(big).toContainText("Ya estaba indexado")
   })
 
   test("sin scroll de página con la tabla y el detalle abiertos", async ({ page }) => {

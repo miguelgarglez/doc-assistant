@@ -171,7 +171,7 @@ test.describe("chat", () => {
     await mockBackend(page, { ask: (route) => route.fulfill({ status: 404, json: { code: "not_found", message: "no" } }) })
     await page.route("**/api/ask", (route) =>
       route.fulfill({
-        json: { ok: true, answer: "Respuesta sin streaming.", citations: [CITATION], reason: "", suggestions: [], timings: { total: 1 } },
+        json: { ok: true, answer: "Respuesta sin streaming.", citations: [CITATION], reason: "", suggestions: [], inline: "none", timings: { total: 1 } },
       })
     )
     await page.goto("/")
@@ -309,7 +309,7 @@ test.describe("adjuntos en el composer", () => {
   test("pegar un PDF lo sube como fuente, muestra su estado y se adjunta al mensaje", async ({ page }) => {
     await mockBackend(page)
     let uploaded = 0
-    await page.route("**/api/documents", async (route) => {
+    await page.route("**/api/documents*", async (route) => {
       uploaded += 1
       await new Promise((resolve) => setTimeout(resolve, 400))
       await route.fulfill({
@@ -344,7 +344,7 @@ test.describe("adjuntos en el composer", () => {
 
   test("arrastrar un archivo a la ventana muestra la zona de suelta y lo añade", async ({ page }) => {
     await mockBackend(page)
-    await page.route("**/api/documents", (route) =>
+    await page.route("**/api/documents*", (route) =>
       route.fulfill({
         json: { n_chunks: 2, chunk_ids: [], warnings: [], timings: {}, doc_id: "pdf-y", path: "y", content_hash: "h", created: true },
       })
@@ -393,7 +393,7 @@ test.describe("sin scroll de página en escritorio", () => {
 test.describe("móvil", () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
-  test("menú plegable, composer usable y visor en hoja inferior", async ({ page }) => {
+  test("menú plegable, composer usable y visor a pantalla completa", async ({ page }) => {
     await mockBackend(page)
     await page.goto("/")
     await expect(page.locator('[data-slot="sidebar-container"]')).toBeHidden()
@@ -411,8 +411,9 @@ test.describe("móvil", () => {
     await page.getByTestId("citation-1").click()
     const viewer = page.getByTestId("source-viewer")
     await expect(viewer).toBeVisible()
-    const sheet = await viewer.boundingBox()
-    expect(sheet!.y).toBeGreaterThan(80)
+    const full = await viewer.boundingBox()
+    expect(full!.y).toBeLessThanOrEqual(1)
+    expect(full!.height).toBeGreaterThanOrEqual(843)
     await viewer.getByRole("button", { name: "Cerrar visor" }).click()
     await expect(viewer).toHaveCount(0)
   })

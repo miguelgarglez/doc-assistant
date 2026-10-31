@@ -59,6 +59,7 @@ test.describe("transport: SSE a mensajes del AI SDK", () => {
         citations: [citation],
         reason: "verified",
         suggestions: [],
+        inline: "none",
         timings: { total: 2.5 },
       }),
     ])
@@ -107,6 +108,7 @@ test.describe("transport: SSE a mensajes del AI SDK", () => {
         citations: [],
         reason: "verify:numbers",
         suggestions: [],
+        inline: "none",
         timings: { total: 1 },
       }),
     ])
@@ -122,7 +124,7 @@ test.describe("transport: SSE a mensajes del AI SDK", () => {
   test("un rechazo sin texto previo no necesita retirar nada", async () => {
     const message = await finalMessage([
       ev({ event: "refusal", answer: "No dispongo de esa información", reason: "llm_unanswerable", retract: false, suggestions: [] }),
-      ev({ event: "done", ok: false, answer: "No dispongo de esa información", citations: [], reason: "llm_unanswerable", suggestions: [], timings: {} }),
+      ev({ event: "done", ok: false, answer: "No dispongo de esa información", citations: [], reason: "llm_unanswerable", suggestions: [], inline: "none", timings: {} }),
     ])
     expect(viewOfAssistant(message, false).kind).toBe("refusal")
   })
