@@ -333,3 +333,9 @@ def test_router_matches_whole_words_and_fuzzy_names():
     assert not is_invoice_question("¿Puedo usar la pinza en una zona con atmósfera explosiva?", con)
     assert is_invoice_question("total de Lucai Martn", con)
     assert is_invoice_question("¿Cuánto IVA lleva?", con)
+
+
+def test_missing_campos_fall_back_to_the_words_of_the_question():
+    con = make(LUCIA, TECNO)
+    r = run_plan(con, {"intent": "valor", "parte": "Lucía Martín"}, "NIF de Lucía Martín")
+    assert r["ok"] and "12345678-K" in r["answer"] and "B96060858" not in r["answer"]

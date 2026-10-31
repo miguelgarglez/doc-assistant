@@ -441,6 +441,37 @@ def _cit(r: dict[str, Any], c: str) -> dict[str, Any]:
 ROLE_WORDS = {"emisor", "emisora", "cliente", "proveedor", "destinatario", "receptor"}
 
 
+# Fallback when the plan omits campos: the small model sometimes drops them.
+LEXICAL_FIELDS = (
+    (("nif", "cif"), ("nif_emisor", "nif_cliente")),
+    (("iban", "cuenta"), ("iban",)),
+    (("iva",), ("cuota_iva_total",)),
+    (("irpf", "retencion"), ("irpf_importe",)),
+    (("recargo",), ("recargo_total",)),
+    (("base",), ("base_imponible_total",)),
+    (("vencimiento", "vence"), ("fecha_vencimiento",)),
+    (("fecha", "cuando"), ("fecha_emision",)),
+    (("total", "importe", "cuanto", "precio"), ("importe_total",)),
+)
+
+
+def lexical_fields(question: str, rol: str | None) -> list[str]:
+    words = set(fold(question).split())
+    out: list[str] = []
+    for cues, fields in LEXICAL_FIELDS:
+        if words & set(cues):
+            picked = fields
+            if fields[0] == "nif_emisor" and (rol or words & ROLE_WORDS):
+                named = rol
+                if words & {"cliente", "destinatario", "receptor"}:
+                    named = "cliente"
+                elif words & {"emisor", "emisora", "proveedor"}:
+                    named = "emisor"
+                picked = (f"nif_{named}",)
+            out.extend(picked)
+    return out
+
+
 def _role_fields(campos: list[str], rol: str | None, question: str) -> list[str]:
     """'NIF de Lucía' when Lucía is the issuer means nif_emisor: unless the question names
     a role, identity fields (name, NIF) refer to the party that selected the invoice."""
@@ -486,7 +517,9 @@ def _shape(
                 "aclaracion",
             )
         rows = _rows(con, numeros)
-        campos = _role_fields(plan.campos, sel.rol, question) or [
+        campos = _role_fields(
+            plan.campos or lexical_fields(question, sel.rol), sel.rol, question
+        ) or [
             "importe_total",
             "fecha_emision",
             "emisor",
