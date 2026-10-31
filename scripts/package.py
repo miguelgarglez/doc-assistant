@@ -127,7 +127,7 @@ def http_ok(url: str, data: bytes | None = None, ctype: str = "application/json"
 
 def smoke(zip_path: Path, prefix: str, fake: bool) -> None:
     """Descomprime en limpio, setup + start + pregunta. Falla si setup descarga algo."""
-    busy = [p for p in (3000, 8000, 8081, 8082, 8083) if port_busy(p)]
+    busy = [p for p in (3000, 8000, 8081, 8082, 8083, 8084) if port_busy(p)]
     if busy:
         raise SystemExit(
             f"[smoke] puertos ocupados {busy}: cierra el stack antes de probar en limpio"
@@ -211,10 +211,10 @@ def smoke(zip_path: Path, prefix: str, fake: bool) -> None:
     if "Traceback" in (td / "start.log").read_text():
         raise SystemExit(f"[smoke] hubo un Traceback en start.log ({td})")
     time.sleep(2)
-    still = [p for p in (3000, 8000, 8081, 8082, 8083) if port_busy(p)]
+    still = [p for p in (3000, 8000, 8081, 8082, 8083, 8084) if port_busy(p)]
     if still:
         raise SystemExit(f"[smoke] puertos sin liberar tras parar: {still}")
-    print("[smoke] puertos 3000/8000/8081-8083 liberados")
+    print("[smoke] puertos 3000/8000/8081-8084 liberados")
     print(f"[smoke] OK en {time.time() - t0:.0f} s · logs en {td}")
 
 

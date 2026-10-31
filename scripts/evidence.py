@@ -54,7 +54,7 @@ def screenshots() -> None:
 
 
 def live() -> None:
-    busy = [p for p in (3000, 8000, 8081, 8082, 8083) if port_busy(p)]
+    busy = [p for p in (3000, 8000, 8081, 8082, 8083, 8084) if port_busy(p)]
     if busy:
         raise SystemExit(f"[evidence] puertos ocupados {busy}: cierra el stack")
     OUT.mkdir(parents=True, exist_ok=True)
