@@ -75,3 +75,30 @@ El cliente consume `/ask/stream` y usa `/ask` si no está disponible. Los tokens
   - Streaming frente a no streaming: 16/16 resultados idénticos en una muestra (8 respondidas y 8 rechazadas). Primer token a 5,0–6,3 s y fin a 8,0–9,5 s, frente a ~9 s sin ninguna señal antes. Las trazas `step` aparecen desde el primer instante.
 - Riesgos: (a) una pregunta de contenido que use "de qué trata/qué contiene/resumen" y nombre un documento recibe su índice en vez de la respuesta; (b) un documento con nombre de palabra común ("manual") dispararía `document` con demasiada facilidad; (c) el texto provisional es visible antes de verificarse; (d) los patrones están en español.
 - Confianza: alta en la garantía, porque las panorámicas no pasan por el LLM y el streaming solo cambia cuándo se ve el texto, no qué se acepta. Media en la cobertura de las reglas.
+
+## ADR-010 Chat sobre AI SDK y AI Elements adaptados a Base UI (2026-10-31)
+
+Sustituye las partes restrictivas de ADR-007 (no instalar `ai` ni `streamdown`; descartar `prompt-input` y `message`) y de ADR-008 (texto plano, chips propios, `details` nativo, sin Shimmer). Con v0.10.0 el chat era un conjunto de piezas propias que replicaban a medias lo que AI SDK y AI Elements ya resuelven (estado de mensajes, cancelar, regenerar, adjuntos, Markdown, scroll). Se autoriza `ai`, `@ai-sdk/react`, `streamdown` y `@streamdown/code`; Radix sigue fuera (los componentes se copian y se pasan a Base UI: `render` en lugar de `asChild`, utilitario `cn` local, sin `motion`).
+
+**Contrato.** `AskTransport` (`lib/chat/transport.ts`) implementa `ChatTransport`: lee `/ask/stream` (ADR-009) y emite `UIMessageChunk`. `step`, `citations`, `refusal` y `done` viajan como data parts tipados (`data-step`, `data-citations`, `data-result`, `data-refusal`, `data-failure`) con id estable para que el SDK los reconcilie. Los `token` son texto provisional; un `refusal` con `retract` o el `done` final lo retiran con `reset-step` del propio SDK, así que "verificando" y su retirada no necesitan estado paralelo. Una sola función (`viewOfAssistant`) decide si el mensaje es respuesta, rechazo, fallo o en curso. Las pruebas de la transformación usan `readUIMessageStream` real; se comprobó por mutación que el test del retract falla sin `reset-step`.
+
+| Componente | Decisión | Qué lo limitaba y cómo se resolvió |
+| --- | --- | --- |
+| Conversation | Adoptado (`use-stick-to-bottom`) | Sin límite. Es el único scroll principal; botón de ir al final. |
+| Message / Response | Adoptado con Streamdown | Antes se evitaba por dependencias y por no haber Markdown garantizado. Streamdown renderiza Markdown parcial sin parpadeos; `@streamdown/code` solo cuando hay código. La acción copiar y regenerar sale de `MessageActions`. |
+| Prompt Input / Attachments | Adoptado y adaptado | El original usa menús Radix y tipos de `ai`. Se conservó la lógica y se rehízo sobre `InputGroup` de Base UI. Se mantienen IME (no envía durante la composición), pegar y arrastrar PDF o imagen, Enter/Mayús+Enter y ↑ con la caja vacía para recuperar la pregunta anterior. Los adjuntos pasan por la misma cola de subida que Fuentes. |
+| Sources / Inline Citation | Adoptado en versión honesta | Las citas inline por frase exigirían alinear texto y fragmento con una heurística que el verificador no ofrece (verifica la respuesta entera). Se muestran píldoras numeradas tras la respuesta y una lista de fuentes plegable; cada una abre el fragmento y la página en el visor (panel lateral en escritorio, hoja inferior en móvil). La tarjeta emergente (`HoverCard`) de cada píldora muestra la cita literal y el documento antes de abrir el visor. |
+| Chain of Thought / Reasoning / Task | Adoptado solo como traza de pasos | El contrato expone pasos del pipeline (consulta, candidatos, reordenado, redacción, verificación), no razonamiento del modelo. Se usa `ChainOfThought` colapsable con el resumen "N pasos · tiempo"; no se presenta como pensamiento. `Tool` y `Plan` siguen sin adoptarse por no haber datos. |
+| Loader / Shimmer | Adoptado | El estado de espera usa Shimmer sobre el texto del paso actual. Con `prefers-reduced-motion` queda estático. |
+| Suggestion | Adoptado | Las sugerencias del vacío salen de las fuentes indexadas; los rechazos traen las del servicio. Si `done` llega con la lista vacía no borra las del rechazo (corregido en el mapper). |
+| Actions | Adoptado | Copiar y regenerar visibles al pasar el ratón (`hover: hover`) o siempre en táctil; sin animar. |
+| Checkpoint, Confirmation, Context, Model Selector, Queue y el resto de ADR-008 | No adoptados | Siguen sin respaldo en el contrato. |
+
+**Rechazos.** Mantienen diseño propio (no son un mensaje de error): motivo, sugerencias reales y reintentar. El texto provisional que se retira se sustituye en el mismo lugar.
+
+**Estado vacío.** Sugerencias derivadas de las fuentes y acceso a añadir fuentes; sin fuentes, explica que hay que subir una.
+
+**Consecuencias.** Cuatro dependencias nuevas. El proyecto depende de la forma de `UIMessage` de AI SDK v7; el contrato propio sigue siendo el SSE, así que cambiar de cliente es tocar `transport.ts`. Compatibilidad con `/ask` sin streaming: se mantiene en el servicio, pero la UI ya no lo usa.
+
+**Layout.** App shell a `100dvh` con navegación fija; el hilo del chat es el único scroll y el composer queda anclado. Comprobado por pruebas a 1440x900 y 1280x720 (el documento no desborda con respuesta y visor abiertos), también en Fuentes y Sistema. En móvil la navegación se pliega (Sheet) y el composer es usable en 390x844 (prueba de móvil); con teclado virtual real no se ha probado y queda como pendiente.
+- Confianza: alta en transporte y layout; media en las citas inline por frase, aplazadas a propósito.

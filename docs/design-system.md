@@ -38,7 +38,7 @@ Muestra swatches, tipografía y componentes clave en el tema/modo activos. Úsal
 
 ## Componentes de chat
 
-Se adoptaron patrones de AI Elements (`conversation`, `suggestion`) reimplementados o adaptados sobre Base UI / dependencias ligeras. No se instaló el paquete `ai` ni `streamdown` (ver ADR-007).
+Desde v0.11 el chat usa AI SDK y componentes de AI Elements copiados a `components/ai-elements` y adaptados a Base UI (ADR-010). La lógica de la conversación vive en `lib/chat` y `components/providers/chat-provider.tsx`; `components/chat` solo compone la vista.
 
 ## Navegación y chat v0.10
 
@@ -47,3 +47,9 @@ La navegación da acceso a Chat, Fuentes, Ajustes y Sistema. En pantallas peque�
 Fuentes reúne los PDF y las imágenes de facturas. El catálogo muestra su estado, páginas y fragmentos; los fragmentos y las páginas se pueden inspeccionar. Sistema muestra las piezas y la traza compartida de la última consulta, con reproducción. Si no hay endpoint de salud por pieza, el estado se muestra como no medido.
 
 Los patrones de AI Elements se detallan en ADR-008. `Message` y `Trace` adaptan código del registro shadcn al sistema de tokens existente; `Conversation`, sugerencias y acciones se mantienen.
+
+## Layout de aplicación v0.11
+
+El shell ocupa `100dvh`: navegación fija a la izquierda (se pliega en móvil), contenido a la derecha. El único scroll del chat es el hilo (`Conversation`); en Fuentes y Sistema scrollea la tabla o el panel, nunca la página. Reglas de movimiento: ninguna animación en acciones de teclado ni de uso frecuente, transiciones de 200 ms o menos con `--ease-out`, `active:scale-[0.97]` en botones, nada de `transition: all`, hover solo con `@media (hover: hover)` y `prefers-reduced-motion` anula Shimmer y transiciones.
+
+Sistema pinta cada pieza con estado en texto y color, latencia y última consulta. Fuentes ofrece tabla, filtro, detalle lateral y la cola de subida. El visor de citas es panel lateral en pantallas grandes y hoja inferior en móvil.

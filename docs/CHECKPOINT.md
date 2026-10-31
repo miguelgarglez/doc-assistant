@@ -80,3 +80,10 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 ## Cierre v0.10.0 · streaming y panorámicas
 - Incorporadas las mejoras del servicio y el ADR-009. Una prueba en vivo con FastAPI y eventos espaciados comprobó que el proxy entrega los eventos de forma incremental. Un rechazo con `retract:true` sustituye el texto provisional antes de `done`.
+
+## 17:50 · Chat sobre AI SDK, shell a 100dvh, Sistema y Fuentes rediseñados (v0.11.0)
+- Qué cambió: el chat usa `useChat` con un `ChatTransport` propio sobre `/ask/stream` y componentes de AI Elements adaptados a Base UI (ADR-010); el shell ocupa `100dvh` con un único scroll; Sistema dibuja las piezas con estado y latencia (`GET /health/components`) y la traza de la última consulta; Fuentes es una tabla con filtro, detalle lateral y cola de subida.
+- Qué se probó (17:41–17:50): `mise run check` → OK (eslint sin errores, tsc, build, 90 tests del servicio, 14 de scripts, contrato sin deriva); Playwright 77 pasadas de 77, tres veces seguidas, con axe en todas las rutas, temas y modos; 4 pruebas contra el stack real (`LIVE_BASE_URL`) → correctas; 96 capturas reales en `evidence/screenshots` (1440x900, 1280x720, 390x844 × industrial/neutral × claro/oscuro: vacío, respuestas, rechazo, visor, Fuentes, Sistema, Ajustes, generación en curso), revisadas una a una por muestreo.
+- Un fallo no reproducido: en una pasada lanzada a la vez que las capturas reales (CPU saturada) fallaron dos pruebas de Sistema por tiempo; sin carga, 77/77 tres veces.
+- Decisión clave y por qué: las citas se muestran como píldoras tras la respuesta y una lista de fuentes plegable, no por frase, porque el verificador valida la respuesta entera y alinear frases con fragmentos sería una heurística sin base.
+- Pendiente: teclado virtual real en móvil, facturas reales de extremo a extremo en la nueva Fuentes (solo con respuestas simuladas), citas por frase.

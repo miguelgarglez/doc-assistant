@@ -2,6 +2,14 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
+## v0.11.0 · 2026-10-31
+- Chat reconstruido sobre AI SDK (`useChat` con un `ChatTransport` propio para `/ask/stream`) y AI Elements adaptados a Base UI: Prompt Input con adjuntos (pegar o arrastrar PDF o imagen), mensajes con Markdown (Streamdown), traza de pasos plegable, píldoras de cita y fuentes plegables que abren el fragmento, Shimmer, sugerencias, copiar y regenerar. Decisión por componente en ADR-010.
+- Layout de aplicación a 100dvh: navegación fija, el hilo es el único scroll, composer anclado; visor de citas lateral (hoja inferior en móvil).
+- Sistema: diagrama de piezas (navegador, proxy, servicio, LLM, embeddings, reranker, índice, OCR) con estado y latencia reales, y traza de la última consulta que ilumina cada pieza. Nuevo `GET /health/components` en el servicio.
+- Fuentes: tabla ordenable (nombre, tipo, páginas, fragmentos, estado, fecha) con filtro de documentos y facturas, detalle lateral y cola de subida con estados y progreso.
+- Servicio: plurales correctos en las etiquetas de los pasos ("1 cita verificada").
+- Probado: `mise run check`; Playwright 77 pruebas en tres pasadas más 4 contra el stack real (`LIVE_BASE_URL`); axe sin violaciones serias o críticas en las rutas, temas y modos; capturas reales en 1440x900, 1280x720 y 390x844, cuatro combinaciones de tema y modo (`evidence/screenshots`).
+
 ## v0.10.0 · 2026-10-31
 - Chat acumulado con SSE, pasos de consulta, tokens provisionales y rechazo inmediato que retira el texto no verificado. Comprobado el paso de eventos por el proxy con un servicio de prueba.
 - Fuentes reúne documentos y facturas, con páginas, fragmentos y altas. Ajustes concentra tema y modo. Las preguntas panorámicas responden desde el índice (ADR-009).
