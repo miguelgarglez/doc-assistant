@@ -1,0 +1,29 @@
+# Checks en cada push y PR a main (#19): lint, tipos, tests, contrato y e2e (sin modelos).
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # evita el rate limit de mise
+      DOC_ASSISTANT_FAKE_LLAMA: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - run: mise run setup -- --no-model
+      - run: mise run check
+      - run: pnpm --filter web exec playwright install --with-deps chromium
+      - run: CI=1 pnpm --filter web e2e
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: logs
+          path: |
+            **/*.log
+            apps/web/test-results/**
