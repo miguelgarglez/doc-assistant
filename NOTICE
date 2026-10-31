@@ -1,0 +1,30 @@
+Doc Assistant — avisos de terceros incluidos en la entrega
+
+Este paquete redistribuye, sin modificar, los siguientes artefactos. Licencias
+comprobadas el 31-oct-2026 en las fichas de Hugging Face y en el repositorio
+de llama.cpp (etiqueta de licencia del modelo y LICENSE del repo).
+
+models/Qwen3.5-4B-Q4_K_M.gguf
+  Modelo: Qwen/Qwen3.5-4B (Alibaba Cloud, equipo Qwen); cuantización GGUF de unsloth/Qwen3.5-4B-GGUF
+  Licencia: Apache License 2.0 — https://huggingface.co/Qwen/Qwen3.5-4B
+            https://www.apache.org/licenses/LICENSE-2.0
+
+models/bge-m3-Q8_0.gguf
+  Modelo: BAAI/bge-m3 (Beijing Academy of Artificial Intelligence); GGUF de gpustack/bge-m3-GGUF
+  Licencia: MIT — https://huggingface.co/BAAI/bge-m3
+
+models/bge-reranker-v2-m3-Q8_0.gguf
+  Modelo: BAAI/bge-reranker-v2-m3; GGUF de gpustack/bge-reranker-v2-m3-GGUF
+  Licencia: Apache License 2.0 — https://huggingface.co/BAAI/bge-reranker-v2-m3
+
+vendor/archives/llama-b12020-bin-*.{tar.gz,zip}
+  llama.cpp b12020 (ggml-org) — MIT License, Copyright (c) 2023-2026 The ggml authors
+  https://github.com/ggml-org/llama.cpp/blob/b12020/LICENSE
+  Cada archivo conserva sus propios avisos de licencia.
+
+No incluido (lo descarga quien lo use): modelo OCR glm-ocr para Ollama
+(zai-org/GLM-OCR, MIT) y el propio Ollama. Las dependencias de Python y npm se
+instalan desde sus registros con `mise run setup`; sus licencias están en
+uv.lock / pnpm-lock.yaml y en cada paquete.
+
+Los PDFs y facturas de evidence/fixtures son sintéticos, generados para este proyecto.

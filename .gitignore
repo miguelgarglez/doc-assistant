@@ -12,3 +12,4 @@ kit/
 vendor/
 models/
 _agents/
+_dist/

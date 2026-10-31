@@ -18,6 +18,7 @@ import zipfile
 from pathlib import Path
 
 from _common import (
+    ARCHIVES,
     ASSETS,
     IS_WIN,
     MODELS_DIR_KEY,
@@ -86,8 +87,13 @@ def install_llama() -> None:
     url = cfg["url"].format(tag=cfg["tag"], plat=plat, ext=ext)
     VENDOR.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as td:
-        archive = Path(td) / f"llama.{ext}"
-        download(url, archive, cfg["sha256"][plat])
+        local = ARCHIVES / url.rsplit("/", 1)[1]
+        if local.exists() and sha256(local) == cfg["sha256"][plat]:
+            print(f"[setup] llama-server desde el paquete: {local.name} (SHA256 OK, sin descarga)")
+            archive = local
+        else:
+            archive = Path(td) / f"llama.{ext}"
+            download(url, archive, cfg["sha256"][plat])
         if ext == "zip":
             with zipfile.ZipFile(archive) as z:
                 z.extractall(VENDOR)  # zip de Windows: plano (exe + dll)

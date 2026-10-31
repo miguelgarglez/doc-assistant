@@ -12,6 +12,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 IS_WIN = os.name == "nt"
 VENDOR = ROOT / "vendor" / "llama"
+ARCHIVES = ROOT / "vendor" / "archives"  # tarballs/zip de llama.cpp incluidos en el ZIP de entrega
 ASSETS: dict[str, Any] = json.loads((ROOT / "scripts" / "assets.json").read_text(encoding="utf-8"))
 
 
