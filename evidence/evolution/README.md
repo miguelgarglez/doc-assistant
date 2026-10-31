@@ -168,3 +168,26 @@ Qué se probó: mise run check OK; e2e 12 passed; package --smoke real OK (4,09 
 ![v0.7.0 invoice-ok](v0.7.0/invoice-ok.png)
 ![v0.7.0 invoice-review-mobile](v0.7.0/invoice-review-mobile.png)
 ![v0.7.0 invoice-review](v0.7.0/invoice-review.png)
+
+## v0.8.0 · 2026-10-31 15:00 +0100 · commit `cce6f39`
+
+**v0.8.0 · OCR de facturas dentro del ZIP**
+
+Qué cambió:
+- GLM-OCR GGUF en llama-server :8084 por defecto; Ollama como alternativa (DOC_ASSISTANT_OCR_RUNTIME=ollama).
+- assets.json con los dos GGUF (commit y SHA256); NOTICE con licencia MIT del modelo base y la duda.
+- Parser de importes: tipos entre paréntesis, base sin tipo y TOTAL FACTURA.
+
+Qué se probó:
+- mise run check OK; e2e 12 passed; mise run package --smoke real OK (ZIP 5,53 GB, OCR desde models/ del ZIP).
+
+![v0.8.0 ask-answer-with-source-mobile](v0.8.0/ask-answer-with-source-mobile.png)
+![v0.8.0 ask-answer-with-source](v0.8.0/ask-answer-with-source.png)
+![v0.8.0 ask-error-mobile](v0.8.0/ask-error-mobile.png)
+![v0.8.0 ask-error](v0.8.0/ask-error.png)
+![v0.8.0 ask-refusal-mobile](v0.8.0/ask-refusal-mobile.png)
+![v0.8.0 ask-refusal](v0.8.0/ask-refusal.png)
+![v0.8.0 invoice-ok-mobile](v0.8.0/invoice-ok-mobile.png)
+![v0.8.0 invoice-ok](v0.8.0/invoice-ok.png)
+![v0.8.0 invoice-review-mobile](v0.8.0/invoice-review-mobile.png)
+![v0.8.0 invoice-review](v0.8.0/invoice-review.png)
