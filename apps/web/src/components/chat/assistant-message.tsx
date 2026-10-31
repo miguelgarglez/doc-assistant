@@ -1,6 +1,6 @@
 "use client"
 
-import { CheckIcon, CopyIcon, FileSearchIcon, RefreshCwIcon } from "lucide-react"
+import { CheckIcon, CopyIcon, RefreshCwIcon } from "lucide-react"
 import { memo, useMemo, useState } from "react"
 import { toast } from "sonner"
 
@@ -18,6 +18,7 @@ import { duration } from "@/lib/format"
 import { copyText, formatAnswerMarkdown } from "@/lib/clipboard"
 import type { AskMessage, Citation, RefusalData, ResultData } from "@/lib/chat/types"
 import { clarificationText } from "@/lib/chat/clarification"
+import { refusalCopy } from "@/lib/chat/refusal-copy"
 import { segmentsMatch, withMarkers } from "@/lib/chat/inline"
 import { suggestionLabel, viewOfAssistant, type AssistantView } from "@/lib/chat/view"
 import { cn } from "@/lib/utils"
@@ -110,7 +111,10 @@ export const AssistantMessage = memo(function AssistantMessage({
 })
 
 function copyTextOf(view: Extract<AssistantView, { kind: "answer" | "refusal" | "clarification" }>): string {
-  if (view.kind === "refusal") return view.refusal.answer
+  if (view.kind === "refusal") {
+    const copy = refusalCopy(view.refusal)
+    return `${copy.title}. ${copy.body}`
+  }
   if (view.kind === "clarification") return clarificationText(view.clarification.clarification)
   return formatAnswerMarkdown(withMarkers(view.text, view.result.segments, view.citations.length, "plain"), view.citations)
 }
@@ -171,42 +175,36 @@ function Actions({ copyText: text, elapsed, isLast, onRetry }: { copyText: strin
 }
 
 export function Refusal({ refusal, onAsk }: { refusal: RefusalData; onAsk: (question: string) => void }) {
+  const copy = refusalCopy(refusal)
   return (
     <aside
       aria-live="polite"
-      className="flex gap-3 rounded-xl border border-[color:var(--refusal-border)] bg-[color:var(--refusal-bg)] p-4 text-[color:var(--refusal-fg)]"
+      className="flex flex-col gap-2 rounded-xl border border-[color:var(--refusal-border)] bg-[color:var(--refusal-bg)] p-4 text-[color:var(--refusal-fg)]"
       data-testid="refusal-notice"
       role="status"
     >
-      <FileSearchIcon aria-hidden className="mt-0.5 size-5 shrink-0 opacity-80" />
-      <div className="flex min-w-0 flex-col gap-2">
-        <h3 className="font-heading text-sm font-semibold">Sin evidencia suficiente</h3>
-        <p className="text-sm leading-relaxed">{refusal.answer}</p>
-        <p className="text-sm leading-relaxed opacity-80">
-          No hay evidencia en las fuentes indexadas, así que no se inventa una respuesta.
-        </p>
-        {refusal.suggestions.length > 0 ? (
-          <div className="flex flex-col gap-1.5 pt-1">
-            <p className="text-xs font-medium opacity-80">Apartados relacionados</p>
-            <div className="flex flex-wrap gap-1.5">
-              {refusal.suggestions.map((item) => {
-                const topic = item.heading ?? `la sección ${item.section}`
-                return (
-                  <Suggestion
-                    className="h-auto max-w-full bg-background/60 py-1 whitespace-normal text-left text-xs"
-                    key={`${item.doc_id}-${item.section}`}
-                    onClick={onAsk}
-                    suggestion={`¿Qué dice ${item.doc} sobre ${topic}?`}
-                  >
-                    {suggestionLabel(item)}
-                  </Suggestion>
-                )
-              })}
-            </div>
+      <h3 className="font-heading text-sm font-semibold">{copy.title}</h3>
+      <p className="text-sm leading-relaxed">{copy.body}</p>
+      {refusal.suggestions.length > 0 ? (
+        <div className="flex flex-col gap-1.5 pt-1">
+          <p className="text-xs font-medium opacity-80">Apartados relacionados</p>
+          <div className="flex flex-wrap gap-1.5">
+            {refusal.suggestions.map((item) => {
+              const topic = item.heading ?? `la sección ${item.section}`
+              return (
+                <Suggestion
+                  className="h-auto max-w-full bg-background/60 py-1 whitespace-normal text-left text-xs"
+                  key={`${item.doc_id}-${item.section}`}
+                  onClick={onAsk}
+                  suggestion={`¿Qué dice ${item.doc} sobre ${topic}?`}
+                >
+                  {suggestionLabel(item)}
+                </Suggestion>
+              )
+            })}
           </div>
-        ) : null}
-        <p className="font-mono text-xs opacity-70">motivo: {refusal.reason}</p>
-      </div>
+        </div>
+      ) : null}
     </aside>
   )
 }

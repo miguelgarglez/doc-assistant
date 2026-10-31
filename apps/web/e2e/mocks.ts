@@ -93,7 +93,7 @@ export function sse(events: SseEvent[]): string {
   return events.map(([event, data]) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`).join("")
 }
 
-const step = (id: string, status: "running" | "done", label: string, elapsed_s?: number): SseEvent => [
+export const step = (id: string, status: "running" | "done", label: string, elapsed_s?: number): SseEvent => [
   "step",
   { id, status, label, data: {}, elapsed_s: elapsed_s ?? null },
 ]
@@ -153,7 +153,7 @@ export const CLARIFICATION: Clarification = {
       emisor: "Suministros Aranda, S.L.",
       cliente: "Taller Norte, S.L.",
       fecha: "12/02/2026",
-      total: "1210.00",
+      total: "1.210,00 €",
       question: "¿Cuál es el importe total de la factura A-2026/014?",
     },
     {

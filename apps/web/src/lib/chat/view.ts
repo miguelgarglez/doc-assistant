@@ -59,8 +59,10 @@ export function lastQuestion(messages: AskMessage[]): string | null {
   return null
 }
 
-/** The most recent assistant message that produced step events: the "last request" of the system page. */
-export function lastTrace(messages: AskMessage[]): { question: string | null; steps: StepData[]; total: number | null } | null {
+/** The most recent assistant message that produced step events: the "last request" of the system page. `code` is the internal reason of a refusal or clarification, shown there and nowhere else. */
+export type Trace = { question: string | null; steps: StepData[]; total: number | null; code: string | null }
+
+export function lastTrace(messages: AskMessage[]): Trace | null {
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i]
     if (message?.role !== "assistant") continue
@@ -71,6 +73,7 @@ export function lastTrace(messages: AskMessage[]): { question: string | null; st
       question: lastQuestion(messages.slice(0, i)),
       steps: view.steps,
       total: result?.timings.total ?? null,
+      code: view.kind === "refusal" ? view.refusal.reason : view.kind === "clarification" ? view.clarification.reason : null,
     }
   }
   return null

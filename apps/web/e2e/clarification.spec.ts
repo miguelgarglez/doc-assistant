@@ -32,6 +32,10 @@ test.describe("aclaración: funciones puras", () => {
     expect(candidateParties({ ...bare, emisor: null })).toBeNull()
   })
 
+  test("el servicio ya manda el importe con formato; uno sin formato, de un servicio anterior, se formatea", () => {
+    expect(candidateTotal({ ...full, total: "1210.00" })).toBe("1.210,00 €")
+  })
+
   test("un importe en otro formato se enseña tal como está guardado", () => {
     expect(candidateTotal({ ...full, total: "1.210,00 EUR" })).toBe("1.210,00 EUR")
   })

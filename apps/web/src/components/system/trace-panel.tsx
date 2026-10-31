@@ -4,12 +4,10 @@ import { PlayIcon } from "lucide-react"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
-import type { StepData } from "@/lib/chat/types"
+import type { Trace } from "@/lib/chat/view"
 import { duration } from "@/lib/format"
 import { PIECES, STEP_PIECES } from "@/lib/system/pieces"
 import { cn } from "@/lib/utils"
-
-type Trace = { question: string | null; steps: StepData[]; total: number | null }
 
 type TracePanelProps = {
   trace: Trace | null
@@ -32,6 +30,11 @@ export function TracePanel({ trace, activeId, replaying, onSelect, onReplay }: T
             <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground" data-testid="trace-question">
               {trace.question ? `«${trace.question}»` : "Sin texto"}
               {trace.total === null ? "" : ` · ${duration(trace.total)} en total`}
+            </p>
+          ) : null}
+          {trace?.code ? (
+            <p className="mt-0.5 font-mono text-xs text-muted-foreground" data-testid="trace-code">
+              {trace.code}
             </p>
           ) : null}
         </div>
