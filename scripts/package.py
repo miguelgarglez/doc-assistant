@@ -89,11 +89,7 @@ def build(zip_path: Path, prefix: str, src_models: Path, with_models: bool) -> N
     files = tracked_files()
     archives = llama_archives()
     models = model_files(src_models) if with_models else []
-    sums = (
-        "".join(f"{m['sha256']}  {m['file']}\n" for m in ASSETS["models"])
-        if models
-        else ""
-    )
+    sums = "".join(f"{m['sha256']}  {m['file']}\n" for m in ASSETS["models"]) if models else ""
     t0 = time.time()
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED, allowZip64=True) as z:
         for f in files:
@@ -122,9 +118,7 @@ def port_busy(port: int) -> bool:
         return s.connect_ex(("127.0.0.1", port)) == 0
 
 
-def http_ok(
-    url: str, data: bytes | None = None, ctype: str = "application/json"
-) -> str:
+def http_ok(url: str, data: bytes | None = None, ctype: str = "application/json") -> str:
     req = urllib.request.Request(url, data=data, headers={"content-type": ctype})
     with urllib.request.urlopen(req, timeout=120) as r:
         body: bytes = r.read()
@@ -147,18 +141,14 @@ def smoke(zip_path: Path, prefix: str, fake: bool) -> None:
     env = {k: v for k, v in os.environ.items() if k not in drop}
     uvrun = ["uv", "run", "--project", "services/ai", "python"]
     setup_cmd = [*uvrun, "scripts/setup.py", "--yes"] + (["--no-model"] if fake else [])
-    r = subprocess.run(
-        setup_cmd, check=False, cwd=root, env=env, capture_output=True, text=True
-    )
+    r = subprocess.run(setup_cmd, check=False, cwd=root, env=env, capture_output=True, text=True)
     log = r.stdout + r.stderr
     (td / "setup.log").write_text(log)
     if r.returncode != 0:
         raise SystemExit(f"[smoke] setup falló:\n{log[-2000:]}")
     if "[setup] descargando" in log:
         raise SystemExit("[smoke] setup descargó algo (debería usar lo empaquetado)")
-    print(
-        f"[smoke] setup OK sin descargas de modelos/binarios ({time.time() - t0:.0f} s)"
-    )
+    print(f"[smoke] setup OK sin descargas de modelos/binarios ({time.time() - t0:.0f} s)")
     if fake:
         env["DOC_ASSISTANT_FAKE_LLAMA"] = "1"
     kw: dict[str, object] = (
@@ -209,17 +199,13 @@ def smoke(zip_path: Path, prefix: str, fake: bool) -> None:
         if not fake:
             inv = root / "evidence/fixtures/invoices/factura_001.png"
             t1 = time.time()
-            r_inv = upload(
-                "http://127.0.0.1:3000/api/invoices/upload", inv, "image/png"
-            )
+            r_inv = upload("http://127.0.0.1:3000/api/invoices/upload", inv, "image/png")
             print(f"[smoke] /invoices/upload ({time.time() - t1:.0f} s):", r_inv[:300])
     finally:
         if sys.platform == "win32":
             p.send_signal(signal.CTRL_BREAK_EVENT)  # type: ignore[attr-defined]
         else:
-            os.killpg(
-                p.pid, signal.SIGINT
-            )  # todo el grupo: uv no reenvía SIGINT sin TTY
+            os.killpg(p.pid, signal.SIGINT)  # todo el grupo: uv no reenvía SIGINT sin TTY
         p.wait(timeout=30)
         out.close()
     if "Traceback" in (td / "start.log").read_text():

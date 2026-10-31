@@ -44,7 +44,12 @@ class Proc:
 def llama(name: str, port: int, model: str, *extra: str) -> Proc:
     health = f"http://{LOOPBACK}:{port}/health"
     if os.environ.get("DOC_ASSISTANT_FAKE_LLAMA") == "1":
-        cmd = [sys.executable, str(ROOT / "scripts" / "fake_llama.py"), "--port", str(port)]
+        cmd = [
+            sys.executable,
+            str(ROOT / "scripts" / "fake_llama.py"),
+            "--port",
+            str(port),
+        ]
         return Proc(name, cmd, port, health)
     exe = os.environ.get("DOC_ASSISTANT_LLAMA_SERVER") or (
         str(llama_exe()) if llama_exe().exists() else shutil.which("llama-server")
@@ -65,7 +70,15 @@ def plan(dev: bool, ai_port: int, web_port: int, with_llm: bool) -> list[Proc]:
     if node is None:
         raise SystemExit("[dev] no encuentro node. ¿Has ejecutado 'mise install'?")
     next_bin = ROOT / "apps" / "web" / "node_modules" / "next" / "dist" / "bin" / "next"
-    web = [node, str(next_bin), "dev" if dev else "start", "-H", LOOPBACK, "-p", str(web_port)]
+    web = [
+        node,
+        str(next_bin),
+        "dev" if dev else "start",
+        "-H",
+        LOOPBACK,
+        "-p",
+        str(web_port),
+    ]
     api = [
         sys.executable,
         "-m",
@@ -89,7 +102,14 @@ def plan(dev: bool, ai_port: int, web_port: int, with_llm: bool) -> list[Proc]:
                 "--reasoning-budget",  # sin "pensar": respuesta directa (como en el slice)
                 "0",
             ),
-            llama("embeddings", 8082, "bge-m3-Q8_0.gguf", "--embeddings", "--pooling", "cls"),
+            llama(
+                "embeddings",
+                8082,
+                "bge-m3-Q8_0.gguf",
+                "--embeddings",
+                "--pooling",
+                "cls",
+            ),
             llama("reranker", 8083, "bge-reranker-v2-m3-Q8_0.gguf", "--reranking"),
         ]
         if with_llm
@@ -112,7 +132,13 @@ def plan(dev: bool, ai_port: int, web_port: int, with_llm: bool) -> list[Proc]:
     return [
         *models,
         *ocr,
-        Proc("ai", api, ai_port, f"http://{LOOPBACK}:{ai_port}/health", ROOT / "services" / "ai"),
+        Proc(
+            "ai",
+            api,
+            ai_port,
+            f"http://{LOOPBACK}:{ai_port}/health",
+            ROOT / "services" / "ai",
+        ),
         Proc(
             "web",
             web,
@@ -166,19 +192,63 @@ def _alive() -> list[subprocess.Popen[bytes]]:
     return [p.popen for p in reversed(STARTED) if p.popen is not None and p.popen.poll() is None]
 
 
+def _group_alive(pgid: int) -> bool:
+    try:
+        os.killpg(pgid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def _groups() -> list[int]:
+    """Grupos iniciados (POSIX: pgid = pid del líder). Vivos aunque el líder ya haya muerto."""
+    return [p.popen.pid for p in reversed(STARTED) if p.popen is not None]
+
+
 def stop_all() -> None:
     # uv/mise reenvían la señal y el terminal la manda al grupo: ignorar las repetidas
     # mientras cerramos evita un KeyboardInterrupt a mitad de la parada.
     for sig in (signal.SIGINT, signal.SIGTERM):
         signal.signal(sig, signal.SIG_IGN)
+    if IS_WIN:
+        _stop_windows()
+        return
+    live = [g for g in _groups() if _group_alive(g)]
+    if not live:
+        return
+    for g in live:  # fase 1: amable, a todo el grupo (también si el líder murió: #14)
+        try:
+            os.killpg(g, signal.SIGTERM)
+        except OSError:
+            pass
+    deadline = time.monotonic() + GRACE_S
+    while time.monotonic() < deadline and any(_group_alive(g) for g in live):
+        for pp in _alive():
+            pp.poll()
+        time.sleep(0.1)
+    for g in live:  # fase 2: forzado
+        if _group_alive(g):
+            try:
+                os.killpg(g, signal.SIGKILL)
+            except OSError:
+                pass
+    for p in STARTED:
+        if p.popen is not None:
+            try:
+                p.popen.wait(5)
+            except subprocess.TimeoutExpired:
+                pass
+    print("[dev] todos los procesos cerrados", flush=True)
+
+
+def _stop_windows() -> None:
     if not _alive():
         return
-    for pp in _alive():  # fase 1: amable
+    for pp in _alive():
         try:
-            if IS_WIN:
-                pp.send_signal(signal.CTRL_BREAK_EVENT)  # type: ignore[attr-defined]
-            else:
-                os.killpg(pp.pid, signal.SIGTERM)
+            pp.send_signal(signal.CTRL_BREAK_EVENT)  # type: ignore[attr-defined]
         except OSError:
             pass
     deadline = time.monotonic() + GRACE_S
@@ -187,16 +257,12 @@ def stop_all() -> None:
             pp.wait(max(0.1, deadline - time.monotonic()))
         except subprocess.TimeoutExpired:
             pass
-    for pp in _alive():  # fase 2: forzado, árbol completo
-        if IS_WIN:
-            subprocess.run(
-                ["taskkill", "/PID", str(pp.pid), "/T", "/F"], capture_output=True, check=False
-            )
-        else:
-            try:
-                os.killpg(pp.pid, signal.SIGKILL)
-            except OSError:
-                pass
+    for pp in _alive():  # árbol completo (si el padre murió, taskkill /T no ve a los hijos)
+        subprocess.run(
+            ["taskkill", "/PID", str(pp.pid), "/T", "/F"],
+            capture_output=True,
+            check=False,
+        )
     print("[dev] todos los procesos cerrados", flush=True)
 
 
@@ -209,10 +275,14 @@ def main() -> int:
     ap.add_argument("--dev", action="store_true", help="next dev en vez de next start")
     ap.add_argument("--no-llm", action="store_true", help="sin llama-server (solo UI/contrato)")
     ap.add_argument(
-        "--ai-port", type=int, default=int(os.environ.get("DOC_ASSISTANT_AI_PORT", "8000"))
+        "--ai-port",
+        type=int,
+        default=int(os.environ.get("DOC_ASSISTANT_AI_PORT", "8000")),
     )
     ap.add_argument(
-        "--web-port", type=int, default=int(os.environ.get("DOC_ASSISTANT_WEB_PORT", "3000"))
+        "--web-port",
+        type=int,
+        default=int(os.environ.get("DOC_ASSISTANT_WEB_PORT", "3000")),
     )
     ap.add_argument(
         "--models-dir",
@@ -236,7 +306,10 @@ def main() -> int:
     reused = [p for p in procs if p.reuse_if_running and port_busy(p.port)]
     procs = [p for p in procs if p not in reused]
     for p in reused:
-        print(f"[dev] {p.name}: ya en marcha en {p.port}, se reutiliza (no se cerrará)", flush=True)
+        print(
+            f"[dev] {p.name}: ya en marcha en {p.port}, se reutiliza (no se cerrará)",
+            flush=True,
+        )
     busy = [p for p in procs if port_busy(p.port)]
     for p in busy:
         print(
@@ -246,14 +319,20 @@ def main() -> int:
     if busy:
         return 2
     if not a.dev and not (ROOT / "apps" / "web" / ".next" / "BUILD_ID").exists():
-        print("[dev] ERROR: falta el build de la web. Ejecuta 'mise run build'.", file=sys.stderr)
+        print(
+            "[dev] ERROR: falta el build de la web. Ejecuta 'mise run build'.",
+            file=sys.stderr,
+        )
         return 2
     try:
         for p in procs:
             start(p)
             wait_healthy(p)
             print(f"[dev] {p.name} OK", flush=True)
-        print(f"[dev] Listo: http://{LOOPBACK}:{a.web_port}  (Ctrl-C para salir)", flush=True)
+        print(
+            f"[dev] Listo: http://{LOOPBACK}:{a.web_port}  (Ctrl-C para salir)",
+            flush=True,
+        )
         while not any(p.popen is not None and p.popen.poll() is not None for p in STARTED):
             time.sleep(0.5)
         dead = next(p for p in STARTED if p.popen is not None and p.popen.poll() is not None)
