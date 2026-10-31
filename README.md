@@ -16,9 +16,8 @@ Sin mise (con uv y node ya instalados): `uv run --project services/ai python scr
 
 ### Notas
 - Si ya tienes los modelos: `mise run setup --models-dir /ruta/a/models` (o `DOC_ASSISTANT_MODELS_DIR=/ruta`). `setup` comprueba lo que hay (el tamaño, y el SHA256 con `--verify`) y solo descarga lo que falte, con reanudación. La ruta se guarda en `.env.local`. Orden de resolución: `--models-dir` > `DOC_ASSISTANT_MODELS_DIR` > `.env.local` > `./models`. Si va a descargar más de 1 GB pide confirmación (`--yes` en CI).
-- Máquina de Miguel: una vez `DOC_ASSISTANT_MODELS_DIR=<carpeta de modelos> mise run setup`; después solo `mise run start`.
 - Windows:
-  - Descomprime en una ruta corta y sin espacios (p. ej. `C:\doc-assistant`).
+  - Descomprime en una ruta corta y sin espacios (p. ej. `C:\docassist`).
   - Si falta `VCRUNTIME140.dll`, instala https://aka.ms/vs/17/release/vc_redist.x64.exe.
   - Si `mise install` da 403 por rate limit de GitHub, define `GITHUB_TOKEN`.
   - Contingencia: WSL2 con Ubuntu y los pasos de Linux.

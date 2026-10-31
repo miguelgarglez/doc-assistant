@@ -15,7 +15,7 @@ Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`g
 
 ## v0.2.0 · 2026-10-31 12:40 · 5798de1
 - LLM con --reasoning-budget 0. Primera pregunta real extremo a extremo.
-- Probado (humo): "N kg" con cita en 7 s; rechazo de precio en 5 s.
+- Probado (humo): valor correcto con cita en 7 s; rechazo de precio en 5 s.
 
 ## v0.1.0 · 2026-10-31 12:32 · 4588e84
 - Monorepo FastAPI + Next/shadcn, mise + scripts Python, llama.cpp b12020 con SHA256, contrato OpenAPI con check de deriva.

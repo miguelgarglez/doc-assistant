@@ -10,7 +10,7 @@ from typing import Any
 import pdfplumber
 
 HDR = re.compile(r"^(\d+(?:\.\d+)*)\.\s+(\S.*)$")
-FOOT = re.compile(r"^ACME Robotics · .* \d+$")
+FOOT = re.compile(r"^[^·\n]{2,40} · .* \d+$")
 
 
 def ws(s: str) -> str:

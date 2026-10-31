@@ -33,7 +33,7 @@ LLM, embeddings, reranker y OCR son `Protocol`s; los adaptadores HTTP se eligen 
 ## Fronteras y seguridad
 - Todo en `127.0.0.1`; el proxy de Next reenvía solo `content-type`, `accept` y `accept-language`, recodifica cada segmento de ruta y comprueba el origen final (sin SSRF). Si el servicio cae, devuelve 502 `{code, message}`.
 - Ficheros: `/ingest` solo admite rutas dentro de `data_dir` (sin `..`, absolutas ni symlinks que salgan); las subidas escriben en `data_dir/documents` y `data_dir/invoices` con nombre saneado, límite de tamaño y de páginas configurable, y 413 tipado.
-- Datos reales (kit, facturas) nunca entran en el repo ni en el ZIP: `.gitignore` + comprobación en `scripts/package.py`.
+- Documentos y facturas reales nunca entran en el repo ni en el ZIP: `.gitignore` + comprobación en `scripts/package.py`.
 
 ## Procesos y arranque
 `mise run start` → `scripts/dev.py` (solo stdlib): comprueba puertos, lanza cada proceso en su propio grupo, espera su health check en orden (LLM, embeddings, reranker, OCR reutilizado si ya corre, IA, web) y, con Ctrl-C, para en dos fases (amable y luego forzado a los 5 s) con `atexit` de respaldo. `DOC_ASSISTANT_FAKE_LLAMA=1` sustituye los tres llama-server por un simulador para CI y pruebas.

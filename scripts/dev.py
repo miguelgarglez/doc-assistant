@@ -208,10 +208,15 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dev", action="store_true", help="next dev en vez de next start")
     ap.add_argument("--no-llm", action="store_true", help="sin llama-server (solo UI/contrato)")
-    ap.add_argument("--ai-port", type=int, default=int(os.environ.get("DOC_ASSISTANT_AI_PORT", "8000")))
-    ap.add_argument("--web-port", type=int, default=int(os.environ.get("DOC_ASSISTANT_WEB_PORT", "3000")))
     ap.add_argument(
-        "--models-dir", help="carpeta con los GGUF (si no: DOC_ASSISTANT_MODELS_DIR, .env.local, ./models)"
+        "--ai-port", type=int, default=int(os.environ.get("DOC_ASSISTANT_AI_PORT", "8000"))
+    )
+    ap.add_argument(
+        "--web-port", type=int, default=int(os.environ.get("DOC_ASSISTANT_WEB_PORT", "3000"))
+    )
+    ap.add_argument(
+        "--models-dir",
+        help="carpeta con los GGUF (si no: DOC_ASSISTANT_MODELS_DIR, .env.local, ./models)",
     )
     a = ap.parse_args()
     if a.models_dir:

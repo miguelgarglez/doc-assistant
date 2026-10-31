@@ -18,12 +18,19 @@ TRASH = ROOT / "_trash" / "evolution"
 
 
 def git(*args: str) -> str:
-    return subprocess.run(["git", *args], cwd=ROOT, check=True, capture_output=True, text=True).stdout
+    return subprocess.run(
+        ["git", *args], cwd=ROOT, check=True, capture_output=True, text=True
+    ).stdout
 
 
 def tags() -> list[tuple[str, str, str]]:
     """(tag, sha corto, fecha ISO del commit) en orden cronológico."""
-    out = git("for-each-ref", "--sort=*committerdate", "--format=%(refname:short)|%(*objectname:short)|%(*committerdate:format:%Y-%m-%d %H:%M %z)", "refs/tags/v*")
+    out = git(
+        "for-each-ref",
+        "--sort=*committerdate",
+        "--format=%(refname:short)|%(*objectname:short)|%(*committerdate:format:%Y-%m-%d %H:%M %z)",
+        "refs/tags/v*",
+    )
     return [tuple(line.split("|")) for line in out.splitlines() if line]  # type: ignore[misc]
 
 
@@ -49,13 +56,19 @@ def main() -> int:
         msg = git("tag", "-l", "--format=%(contents)", tag).strip().splitlines()
         title, body = msg[0], "\n".join(msg[1:]).strip()
         lines += [f"## {tag} · {date} · commit `{sha}`", "", f"**{title}**", "", body, ""]
-        names = [n for n in git("ls-tree", "-r", "--name-only", tag, "--", SHOTS).splitlines() if n.endswith(".png")]
+        names = [
+            n
+            for n in git("ls-tree", "-r", "--name-only", tag, "--", SHOTS).splitlines()
+            if n.endswith(".png")
+        ]
         if not names:
             lines += ["_Sin capturas en esta versión._", ""]
             continue
         (OUT / tag).mkdir()
         for name in names:
-            blob = subprocess.run(["git", "show", f"{tag}:{name}"], cwd=ROOT, check=True, capture_output=True).stdout
+            blob = subprocess.run(
+                ["git", "show", f"{tag}:{name}"], cwd=ROOT, check=True, capture_output=True
+            ).stdout
             (OUT / tag / Path(name).name).write_bytes(blob)
             lines.append(f"![{tag} {Path(name).stem}]({tag}/{Path(name).name})")
         lines.append("")
