@@ -104,3 +104,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Decisión clave y por qué: el año, el rol y los campos salen de la pregunta, porque el modelo de 4B inventaba años y omitía campos. Preguntar es mejor que elegir una factura al azar.
 - Pendiente: un gold aprobado, pistas en otros idiomas y triggers de cambios para índices muy grandes.
 
+
+## Integración de v0.13.0 sobre v0.12.0
+- Qué cambió: ADR-011 se mantiene para citas inline y ADR-012 identifica las consultas de facturas. El resultado v2 entrega elementos con sus citas a `AnswerBuilder`; conserva valores, selectores, datos ausentes, límites de lista, notas de revisión y aclaraciones. La subida conserva su progreso real.
+- Qué se probó: `mise run check` OK con 218 tests del servicio y 14 de scripts, contrato sin deriva, lint, tipos y build. Playwright 118/118 en tres pasadas seguidas, con axe sin violaciones serias ni críticas. Los cuatro tests que requieren el stack de fixtures se omiten en estas pasadas. Revisión independiente favorable y regresiones sintéticas de las cuatro intenciones, Markdown, citas, truncado y campos ausentes.
+- Migración: aditiva e idempotente al primer acceso que abre `InvoiceDB`, no en el lifespan de FastAPI. No requiere reindexar PDFs ni repetir OCR o embeddings de facturas existentes.

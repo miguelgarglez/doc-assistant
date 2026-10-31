@@ -1,6 +1,6 @@
 # Evolución por versión
 
-Generado por `mise run evolution` (scripts/evolution.py) desde los tags anotados de git.
+Galerías históricas generadas por `mise run evolution` (scripts/evolution.py) desde los tags anotados de git. La nota de integración de v0.13.0 se mantiene al final.
 Las capturas son las que estaban versionadas en ese tag (`git show <tag>:evidence/screenshots/…`);
 el texto es el mensaje del tag.
 

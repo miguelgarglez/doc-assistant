@@ -12,7 +12,8 @@ Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`g
 - Integrada sobre v0.12.0: se conservan las citas inline por elemento, el Markdown de `answer_markup`, el visor y el progreso de subida (ADR-011).
 - Migración aditiva e idempotente al abrir `InvoiceDB` (`facturas_q`, `partes_fts`). No cambia `SCHEMA_VERSION` ni el contrato de v0.12.0.
 - Probado:
-  - 155 tests del servicio en la rama de facturas; 218 tests en la integración con v0.12.0.
+  - `mise run check` OK: 218 tests del servicio, 14 de scripts, contrato sin deriva, lint, tipos y build. Playwright 118/118 en tres pasadas con axe sin violaciones serias ni críticas.
+  - 155 tests del servicio en la rama original de facturas.
   - Baterías con LLM real: 36/36 (antes 6/36, 6 falsas) y 33/33 adversariales (antes 7/33, 5 falsas).
   - Índice sintético de 2.005 facturas: 0 falsas y 33 ms de parte determinista (p50).
 
