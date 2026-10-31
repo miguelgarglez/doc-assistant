@@ -1,21 +1,24 @@
 """HTTP interface to the document and invoice workflows."""
 
-from collections.abc import AsyncIterator
+import copy
+import json
+from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 import pypdfium2 as pdfium
 from fastapi import FastAPI, File, Request, UploadFile
-from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, Field
+from fastapi.responses import JSONResponse, Response, StreamingResponse
+from pydantic import BaseModel, Field, TypeAdapter
 
 from doc_assistant.adapters import AdapterError
-from doc_assistant.ask import ask
+from doc_assistant.ask import ask, ask_events
 from doc_assistant.chunking import invoice_doc_id, pdf_doc_id
 from doc_assistant.config import load_config
 from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
 from doc_assistant.invoices import InvoiceDB, invoice_image, upload_invoice
+from doc_assistant.sources import find_source, list_sources, remove_source
 from doc_assistant.store import ChunkStore
 
 DEFAULT_CONFIG = Path(__file__).resolve().parents[4] / "config/config.yaml"
@@ -62,11 +65,89 @@ class Citation(BaseModel):
     fragment: str
 
 
+class Suggestion(BaseModel):
+    """A real, nearby source shown when the question cannot be answered."""
+
+    doc: str
+    doc_id: str
+    section: str
+    heading: str | None = None
+    pages: list[int]
+
+
 class AskResponse(BaseModel):
     ok: bool
     answer: str
     citations: list[Citation]
     reason: str
+    suggestions: list[Suggestion] = Field(default_factory=list)
+
+
+StepId = Literal["route", "meta", "invoices", "retrieve", "rerank", "generate", "verify"]
+
+
+class StepEvent(BaseModel):
+    event: Literal["step"] = "step"
+    id: StepId
+    status: Literal["running", "done"]
+    label: str
+    data: dict[str, Any] = Field(default_factory=dict)
+    elapsed_s: float | None = None
+
+
+class TokenEvent(BaseModel):
+    event: Literal["token"] = "token"
+    text: str
+
+
+class CitationsEvent(BaseModel):
+    event: Literal["citations"] = "citations"
+    citations: list[Citation]
+
+
+class RefusalEvent(BaseModel):
+    event: Literal["refusal"] = "refusal"
+    answer: str
+    reason: str
+    retract: bool
+    suggestions: list[Suggestion] = Field(default_factory=list)
+
+
+class DoneEvent(AskResponse):
+    event: Literal["done"] = "done"
+    timings: dict[str, float]
+
+
+class ErrorEvent(BaseModel):
+    event: Literal["error"] = "error"
+    code: str
+    message: str
+
+
+StreamEvent = Annotated[
+    StepEvent | TokenEvent | CitationsEvent | RefusalEvent | DoneEvent | ErrorEvent,
+    Field(discriminator="event"),
+]
+
+
+class SourceSection(BaseModel):
+    section: str
+    heading: str | None = None
+    pages: list[int]
+
+
+class Source(BaseModel):
+    id: str
+    kind: Literal["pdf", "invoice"]
+    name: str
+    title: str | None = None
+    n_pages: int
+    n_chunks: int
+    sections: list[SourceSection]
+    added_at: str | None = None
+    status: Literal["indexed", "review", "no_text"]
+    status_detail: str | None = None
+    file: str | None = None
 
 
 class Invoice(BaseModel):
@@ -125,6 +206,47 @@ def safe_upload_directory(base: Path, name: str) -> bool:
     )
 
 
+def sse(event: BaseModel) -> str:
+    data = event.model_dump(mode="json", exclude={"event"})
+    name = event.event  # type: ignore[attr-defined]
+    return f"event: {name}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+def ask_stream_events(config_path: Path, question: str) -> Iterator[str]:
+    """Translate pipeline events into the SSE contract (see docs/streaming.md)."""
+    emitted = False
+    try:
+        for kind, data in ask_events(config_path, question, stream=True):
+            if kind == "step":
+                yield sse(StepEvent.model_validate(data))
+            elif kind == "token":
+                emitted = True
+                yield sse(TokenEvent(text=data["text"]))
+            else:
+                response = AskResponse.model_validate(data)
+                if response.ok:
+                    yield sse(CitationsEvent(citations=response.citations))
+                else:
+                    yield sse(
+                        RefusalEvent(
+                            answer=response.answer,
+                            reason=response.reason,
+                            retract=emitted,
+                            suggestions=response.suggestions,
+                        )
+                    )
+                timings = dict(data.get("latencies") or {})
+                timings["total"] = round(sum(timings.values()), 4)
+                yield sse(DoneEvent(**response.model_dump(), timings=timings))
+    except AdapterError as exc:
+        yield sse(ErrorEvent(code="adapter_error", message=str(exc)))
+    except Exception:  # noqa: BLE001 - the stream must always end with done or error
+        yield sse(ErrorEvent(code="internal_error", message="Error interno al responder"))
+
+
+STREAM_SCHEMA = TypeAdapter(StreamEvent).json_schema(ref_template="#/components/schemas/{model}")
+
+
 def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -133,6 +255,20 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         yield
 
     app = FastAPI(title="Doc Assistant AI", version="0.1.0", lifespan=lifespan)
+
+    def openapi() -> dict[str, Any]:
+        if app.openapi_schema is None:
+            from fastapi.openapi.utils import get_openapi
+
+            schema = get_openapi(title=app.title, version=app.version, routes=app.routes)
+            components = schema.setdefault("components", {}).setdefault("schemas", {})
+            stream = copy.deepcopy(STREAM_SCHEMA)
+            components.update(stream.pop("$defs", {}))
+            components["StreamEvent"] = stream
+            app.openapi_schema = schema
+        return app.openapi_schema
+
+    app.openapi = openapi  # type: ignore[method-assign]
 
     @app.exception_handler(AdapterError)
     async def adapter_error(request: Request, exc: AdapterError) -> JSONResponse:
@@ -224,6 +360,55 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
     @app.post("/ask", response_model=AskResponse, responses={502: {"model": ErrorBody}})
     def query(payload: AskRequest) -> Any:
         return ask(config_path, payload.question)
+
+    @app.post(
+        "/ask/stream",
+        response_class=StreamingResponse,
+        responses={
+            200: {
+                "description": "Server-Sent Events. Each `data:` line is one StreamEvent "
+                "(the `event` field is sent as the SSE event name).",
+                "content": {
+                    "text/event-stream": {"schema": {"$ref": "#/components/schemas/StreamEvent"}}
+                },
+            }
+        },
+    )
+    def query_stream(payload: AskRequest) -> StreamingResponse:
+        return StreamingResponse(
+            ask_stream_events(config_path, payload.question),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
+    @app.get("/sources", response_model=list[Source])
+    def sources(request: Request) -> Any:
+        return list_sources(request.app.state.config)
+
+    @app.delete("/sources/{source_id}", status_code=204, responses={404: {"model": ErrorBody}})
+    def delete_source(source_id: str, request: Request) -> Response:
+        cfg = request.app.state.config
+        source = find_source(cfg, source_id)
+        if source is None:
+            return upload_error("source_not_found", "Source does not exist", 404)
+        remove_source(cfg, source)
+        return Response(status_code=204)
+
+    @app.post(
+        "/sources/{source_id}/reindex",
+        response_model=IngestResponse,
+        responses={400: {"model": ErrorBody}, 404: {"model": ErrorBody}, 502: {"model": ErrorBody}},
+    )
+    def reindex_source(source_id: str, request: Request) -> Any:
+        cfg = request.app.state.config
+        source = find_source(cfg, source_id)
+        if source is None:
+            return upload_error("source_not_found", "Source does not exist", 404)
+        if source["kind"] != "pdf" or not source["file"]:
+            return upload_error(
+                "not_reindexable", "Only stored PDFs can be reindexed; upload invoices again", 400
+            )
+        return ingest_pdfs(config_path, cfg.data_dir / source["file"])
 
     @app.get(
         "/sources/{doc_id:path}/pages/{n}",

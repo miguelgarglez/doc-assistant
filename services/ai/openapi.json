@@ -211,6 +211,177 @@
         }
       }
     },
+    "/ask/stream": {
+      "post": {
+        "summary": "Query Stream",
+        "operationId": "query_stream_ask_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Server-Sent Events. Each `data:` line is one StreamEvent (the `event` field is sent as the SSE event name).",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamEvent"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sources": {
+      "get": {
+        "summary": "Sources",
+        "operationId": "sources_sources_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Source"
+                  },
+                  "type": "array",
+                  "title": "Response Sources Sources Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sources/{source_id}": {
+      "delete": {
+        "summary": "Delete Source",
+        "operationId": "delete_source_sources__source_id__delete",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sources/{source_id}/reindex": {
+      "post": {
+        "summary": "Reindex Source",
+        "operationId": "reindex_source_sources__source_id__reindex_post",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/sources/{doc_id}/pages/{n}": {
       "get": {
         "summary": "Source Page",
@@ -444,6 +615,13 @@
           "reason": {
             "type": "string",
             "title": "Reason"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/Suggestion"
+            },
+            "type": "array",
+            "title": "Suggestions"
           }
         },
         "type": "object",
@@ -486,38 +664,37 @@
       "Citation": {
         "properties": {
           "chunk_id": {
-            "type": "string",
-            "title": "Chunk Id"
+            "title": "Chunk Id",
+            "type": "string"
           },
           "quote": {
-            "type": "string",
-            "title": "Quote"
+            "title": "Quote",
+            "type": "string"
           },
           "doc": {
-            "type": "string",
-            "title": "Doc"
+            "title": "Doc",
+            "type": "string"
           },
           "doc_id": {
-            "type": "string",
-            "title": "Doc Id"
+            "title": "Doc Id",
+            "type": "string"
           },
           "section": {
-            "type": "string",
-            "title": "Section"
+            "title": "Section",
+            "type": "string"
           },
           "pages": {
             "items": {
               "type": "integer"
             },
-            "type": "array",
-            "title": "Pages"
+            "title": "Pages",
+            "type": "array"
           },
           "fragment": {
-            "type": "string",
-            "title": "Fragment"
+            "title": "Fragment",
+            "type": "string"
           }
         },
-        "type": "object",
         "required": [
           "chunk_id",
           "quote",
@@ -527,7 +704,8 @@
           "pages",
           "fragment"
         ],
-        "title": "Citation"
+        "title": "Citation",
+        "type": "object"
       },
       "DocumentUploadResponse": {
         "properties": {
@@ -1056,6 +1234,181 @@
         ],
         "title": "InvoiceUploadResponse"
       },
+      "Source": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "pdf",
+              "invoice"
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "n_pages": {
+            "type": "integer",
+            "title": "N Pages"
+          },
+          "n_chunks": {
+            "type": "integer",
+            "title": "N Chunks"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/SourceSection"
+            },
+            "type": "array",
+            "title": "Sections"
+          },
+          "added_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Added At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "indexed",
+              "review",
+              "no_text"
+            ],
+            "title": "Status"
+          },
+          "status_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Detail"
+          },
+          "file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "n_pages",
+          "n_chunks",
+          "sections",
+          "status"
+        ],
+        "title": "Source"
+      },
+      "SourceSection": {
+        "properties": {
+          "section": {
+            "type": "string",
+            "title": "Section"
+          },
+          "heading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading"
+          },
+          "pages": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "section",
+          "pages"
+        ],
+        "title": "SourceSection"
+      },
+      "Suggestion": {
+        "description": "A real, nearby source shown when the question cannot be answered.",
+        "properties": {
+          "doc": {
+            "title": "Doc",
+            "type": "string"
+          },
+          "doc_id": {
+            "title": "Doc Id",
+            "type": "string"
+          },
+          "section": {
+            "title": "Section",
+            "type": "string"
+          },
+          "heading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Heading"
+          },
+          "pages": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Pages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "doc",
+          "doc_id",
+          "section",
+          "pages"
+        ],
+        "title": "Suggestion",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -1095,6 +1448,251 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "CitationsEvent": {
+        "properties": {
+          "event": {
+            "const": "citations",
+            "default": "citations",
+            "title": "Event",
+            "type": "string"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "title": "Citations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "citations"
+        ],
+        "title": "CitationsEvent",
+        "type": "object"
+      },
+      "DoneEvent": {
+        "properties": {
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/Suggestion"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          },
+          "event": {
+            "const": "done",
+            "default": "done",
+            "title": "Event",
+            "type": "string"
+          },
+          "timings": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Timings",
+            "type": "object"
+          }
+        },
+        "required": [
+          "ok",
+          "answer",
+          "citations",
+          "reason",
+          "timings"
+        ],
+        "title": "DoneEvent",
+        "type": "object"
+      },
+      "ErrorEvent": {
+        "properties": {
+          "event": {
+            "const": "error",
+            "default": "error",
+            "title": "Event",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorEvent",
+        "type": "object"
+      },
+      "RefusalEvent": {
+        "properties": {
+          "event": {
+            "const": "refusal",
+            "default": "refusal",
+            "title": "Event",
+            "type": "string"
+          },
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "retract": {
+            "title": "Retract",
+            "type": "boolean"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/Suggestion"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "answer",
+          "reason",
+          "retract"
+        ],
+        "title": "RefusalEvent",
+        "type": "object"
+      },
+      "StepEvent": {
+        "properties": {
+          "event": {
+            "const": "step",
+            "default": "step",
+            "title": "Event",
+            "type": "string"
+          },
+          "id": {
+            "enum": [
+              "route",
+              "meta",
+              "invoices",
+              "retrieve",
+              "rerank",
+              "generate",
+              "verify"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "done"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          },
+          "elapsed_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Elapsed S"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "label"
+        ],
+        "title": "StepEvent",
+        "type": "object"
+      },
+      "TokenEvent": {
+        "properties": {
+          "event": {
+            "const": "token",
+            "default": "token",
+            "title": "Event",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "TokenEvent",
+        "type": "object"
+      },
+      "StreamEvent": {
+        "discriminator": {
+          "mapping": {
+            "citations": "#/components/schemas/CitationsEvent",
+            "done": "#/components/schemas/DoneEvent",
+            "error": "#/components/schemas/ErrorEvent",
+            "refusal": "#/components/schemas/RefusalEvent",
+            "step": "#/components/schemas/StepEvent",
+            "token": "#/components/schemas/TokenEvent"
+          },
+          "propertyName": "event"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/StepEvent"
+          },
+          {
+            "$ref": "#/components/schemas/TokenEvent"
+          },
+          {
+            "$ref": "#/components/schemas/CitationsEvent"
+          },
+          {
+            "$ref": "#/components/schemas/RefusalEvent"
+          },
+          {
+            "$ref": "#/components/schemas/DoneEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ErrorEvent"
+          }
+        ]
       }
     }
   }

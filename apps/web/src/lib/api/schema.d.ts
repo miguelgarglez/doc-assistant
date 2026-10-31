@@ -72,6 +72,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ask/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Query Stream */
+        post: operations["query_stream_ask_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sources */
+        get: operations["sources_sources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sources/{source_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Source */
+        delete: operations["delete_source_sources__source_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sources/{source_id}/reindex": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reindex Source */
+        post: operations["reindex_source_sources__source_id__reindex_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sources/{doc_id}/pages/{n}": {
         parameters: {
             query?: never;
@@ -159,6 +227,8 @@ export interface components {
             citations: components["schemas"]["Citation"][];
             /** Reason */
             reason: string;
+            /** Suggestions */
+            suggestions?: components["schemas"]["Suggestion"][];
         };
         /** Body_invoices_upload_invoices_upload_post */
         Body_invoices_upload_invoices_upload_post: {
@@ -325,6 +395,65 @@ export interface components {
             /** Fichero */
             fichero?: string | null;
         };
+        /** Source */
+        Source: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "pdf" | "invoice";
+            /** Name */
+            name: string;
+            /** Title */
+            title?: string | null;
+            /** N Pages */
+            n_pages: number;
+            /** N Chunks */
+            n_chunks: number;
+            /** Sections */
+            sections: components["schemas"]["SourceSection"][];
+            /** Added At */
+            added_at?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "indexed" | "review" | "no_text";
+            /** Status Detail */
+            status_detail?: string | null;
+            /** File */
+            file?: string | null;
+        };
+        /** SourceSection */
+        SourceSection: {
+            /** Section */
+            section: string;
+            /** Heading */
+            heading?: string | null;
+            /** Pages */
+            pages: number[];
+        };
+        /**
+         * Suggestion
+         * @description A real, nearby source shown when the question cannot be answered.
+         */
+        Suggestion: {
+            /** Doc */
+            doc: string;
+            /** Doc Id */
+            doc_id: string;
+            /** Section */
+            section: string;
+            /**
+             * Heading
+             * @default null
+             */
+            heading: string | null;
+            /** Pages */
+            pages: number[];
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -338,6 +467,106 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /** CitationsEvent */
+        CitationsEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event: "citations";
+            /** Citations */
+            citations: components["schemas"]["Citation"][];
+        };
+        /** DoneEvent */
+        DoneEvent: {
+            /** Ok */
+            ok: boolean;
+            /** Answer */
+            answer: string;
+            /** Citations */
+            citations: components["schemas"]["Citation"][];
+            /** Reason */
+            reason: string;
+            /** Suggestions */
+            suggestions?: components["schemas"]["Suggestion"][];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event: "done";
+            /** Timings */
+            timings: {
+                [key: string]: number;
+            };
+        };
+        /** ErrorEvent */
+        ErrorEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event: "error";
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+        };
+        /** RefusalEvent */
+        RefusalEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event: "refusal";
+            /** Answer */
+            answer: string;
+            /** Reason */
+            reason: string;
+            /** Retract */
+            retract: boolean;
+            /** Suggestions */
+            suggestions?: components["schemas"]["Suggestion"][];
+        };
+        /** StepEvent */
+        StepEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event: "step";
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "route" | "meta" | "invoices" | "retrieve" | "rerank" | "generate" | "verify";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "done";
+            /** Label */
+            label: string;
+            /** Data */
+            data?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Elapsed S
+             * @default null
+             */
+            elapsed_s: number | null;
+        };
+        /** TokenEvent */
+        TokenEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event: "token";
+            /** Text */
+            text: string;
+        };
+        StreamEvent: components["schemas"]["StepEvent"] | components["schemas"]["TokenEvent"] | components["schemas"]["CitationsEvent"] | components["schemas"]["RefusalEvent"] | components["schemas"]["DoneEvent"] | components["schemas"]["ErrorEvent"];
     };
     responses: never;
     parameters: never;
@@ -509,6 +738,155 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AskResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    query_stream_ask_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskRequest"];
+            };
+        };
+        responses: {
+            /** @description Server-Sent Events. Each `data:` line is one StreamEvent (the `event` field is sent as the SSE event name). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["StreamEvent"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sources_sources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Source"][];
+                };
+            };
+        };
+    };
+    delete_source_sources__source_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reindex_source_sources__source_id__reindex_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
             /** @description Validation Error */
