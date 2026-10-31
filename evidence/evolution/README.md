@@ -222,3 +222,40 @@ Qué se probó:
 ![v0.9.0 theme-industrial](v0.9.0/theme-industrial.png)
 ![v0.9.0 theme-neutral-mobile](v0.9.0/theme-neutral-mobile.png)
 ![v0.9.0 theme-neutral](v0.9.0/theme-neutral.png)
+
+## v0.10.0 · 2026-10-31
+
+**Chat, fuentes, ajustes y sistema**
+
+Capturas generadas con los fixtures de Playwright en desktop y móvil.
+
+![v0.10.0 ajustes-industrial-mobile](v0.10.0/ajustes-industrial-mobile.png)
+![v0.10.0 ajustes-industrial](v0.10.0/ajustes-industrial.png)
+![v0.10.0 ajustes-neutral-mobile](v0.10.0/ajustes-neutral-mobile.png)
+![v0.10.0 ajustes-neutral](v0.10.0/ajustes-neutral.png)
+![v0.10.0 ask-answer-with-source-mobile](v0.10.0/ask-answer-with-source-mobile.png)
+![v0.10.0 ask-answer-with-source](v0.10.0/ask-answer-with-source.png)
+![v0.10.0 ask-error-mobile](v0.10.0/ask-error-mobile.png)
+![v0.10.0 ask-error](v0.10.0/ask-error.png)
+![v0.10.0 ask-refusal-mobile](v0.10.0/ask-refusal-mobile.png)
+![v0.10.0 ask-refusal](v0.10.0/ask-refusal.png)
+![v0.10.0 design-industrial-mobile](v0.10.0/design-industrial-mobile.png)
+![v0.10.0 design-industrial](v0.10.0/design-industrial.png)
+![v0.10.0 design-neutral-mobile](v0.10.0/design-neutral-mobile.png)
+![v0.10.0 design-neutral](v0.10.0/design-neutral.png)
+![v0.10.0 fuentes-industrial-mobile](v0.10.0/fuentes-industrial-mobile.png)
+![v0.10.0 fuentes-industrial](v0.10.0/fuentes-industrial.png)
+![v0.10.0 fuentes-neutral-mobile](v0.10.0/fuentes-neutral-mobile.png)
+![v0.10.0 fuentes-neutral](v0.10.0/fuentes-neutral.png)
+![v0.10.0 invoice-ok-mobile](v0.10.0/invoice-ok-mobile.png)
+![v0.10.0 invoice-ok](v0.10.0/invoice-ok.png)
+![v0.10.0 invoice-review-mobile](v0.10.0/invoice-review-mobile.png)
+![v0.10.0 invoice-review](v0.10.0/invoice-review.png)
+![v0.10.0 sistema-industrial-mobile](v0.10.0/sistema-industrial-mobile.png)
+![v0.10.0 sistema-industrial](v0.10.0/sistema-industrial.png)
+![v0.10.0 sistema-neutral-mobile](v0.10.0/sistema-neutral-mobile.png)
+![v0.10.0 sistema-neutral](v0.10.0/sistema-neutral.png)
+![v0.10.0 theme-industrial-mobile](v0.10.0/theme-industrial-mobile.png)
+![v0.10.0 theme-industrial](v0.10.0/theme-industrial.png)
+![v0.10.0 theme-neutral-mobile](v0.10.0/theme-neutral-mobile.png)
+![v0.10.0 theme-neutral](v0.10.0/theme-neutral.png)

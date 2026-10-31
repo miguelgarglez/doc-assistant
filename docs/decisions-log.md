@@ -40,3 +40,24 @@
 - Alternativas: instalar el registro AI Elements completo; Sonner + Radix toast; un solo tema hardcodeado.
 - Consecuencias: `@axe-core/playwright` como devDependency para a11y e2e; sin dependencia de streaming LLM en la UI (el contrato sigue siendo POST `/ask`).
 - Confianza: alta.
+
+## ADR-008 Chat con SSE, fuentes y vista de sistema (2026-10-31)
+
+Sustituye la conclusión de ADR-007 sobre el alcance de AI Elements. Se revisaron el catálogo y la tabla de migración de [AI Elements de shadcn](https://ui.shadcn.com/docs/ai-elements), además de los componentes del registro Base. El proyecto usa Base UI; las piezas que dependen de Radix no se instalan sin adaptación.
+
+| Componente o familia | Decisión, impedimento y coste |
+| --- | --- |
+| Conversation | Se conserva la adaptación basada en `use-stick-to-bottom`; coste bajo porque ya estaba integrada. |
+| Message | Copiado el núcleo `Message` y `MessageContent` del registro Base, adaptando `cn` al utilitario local; coste bajo. Se usa para la pregunta. |
+| Response / Markdown / Code Block | La respuesta del servicio es texto; Streamdown y el resaltado añaden dependencias y no hay salida de código garantizada. Coste medio; se conserva texto plano. |
+| Chain of Thought / Trace | Se copia el núcleo de Trace del registro Base para los pasos SSE. La parte plegable del registro requiere Collapsible; se usa `details` nativo para el resumen. Coste bajo. No se presentan los pasos como pensamiento privado. |
+| Reasoning, Task, Tool | El contrato expone pasos del pipeline, no razonamiento, tareas ni llamadas a herramientas. Trace representa esos pasos; incorporar los demás sin datos sería engañoso. Coste bajo si el contrato los incorpora. |
+| Sources / Inline Citation | Los chips y el visor existentes muestran citas verificables y páginas. El patrón upstream usa controles desplegables y Hover Card; adaptar los primitivos es viable, pero no aporta acceso adicional al fragmento. Coste medio; se mantienen chips y visor. |
+| Prompt Input / Attachments | `QuestionBox` conserva teclado, IME, pegado y arrastre. El upstream integra adjuntos, menús y tipos de `ai`; se mantuvo la implementación Base existente. Coste medio de adaptar sin perder compatibilidad. |
+| Suggestion / Actions | Sugerencias y acciones se usan en el chat, adaptadas a los botones Base locales; coste bajo. |
+| Loader / Shimmer | El skeleton existente comunica espera y Trace comunica pasos. Shimmer no añade información; coste bajo de adaptación. |
+| Checkpoint, Confirmation, Context, Model Selector, Plan, Queue, Question | No hay ramas de conversación, permisos de herramientas, selector de modelo ni cola en el contrato. No se incorporan; coste depende de esas capacidades. |
+| Agent, Artifact, Commit, Environment Variables, File Tree, JSX Preview, Package Info, Sandbox, Schema Display, Snippet, Stack Trace, Terminal, Test Results, Web Preview | Son patrones para código o ejecución de agentes que este producto no expone; no se incorporan. |
+| Audio Player, Mic Selector, Persona, Speech Input, Transcription, Voice Selector; Canvas, Connection, Controls, Edge, Node, Panel, Toolbar; Image, Open In Chat | Audio, lienzos de flujo y enlaces a otros chats no forman parte de este flujo; no se incorporan. |
+
+El cliente consume `/ask/stream` y usa `/ask` si no está disponible. Los tokens se etiquetan como provisionales y se sustituyen por el resultado final o un rechazo. Sistema comparte los eventos `step`, puede reproducirlos y consulta una interfaz de salud por pieza; hasta que exista el endpoint indica que no se ha medido. La futura autorización de administrador se aplicará en la entrada de la ruta.

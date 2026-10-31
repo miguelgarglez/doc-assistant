@@ -21,7 +21,7 @@ Temas incluidos:
 - `industrial` (por defecto): grafito, acento azul-señal, rejilla sutil, radios cortos
 - `neutral`: tipografía distinta, radios amplios, sin rejilla (sirve para validar el swap)
 
-El documento HTML lleva `data-theme` y la clase `dark` cuando el modo es oscuro. El selector de tema/modo está en la cabecera y persiste en `localStorage`.
+El documento HTML lleva `data-theme` y la clase `dark` cuando el modo es oscuro. El selector de tema/modo está en Ajustes y persiste en `localStorage`.
 
 ## Cómo crear un tema nuevo
 
@@ -39,3 +39,11 @@ Muestra swatches, tipografía y componentes clave en el tema/modo activos. Úsal
 ## Componentes de chat
 
 Se adoptaron patrones de AI Elements (`conversation`, `suggestion`) reimplementados o adaptados sobre Base UI / dependencias ligeras. No se instaló el paquete `ai` ni `streamdown` (ver ADR-007).
+
+## Navegación y chat v0.10
+
+La navegación da acceso a Chat, Fuentes, Ajustes y Sistema. En pantallas pequeñas se recoge en un menú. El compositor permanece al pie; las preguntas anteriores se conservan durante la sesión. Los tokens SSE son provisionales hasta el evento final y no ofrecen acciones de copia. Si el servicio retira una respuesta, se elimina el texto provisional.
+
+Fuentes reúne los PDF y las imágenes de facturas. El catálogo muestra su estado, páginas y fragmentos; los fragmentos y las páginas se pueden inspeccionar. Sistema muestra las piezas y la traza compartida de la última consulta, con reproducción. Si no hay endpoint de salud por pieza, el estado se muestra como no medido.
+
+Los patrones de AI Elements se detallan en ADR-008. `Message` y `Trace` adaptan código del registro shadcn al sistema de tokens existente; `Conversation`, sugerencias y acciones se mantienen.

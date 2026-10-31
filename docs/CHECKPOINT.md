@@ -68,3 +68,12 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Arreglo del parser de importes: tipo entre paréntesis ("IVA (21%)", "IRPF (-15%)"), base sin tipo y "TOTAL FACTURA". En facturas reales fuera del repo (solo agregado) el estado ok pasó de 0/5 a 5/5.
 - Qué se probó: `mise run check` → OK (60 tests servicio + scripts); e2e → 12 passed; `mise run package --smoke real` → ZIP 5,53 GB, OCR en :8084 desde `models/` del ZIP, factura extraída (14 s), puertos 3000/8000/8081–8084 liberados.
 - Decisión clave y por qué: un solo runtime (llama.cpp) y nada que descargar al evaluar; la licencia de los GGUF no está declarada en su ficha y se cita la MIT del modelo base (duda anotada en NOTICE).
+
+## 15:58 · Sistema de diseño y experiencia de consulta (v0.9.0)
+- Temas industrial y neutral, modo claro y oscuro, atajos, historial, copia, cancelación, cargas y visor. Revisión de accesibilidad aplicada.
+- Probado: `mise run check` correcto y 38 pruebas e2e en tres pasadas.
+
+## v0.10.0 · Chat, fuentes y sistema
+- Chat acumulado con SSE, texto provisional y pasos; navegación separada para Fuentes, Ajustes y Sistema. El catálogo permite revisar páginas y fragmentos.
+- El estado por pieza queda sin medir si el servicio no ofrece el endpoint; la propuesta está en el contrato compartido.
+- Probado: `mise run check` correcto (87 tests del servicio y 14 de scripts); 69 pruebas Playwright en tres pasadas, con axe en chat, fuentes, ajustes y sistema × dos temas × claro/oscuro.

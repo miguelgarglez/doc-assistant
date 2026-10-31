@@ -2,6 +2,13 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
+## v0.10.0 · 2026-10-31
+- Chat acumulado con SSE, pasos de consulta, tokens provisionales y rechazo que retira el texto no verificado.
+- Fuentes reúne documentos y facturas, con páginas, fragmentos y altas. Ajustes concentra tema y modo.
+- Sistema muestra la arquitectura y reproduce la traza; la salud por pieza queda pendiente del endpoint propuesto.
+- Adaptación de patrones AI Elements sobre Base UI y decisión detallada en ADR-008.
+- Validación: `mise run check` correcto (87 tests del servicio y 14 de scripts), 69 pruebas Playwright en tres pasadas; axe sin violaciones serias o críticas en las cuatro rutas, ambos temas y modos.
+
 ## v0.9.0 · 2026-10-31 15:55
 - Sistema de diseño intercambiable: temas `industrial` (default) y `neutral`, modo claro/oscuro, página `/design`, guía en `docs/design-system.md` (ADR-007).
 - Chat: atajos de teclado, historial de preguntas en sesión, cancelar con AbortController, copiar respuesta/citas/Markdown, pegar/arrastrar PDF e imagen, regenerar, rechazo con diseño propio, auto-scroll que respeta scroll del usuario, progreso de subida.
