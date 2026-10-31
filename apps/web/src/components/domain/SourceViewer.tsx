@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import { ChevronLeftIcon, ChevronRightIcon, ZoomInIcon, ZoomOutIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -35,15 +35,8 @@ export function SourceViewer({
   onPrevCitation,
   onNextCitation,
 }: SourceViewerProps) {
-  const regionRef = useRef<HTMLDivElement>(null)
   const [zoomedChunkId, setZoomedChunkId] = useState<string | null>(null)
   const zoomed = citation !== null && zoomedChunkId === citation.chunk_id
-
-  useEffect(() => {
-    if (citation && regionRef.current) {
-      regionRef.current.focus()
-    }
-  }, [citation])
 
   if (!citation) {
     return (
@@ -110,8 +103,7 @@ export function SourceViewer({
       </CardHeader>
       <CardContent>
         <div
-          ref={regionRef}
-          tabIndex={-1}
+          aria-live="polite"
           role="region"
           aria-label={`Fuente ${citation.doc}${page !== null ? `, página ${page}` : ""}`}
           className="flex flex-col gap-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"

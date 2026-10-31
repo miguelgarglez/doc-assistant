@@ -115,7 +115,7 @@ test.describe("ask flow screenshots", () => {
         await page.getByRole("button", { name: "Consultar" }).click()
 
         await expect(page.getByTestId("refusal-notice")).toBeVisible()
-        await expect(page.getByText(askRefusal.reason)).toBeVisible()
+        await expect(page.getByText(askRefusal.answer)).toBeVisible()
         await expect(
           page.getByText(
             "No hay evidencia en los documentos indexados; no se inventa una respuesta."
@@ -146,4 +146,14 @@ test.describe("ask flow screenshots", () => {
       })
     })
   }
+})
+
+test("fallo de red: estado de error y formulario usable", async ({ page }) => {
+  await page.route("**/api/ask", (route) => route.abort("connectionrefused"))
+  await page.goto("/")
+  await page.getByLabel("Pregunta").fill(DEMO_QUESTION)
+  await page.getByRole("button", { name: "Consultar" }).click()
+  await expect(page.getByTestId("ask-error-notice")).toBeVisible()
+  await expect(page.getByText("Error (network_error)")).toBeVisible()
+  await expect(page.getByRole("button", { name: "Consultar" })).toBeEnabled()
 })

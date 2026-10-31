@@ -34,9 +34,9 @@ export const askAnswerWithCitation = {
 
 export const askRefusal = {
   ok: false,
-  answer: "",
+  answer: "No dispongo de esa información en los documentos",
   citations: [],
-  reason: "No hay pasajes indexados que respondan a la consulta.",
+  reason: "llm_unanswerable",
 } as const satisfies AskResponse
 
 export const askError = {

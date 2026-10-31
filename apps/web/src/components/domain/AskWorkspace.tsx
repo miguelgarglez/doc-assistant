@@ -79,7 +79,7 @@ export function AskWorkspace() {
       ) : null}
 
       {status.kind === "success" && !status.data.ok ? (
-        <RefusalNotice reason={status.data.reason} />
+        <RefusalNotice message={status.data.answer} reason={status.data.reason} />
       ) : null}
 
       {status.kind === "success" && status.data.ok ? (
