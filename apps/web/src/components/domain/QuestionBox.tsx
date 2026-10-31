@@ -37,15 +37,16 @@ export function QuestionBox({ disabled = false, onSubmit }: QuestionBoxProps) {
           name="question"
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
-          placeholder="¿Qué quieres consultar sobre la normativa o tus documentos?"
-          rows={4}
+          placeholder="¿Cuál es la carga útil máxima del GR-50?"
+          rows={3}
           disabled={disabled}
           maxLength={1000}
           required
           aria-describedby={`${id}-hint`}
         />
-        <p id={`${id}-hint`} className="text-xs text-muted-foreground">
-          La respuesta citará fragmentos verificados o explicará el rechazo.
+        <p id={`${id}-hint`} className="text-xs leading-relaxed text-muted-foreground">
+          La respuesta citará el documento, la sección y la página, o explicará
+          el rechazo si no hay evidencia.
         </p>
       </div>
       <div>
