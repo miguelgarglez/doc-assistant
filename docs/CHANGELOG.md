@@ -2,10 +2,12 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
-## v0.9.0 · pendiente de tag
+## v0.9.0 · 2026-10-31 15:55
 - Sistema de diseño intercambiable: temas `industrial` (default) y `neutral`, modo claro/oscuro, página `/design`, guía en `docs/design-system.md` (ADR-007).
 - Chat: atajos de teclado, historial de preguntas en sesión, cancelar con AbortController, copiar respuesta/citas/Markdown, pegar/arrastrar PDF e imagen, regenerar, rechazo con diseño propio, auto-scroll que respeta scroll del usuario, progreso de subida.
 - Calidad: e2e de comportamiento + axe (0 violaciones serias/críticas en home y `/design`, ambos temas/modos); capturas theme/design desktop y móvil.
+- Revisión independiente (13 hallazgos: foco del diálogo, IME, historial ↑, subidas concurrentes, timeout, persistencia, tema antes del pintado, reduced-motion, portapapeles) aplicada.
+- Probado: check OK, e2e 38 passed (3 pasadas seguidas), axe 0 serias/críticas en 8 combinaciones.
 
 ## v0.8.0 · 2026-10-31 15:00
 - OCR de facturas dentro del ZIP: GLM-OCR GGUF en llama-server :8084 por defecto (setup lo descarga con SHA256); Ollama como alternativa documentada. NOTICE con la licencia y la duda.
