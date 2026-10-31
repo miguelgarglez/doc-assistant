@@ -22,7 +22,9 @@ class EndpointConfig(BaseModel):
 
 class OcrConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    base_url: str = Field(default="http://127.0.0.1:11434", pattern=r"^https?://")
+    # "llama": GLM-OCR GGUF en llama-server (por defecto, va en el ZIP); "ollama": fallback
+    runtime: Literal["llama", "ollama"] = "llama"
+    base_url: str = Field(default="http://127.0.0.1:8084", pattern=r"^https?://")
     model: str = Field(default="glm-ocr", min_length=1)
     timeout_s: float = Field(default=300, gt=0)
 

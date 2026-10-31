@@ -18,7 +18,10 @@ reranker:
   model: rerank-local
   timeout_s: 90
 ocr:
-  base_url: http://127.0.0.1:11434
+  # llama: GLM-OCR GGUF en llama-server (va en el ZIP). Alternativa: runtime ollama
+  # (o DOC_ASSISTANT_OCR_RUNTIME=ollama) con 'ollama pull glm-ocr' en :11434.
+  runtime: llama
+  base_url: http://127.0.0.1:8084
   model: glm-ocr
   timeout_s: 300
 top_k: 5

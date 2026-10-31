@@ -22,7 +22,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from _common import IS_WIN, ROOT, llama_exe, models_dir, ocr_problem
+from _common import IS_WIN, OCR_FILES, ROOT, llama_exe, models_dir, ocr_problem, ocr_runtime
 
 GRACE_S = 5.0
 LOOPBACK = "127.0.0.1"
@@ -115,9 +115,12 @@ def plan(dev: bool, ai_port: int, web_port: int, with_llm: bool) -> list[Proc]:
         if with_llm
         else []
     )
+    fake = os.environ.get("DOC_ASSISTANT_FAKE_LLAMA") == "1"
     ollama = shutil.which("ollama")
-    ocr = (
-        [
+    ocr: list[Proc] = []
+    if with_llm and not fake and ocr_runtime() == "ollama" and ollama:
+        # alternativa documentada: Ollama del sistema (se reutiliza si ya corre)
+        ocr = [
             Proc(
                 "ocr",
                 [ollama, "serve"],
@@ -126,9 +129,27 @@ def plan(dev: bool, ai_port: int, web_port: int, with_llm: bool) -> list[Proc]:
                 reuse_if_running=True,
             )
         ]
-        if with_llm and ollama and os.environ.get("DOC_ASSISTANT_FAKE_LLAMA") != "1"
-        else []
-    )
+    elif with_llm and not fake and ocr_runtime() == "llama":
+        # por defecto: GLM-OCR GGUF del ZIP. Ajustes medidos (16 GB junto al LLM, sin OOM):
+        # contexto 8192, flash-attn y la imagen limitada a 1600 tokens.
+        mmproj = models_dir(os.environ.get("_DOC_ASSISTANT_CLI_MODELS_DIR"))[0] / OCR_FILES[1]
+        ocr = [
+            llama(
+                "ocr",
+                8084,
+                OCR_FILES[0],
+                "--mmproj",
+                str(mmproj),
+                "-c",
+                "8192",
+                "--flash-attn",
+                "on",
+                "--image-max-tokens",
+                "1600",
+                "--temp",
+                "0",
+            )
+        ]
     return [
         *models,
         *ocr,
@@ -331,7 +352,7 @@ def main() -> int:
             wait_healthy(p)
             print(f"[dev] {p.name} OK", flush=True)
         if with_ocr:
-            why = ocr_problem(shutil.which("ollama"))
+            why = ocr_problem(ollama_path=shutil.which("ollama"))
             if why:
                 print(f"[dev] AVISO: Facturas NO disponible: {why}", flush=True)
         print(

@@ -29,6 +29,7 @@ from _common import (
     llama_platform,
     models_dir,
     ocr_problem,
+    ocr_runtime,
     write_env_local,
 )
 
@@ -224,11 +225,11 @@ def main() -> int:
         install_models(d, a.verify, a.yes)
         write_env_local(MODELS_DIR_KEY, str(d))
         print(f"[setup] guardado {MODELS_DIR_KEY}={d} en .env.local (lo usará 'mise run start')")
-    why = ocr_problem(shutil.which("ollama"))
+    why = ocr_problem(models=d, ollama_path=shutil.which("ollama"))
     if why:
         print(f"[setup] AVISO: Facturas no funcionará hasta que {why}")
     else:
-        print("[setup] OCR de facturas listo (Ollama + glm-ocr)")
+        print(f"[setup] OCR de facturas listo (runtime {ocr_runtime()})")
     print("[setup] listo. Arranca con: mise run start")
     return 0
 

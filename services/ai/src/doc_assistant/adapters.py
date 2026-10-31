@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import math
+import os
 import struct
 from typing import Any, Protocol, runtime_checkable
 
@@ -134,6 +135,46 @@ class OllamaOCR:
         return content
 
 
+class LlamaOCR:
+    """Adaptador GLM-OCR GGUF servido por llama-server (/v1/chat/completions con imagen)."""
+
+    def __init__(
+        self,
+        base_url: str = "http://127.0.0.1:8084",
+        model: str = "glm-ocr",
+        timeout_s: float = 300,
+    ) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.model = model
+        self.timeout_s = timeout_s
+
+    def extract(self, image: bytes) -> str:
+        url = f"{self.base_url}/v1/chat/completions"
+        b64 = base64.b64encode(image).decode()
+        mime = "image/jpeg" if image[:3] == b"\xff\xd8\xff" else "image/png"
+        payload = {
+            "model": self.model,
+            "temperature": 0,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
+                        {"type": "text", "text": "Text Recognition:"},
+                    ],
+                }
+            ],
+        }
+        data = _request_json("POST", url, timeout=self.timeout_s, json=payload)
+        try:
+            content = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as e:
+            raise AdapterError(f"Formato inesperado de OCR en {url}") from e
+        if not isinstance(content, str):
+            raise AdapterError(f"Contenido OCR no es texto desde {url}")
+        return content
+
+
 def _request_json(method: str, url: str, *, timeout: float, **kwargs: Any) -> Any:
     try:
         r = requests.request(method, url, timeout=timeout, **kwargs)
@@ -252,7 +293,13 @@ class HttpLLM:
 def build_ocr(cfg: AppConfig, *, fake: bool = False, text: str = "") -> OcrPort:
     if fake:
         return FakeOCR(text=text)
-    return OllamaOCR(cfg.ocr.base_url, cfg.ocr.model, cfg.ocr.timeout_s)
+    runtime = os.environ.get("DOC_ASSISTANT_OCR_RUNTIME", cfg.ocr.runtime)
+    if runtime == "ollama":
+        url = cfg.ocr.base_url
+        if url.rstrip("/").endswith(":8084"):  # puerto del runtime llama → el de Ollama
+            url = "http://127.0.0.1:11434"
+        return OllamaOCR(url, cfg.ocr.model, cfg.ocr.timeout_s)
+    return LlamaOCR(cfg.ocr.base_url, cfg.ocr.model, cfg.ocr.timeout_s)
 
 
 def build_adapters(cfg: AppConfig, *, fake: bool = False) -> tuple[Embedder, Reranker, LLM]:

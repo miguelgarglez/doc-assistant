@@ -72,8 +72,29 @@ OCR_MODEL = "glm-ocr"
 OCR_HOWTO = "instala Ollama (https://ollama.com) y ejecuta 'ollama pull glm-ocr'"
 
 
-def ocr_problem(ollama_path: str | None, url: str = OCR_URL, timeout: float = 2) -> str | None:
+OCR_FILES = ("GLM-OCR-Q8_0.gguf", "mmproj-GLM-OCR-Q8_0.gguf")
+
+
+def ocr_runtime() -> str:
+    """'llama' (por defecto: GLM-OCR GGUF del ZIP) u 'ollama' (alternativa documentada)."""
+    return os.environ.get("DOC_ASSISTANT_OCR_RUNTIME", "llama")
+
+
+def ocr_problem(
+    runtime: str | None = None, models: Path | None = None, ollama_path: str | None = None
+) -> str | None:
     """None si el OCR de facturas está listo; si no, el motivo en una frase (#13)."""
+    if (runtime or ocr_runtime()) == "ollama":
+        return ollama_problem(ollama_path)
+    d = models or models_dir(None)[0]
+    missing = [f for f in OCR_FILES if not (d / f).exists()]
+    if missing:
+        return f"faltan {', '.join(missing)} en {d}; ejecuta 'mise run setup'"
+    return None
+
+
+def ollama_problem(ollama_path: str | None, url: str = OCR_URL, timeout: float = 2) -> str | None:
+    """Comprobación del runtime alternativo Ollama + glm-ocr."""
     import urllib.request
 
     if not ollama_path:
