@@ -61,3 +61,8 @@ Sistema pinta cada pieza con estado en texto y color, latencia y última consult
 - **Añadir fuentes.** Botón primario en la barra lateral, en el estado vacío del chat y en Fuentes; abre un `Dialog` con la zona de suelta resaltada al arrastrar. Al elegir o soltar archivos el diálogo se cierra.
 - **Avisos.** Sonner (shadcn, sobre el `ThemeProvider` propio, sin `next-themes`) con un único aviso persistente de subidas: una fila por archivo con su estado real, reintento en los errores recuperables, «Ver en Fuentes» y cierre cuando todo ha terminado. Se oculta solo a los 12 s si todo fue bien. Los demás avisos puntuales usan `toast()` de Sonner (el antiguo `ToastProvider` se retiró).
 - `Kbd` (`components/ui/kbd.tsx`) para las pistas de teclado.
+
+## Aclaración y vista previa v0.13.1
+
+- **Tarjeta de aclaración** (`components/chat/clarification.tsx`). Pregunta corta como título y las candidatas como `Item` de shadcn renderizado como botón: número y fecha arriba, «De X para Y» debajo y el total a la derecha, solo los datos que existen. El nombre accesible de cada botón dice factura, partes, fecha y total. Tab llega a cada botón; ↑/↓, Inicio y Fin mueven el foco sin animación. Hover solo con `@media (hover: hover)` y `active:scale-[0.985]`. Sin iconos decorativos. Con más de 5 candidatas lo dice y pide acotar.
+- **Vista previa de cita.** El panel se centra en el marcador, deja 12 px a los bordes de la ventana y se oculta si el marcador sale del hilo. Nace desde el marcador (`--transform-origin`).

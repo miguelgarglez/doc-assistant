@@ -2,6 +2,12 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
+## v0.13.1 · 2026-10-31
+- Aclaración de facturas con tarjeta propia (ADR-013). Si una pregunta no dice de qué factura habla, el chat enseña «¿De qué factura?» con las candidatas como botones (número, fecha, partes y total, solo si existen). Un clic reenvía la pregunta ya desambiguada. Se mueve con teclado. Antes salía «Sin evidencia suficiente».
+- Contrato: nuevo evento SSE `clarification` y `done.clarification` (hasta 5 candidatas con `question`). Una aclaración deja de ser un rechazo. OpenAPI y cliente regenerados.
+- Vista previa de cita anclada al marcador: centrada, con margen en los bordes y oculta si el marcador sale del hilo.
+- Probado: `mise run check` OK con 225 tests del servicio (7 nuevos). Playwright 139/139 en tres pasadas con axe sin violaciones serias ni críticas. Antes y después contrastados con el kit real, en local.
+
 ## v0.13.0 · 2026-10-31
 - Facturas en lenguaje natural rehechas (ADR-012):
   - Plan validado por esquema (valor, lista, contar, sumar).

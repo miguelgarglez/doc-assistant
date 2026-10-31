@@ -192,6 +192,8 @@ Volver a v0.12 es inocuo, porque el código anterior ignora las tablas nuevas.
 
 El texto de la pregunta de aclaración va en `answer` y las facturas candidatas en `suggestions` (`doc` = número, `section` = "factura").
 
+*Actualizado en v0.13.1 (ADR-013):* `aclaracion`, `factura_ambigua` y `parte_ambigua` ya no viajan como rechazo. Se emiten como evento `clarification` con las candidatas estructuradas, y `suggestions` queda vacío. Los demás motivos siguen siendo rechazos.
+
 **Evaluación** (LLM real de 4B, puertos aislados; las preguntas y las facturas no se publican):
 
 | Batería | Antes (v0.11) | Después |
@@ -215,3 +217,21 @@ Latencias:
 - Una fecha que ninguna regla reconoce queda fuera de los filtros por fecha.
 
 - Confianza: alta en que no inventa (todas las cifras salen de filas seleccionadas por código). Media en la cobertura de formulaciones, porque solo se ha medido con baterías propias.
+
+
+## ADR-013 Aclaración de facturas como evento propio y vista previa de cita anclada (2026-10-31)
+
+Con v0.13.0, una pregunta como «¿cuál es el importe total de la factura?» devolvía un rechazo (`ok=false`) con las candidatas en `suggestions`. La web lo pintaba como «Sin evidencia suficiente»: una respuesta que decía lo contrario de lo que pasaba. El servicio sí tenía evidencia. Le faltaba un dato que solo da el usuario. Además, `suggestions` es una lista de fuentes cercanas (`doc`, `section`) y no puede llevar emisor, fecha, total ni la pregunta que se reenviará, así que la web tenía que inventar el texto del botón o parsear `answer`.
+
+**Decisión.** La ambigüedad deja de ser un rechazo y pasa a ser un resultado con tipo propio.
+- *Servicio* (`invoice_query.py`, `invoices.py`, `api.py`): `_candidates_answer` devuelve además `clarification` con `prompt`, `detail`, `total` y hasta 5 `candidates`. Cada candidata lleva `doc`, `doc_id`, `emisor`, `cliente`, `fecha`, `total` (nulos si la factura no los tiene) y `question`, la pregunta original desambiguada. Esa pregunta la construye el servicio con una tabla cerrada de frases por campo (`FIELD_PHRASE`, comprobada contra `FIELDS`): «¿Cuál es el importe total de la factura F-2026-001?». Solo se reformula si la intención es de valor y con un máximo de 3 campos; en el resto de intenciones se pregunta «¿Qué datos tiene la factura X?». El texto plano de `answer` se conserva como alternativa.
+- *Contrato* (`docs/streaming.md`, sección 4b): evento SSE `clarification` en lugar de `refusal`, y `done.clarification` con la misma estructura. `ok` sigue en `false` y `reason` conserva su valor. `done` sigue siendo la verdad final. Un cliente que no conozca el evento sigue viendo el rechazo en `done`, sin pérdida de seguridad. `suggestions` queda vacío en una aclaración.
+- *Web*: `ChunkMapper` emite `data-clarification`; `viewOfAssistant` da prioridad a la aclaración sobre el rechazo; `ClarificationCard` (`Item` de shadcn como botón) lista las candidatas con el número, la fecha, las partes y el total solo si existen. Un clic reenvía `candidate.question` por el mismo camino que cualquier pregunta. Con teclado: Tab llega a cada botón, ↑/↓, Inicio y Fin mueven el foco sin animación, Intro o Espacio eligen. Si hay más de 5, la tarjeta lo dice y pide el número o la fecha. No hay icono decorativo ni línea «motivo:».
+
+**Qué no se hizo.** No se guarda la elección entre turnos (la pregunta desambiguada ya contiene el número). No se amplió `MAX_CANDIDATES`: con más de 5 candidatas conviene que el usuario acote en vez de recorrer una lista larga.
+
+**Limitación conocida.** En una pregunta de lista, conteo o suma con una persona ambigua, las candidatas son facturas y la pregunta de seguimiento es «¿Qué datos tiene la factura X?». La pregunta original no se puede reescribir con una factura sin cambiar su sentido. Resolverlo bien exigiría candidatas de persona con su propia pregunta.
+
+**Vista previa de cita (HoverCard).** El panel salía desplazado respecto al marcador: el `Positioner` heredaba un `alignOffset` y una colisión sin margen, y al borde de la ventana o con el hilo desplazado quedaba flotando sin ancla. Ahora el panel se centra en el marcador (`align="center"`, `alignOffset={0}`, `sideOffset={6}`), respeta 12 px de margen con la ventana (`collisionPadding`, ya pasado hasta el `Positioner`) y se oculta cuando el marcador sale del hilo (`data-anchor-hidden`). El origen de la transformación sigue a `--transform-origin`. Los tests midieron el fallo antes del arreglo (centrado a 3,83 px; panel flotando con el hilo desplazado) y pasan después. Queda un detalle visible: en pantallas bajas el panel puede tapar el compositor porque la colisión se calcula contra la ventana y no contra el hilo.
+
+**Probado.** 225 tests del servicio (7 nuevos), 139 e2e en tres pasadas (21 nuevos, con axe sobre la aclaración en cuatro temas y modos), `mise run check` correcto. Capturas con el kit real, antes y después, solo en local; capturas sintéticas en `evidence/screenshots`.
