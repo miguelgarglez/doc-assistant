@@ -209,3 +209,42 @@ def test_api_invoice_upload_and_ask(config_path: Path, monkeypatch: pytest.Monke
     assert result["citations"][0]["doc"] == "A120"
     assert result["citations"][0]["section"] == "importe_total"
     assert result["citations"][0]["fragment"]
+
+
+# Formato de pie de factura frecuente: base sin tipo, IVA con el tipo entre paréntesis,
+# retención con tipo negativo y "TOTAL A PAGAR"/"TOTAL FACTURA". Importes inventados.
+PIE_PARENTESIS = """Descripción Cant. Precio IVA Importe
+Consultoría 2 500,00 € 21% 1.000,00 €
+Base imponible 1.000,00 €
+IVA (21%) 210,00 €
+Retención IRPF (-15%) -150,00 €
+TOTAL A PAGAR 1.060,00 €
+"""
+
+PIE_DOS_TIPOS = """Base imponible (21%) 1.000,00 €
+IVA (21%) 210,00 €
+Base imponible (10%) 200,00 €
+IVA (10%) 20,00 €
+TOTAL FACTURA 1.430,00 €
+Recargo de equivalencia no aplicable.
+"""
+
+
+def test_amounts_with_parenthesised_rates_and_withholding() -> None:
+    amounts, _, _ = extract_amounts(PIE_PARENTESIS)
+    assert amounts["subtotal"] == "1000.00"
+    assert amounts["vat_total"] == "210.00"
+    assert amounts["irpf_rate"] == "15"
+    assert amounts["irpf_amount"] == "150.00"
+    assert amounts["total"] == "1060.00"
+    assert check_gates(amounts) == ("ok", None)
+
+
+def test_amounts_with_two_rates_and_total_factura() -> None:
+    amounts, _, flags = extract_amounts(PIE_DOS_TIPOS)
+    assert amounts["subtotal"] == "1200.00" and flags["base_imponible_total"] == "derivado"
+    assert amounts["vat_total"] == "230.00"
+    assert [r["rate"] for r in amounts["vat_breakdown"]] == ["21", "10"]
+    assert amounts["re_total"] is None
+    assert amounts["total"] == "1430.00"
+    assert check_gates(amounts) == ("ok", None)

@@ -10,6 +10,8 @@ from doc_assistant.adapters import LLM, OcrPort
 
 # Importes en formato español (exigen decimales con coma; evita capturar el "15" de "IRPF 15%").
 NUM = r"(-?\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})"
+# Tipo con o sin paréntesis y signo: "21%", "(21%)", "(-15%)".
+RATE = r"\(?\s*-?(\d+(?:,\d+)?)\s*%\s*\)?"
 
 TEXT_FIELDS = (
     "invoice_number",
@@ -88,19 +90,19 @@ def extract_amounts(ocr: str) -> tuple[dict[str, Any], dict[str, str | None], di
             return None, None
         return parse_es_decimal(match.group(1)), match.group(0).strip()
 
-    def all_matches(pat: str) -> list[tuple[Decimal, str]]:
+    def all_matches(pat: str, group: int = 1) -> list[tuple[Decimal, str]]:
         out: list[tuple[Decimal, str]] = []
         for match in re.finditer(pat, ocr, flags=re.IGNORECASE | re.MULTILINE):
-            value = parse_es_decimal(match.group(1))
+            value = parse_es_decimal(match.group(group))
             if value is not None:
                 out.append((value, match.group(0).strip()))
         return out
 
-    bases = all_matches(rf"^Base(?: imponible)?(?: IVA)?\s+\d+(?:,\d+)?\s*%\s+{NUM}")
-    cuotas = all_matches(rf"^IVA\s+\d+(?:,\d+)?\s*%\s+{NUM}")
+    bases = all_matches(rf"^Base(?: imponible)?(?: IVA)?\s+{RATE}\s+{NUM}", 2)
+    cuotas = all_matches(rf"^IVA\s+{RATE}\s+{NUM}", 2)
     breakdown: list[dict[str, str]] = []
     for match in re.finditer(
-        rf"^Base(?: imponible)?(?: IVA)?\s+(\d+(?:,\d+)?)\s*%\s+{NUM}",
+        rf"^Base(?: imponible)?(?: IVA)?\s+{RATE}\s+{NUM}",
         ocr,
         flags=re.IGNORECASE | re.MULTILINE,
     ):
@@ -110,7 +112,7 @@ def extract_amounts(ocr: str) -> tuple[dict[str, Any], dict[str, str | None], di
             continue
         rate_pat = re.escape(match.group(1))
         cuota_match = re.search(
-            rf"^IVA\s+{rate_pat}\s*%\s+{NUM}",
+            rf"^IVA\s+\(?\s*{rate_pat}\s*%\s*\)?\s+{NUM}",
             ocr,
             flags=re.IGNORECASE | re.MULTILINE,
         )
@@ -124,6 +126,8 @@ def extract_amounts(ocr: str) -> tuple[dict[str, Any], dict[str, str | None], di
         )
 
     sub, sub_ev = first(rf"^Subtotal\s+{NUM}")
+    if sub is None:  # "Base imponible 1.000,00 €" sin tipo: es el subtotal
+        sub, sub_ev = first(rf"^Base(?: imponible)?\s+{NUM}")
     if sub is None and bases:
         sub = sum((b for b, _ in bases), Decimal(0))
         flags["base_imponible_total"] = "derivado"
@@ -140,10 +144,12 @@ def extract_amounts(ocr: str) -> tuple[dict[str, Any], dict[str, str | None], di
     recs = all_matches(rf"^Recargo[^\n]*?\s{NUM}\s*€?$")
     irpfs = all_matches(rf"^(?:Retención\s+)?IRPF[^\n]*?\s{NUM}")
     tot, tot_ev = None, None
-    totals = all_matches(rf"^(?:TOTAL|Importe total|Total a pagar)\s+{NUM}")
+    totals = all_matches(rf"^(?:TOTAL(?: FACTURA)?|Importe total|Total a pagar)\s+{NUM}")
     if totals:
         tot, tot_ev = totals[-1]
-    irate_match = re.search(r"^IRPF\s+(\d+(?:,\d+)?)\s*%", ocr, flags=re.MULTILINE)
+    irate_match = re.search(
+        rf"^(?:Retención\s+)?IRPF\s+{RATE}", ocr, flags=re.IGNORECASE | re.MULTILINE
+    )
     irpf_rate = irate_match.group(1).replace(",", ".") if irate_match else None
 
     amounts = {
