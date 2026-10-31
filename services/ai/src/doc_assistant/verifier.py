@@ -280,3 +280,22 @@ def verify(
             details["unsupported_quantity"] = {"value": str(value), "unit": unit}
             return reject(f"unsupported quantity: {value} {unit}".rstrip())
     return Result(True, "verified", details)
+
+
+def quantities_supported(text: str, chunks: list[str]) -> bool:
+    """True when every quantity in `text` also appears in one of `chunks`.
+
+    Same rule as `verify` for answers: a bare number matches a value printed with any
+    unit, a number with a unit must match that unit exactly.
+    """
+    try:
+        required = _quantities(_normalize(text, lowercase=False))
+        support: set[tuple[Decimal, str]] = set()
+        for chunk in chunks:
+            support.update(_quantities(_safe_support(_normalize(chunk, lowercase=False))))
+    except InvalidOperation:
+        return False
+    return all(
+        (value, unit) in support or (not unit and any(v == value for v, _ in support))
+        for value, unit in required
+    )

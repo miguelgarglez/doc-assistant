@@ -43,6 +43,9 @@ class AppConfig(BaseModel):
     upload_pdf_max_pages: int = Field(default=200, gt=0)
     top_k: int = Field(default=5, gt=0)
     answer_mode: Literal["decide_first", "evidence_first"] = "decide_first"
+    # How inline citations are placed: "model" asks the LLM for segments and validates them,
+    # "rules" assigns them from lexical overlap, "off" leaves citations after the answer.
+    inline_citations: Literal["model", "rules", "off"] = "rules"
     path: Path = Path("config.yaml")
 
 

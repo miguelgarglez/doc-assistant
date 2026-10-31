@@ -13,6 +13,12 @@ import re
 import unicodedata
 from typing import Any
 
+from doc_assistant.answer_markup import (
+    AnswerBuilder,
+    md_escape,
+    section_label,
+    split_heading,
+)
 from doc_assistant.config import AppConfig
 from doc_assistant.store import ChunkStore
 
@@ -71,10 +77,10 @@ def classify(question: str, sources: list[dict[str, Any]]) -> tuple[str, list[di
     return "rag", []
 
 
-def _citation(chunk: dict[str, Any]) -> dict[str, Any]:
+def _citation(chunk: dict[str, Any], quote: str | None = None) -> dict[str, Any]:
     return {
         "chunk_id": chunk["chunk_id"],
-        "quote": chunk["heading"],
+        "quote": quote or chunk["heading"],
         "doc": chunk["display_doc"],
         "doc_id": chunk["doc"],
         "section": chunk["section"],
@@ -100,126 +106,227 @@ def _scope_sentence(chunks: list[dict[str, Any]]) -> tuple[dict[str, Any], str] 
     return None
 
 
-def _section_chunks(cfg: AppConfig, doc_id: str) -> list[dict[str, Any]]:
-    store = ChunkStore(cfg.db, cfg.embeddings.dim or 8)
-    try:
-        rows = store.db.execute("SELECT * FROM chunks WHERE doc = ?", (doc_id,)).fetchall()
-        chunks = [store._row(r) for r in rows]
-    finally:
-        store.db.close()
+def _all_chunks(cfg: AppConfig) -> dict[str, list[dict[str, Any]]]:
+    """Chunks with a verbatim heading, per document, in section order."""
     from doc_assistant.sources import _section_key
 
-    chunks = [c for c in chunks if c.get("heading") and c["heading"] in c["text"]]
-    return sorted(chunks, key=lambda c: _section_key(c["section"]))
+    store = ChunkStore(cfg.db, cfg.embeddings.dim or 8)
+    try:
+        rows = [store._row(r) for r in store.db.execute("SELECT * FROM chunks")]
+    finally:
+        store.db.close()
+    by_doc: dict[str, list[dict[str, Any]]] = {}
+    for c in rows:
+        if c.get("heading") and c["heading"] in c["text"]:
+            by_doc.setdefault(c["doc"], []).append(c)
+    for chunks in by_doc.values():
+        chunks.sort(key=lambda c: _section_key(c["section"]))
+    return by_doc
+
+
+def _count(n: int, one: str, many: str) -> str:
+    return f"{n} {one if n == 1 else many}"
 
 
 def _pages(n: int) -> str:
-    return "1 página" if n == 1 else f"{n} páginas"
+    return _count(n, "página", "páginas")
 
 
-def _doc_line(s: dict[str, Any]) -> str:
-    title = f" — {s['title']}" if s["title"] else ""
-    return f"- **{s['name']}**{title} ({_pages(s['n_pages'])}, {len(s['sections'])} secciones)"
+def _doc_cite(s: dict[str, Any], chunks: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """One citation that stands for the whole document: its title on the first page."""
+    if not chunks:
+        return None
+    first = chunks[0]
+    title = s["title"]
+    return _citation(first, title if title and title in first["text"] else first["heading"])
 
 
-def _invoice_line(invoices: list[dict[str, Any]]) -> str:
-    review = sum(1 for s in invoices if s["status"] == "review")
-    names = ", ".join(s["name"] for s in invoices)
-    extra = f"; {review} marcadas para revisar" if review else ""
-    return f"- {len(invoices)} facturas ({names}{extra})"
+def _doc_text(s: dict[str, Any]) -> str:
+    title = f": {md_escape(s['title'])}" if s["title"] else ""
+    return f"**{md_escape(s['name'])}**{title}"
+
+
+def _doc_item(s: dict[str, Any]) -> str:
+    n = len(s["sections"])
+    return f"{_doc_text(s)}. {_pages(s['n_pages'])} y {_count(n, 'apartado', 'apartados')}."
+
+
+_FIELD = re.compile(r"(\w+): ([^;]+)")
+
+
+def _invoice_item(s: dict[str, Any], header: dict[str, Any] | None) -> str:
+    fields = dict(_FIELD.findall((header or {}).get("body") or ""))
+    parts = [fields.get("emisor"), fields.get("fecha_emision")]
+    if fields.get("importe_total"):
+        parts.append(f"total {fields['importe_total']}")
+    detail = ", ".join(md_escape(p.strip()) for p in parts if p)
+    review = " (marcada para revisar)" if s["status"] == "review" else ""
+    return f"**{md_escape(s['name'])}**" + (f": {detail}" if detail else "") + review
+
+
+def inventory_scope(question: str) -> str:
+    """Which sources the question asks about: "pdf", "invoice" or "all"."""
+    q = normalize(question)
+    pdf = re.search(r"\b(?:documentos|manuales|pdfs?)\b", q)
+    invoice = re.search(r"\bfacturas?\b", q)
+    if invoice and not pdf:
+        return "invoice"
+    if pdf and not invoice:
+        return "pdf"
+    return "all"
+
+
+def _empty() -> dict[str, Any]:
+    return _result(
+        "meta:inventory",
+        "Todavía no hay fuentes indexadas. Sube PDFs técnicos o imágenes de facturas "
+        "en Fuentes y podré responder sobre ellos citando documento, sección y página.",
+        [],
+        [],
+    )
 
 
 def answer_meta(
-    cfg: AppConfig, intent: str, docs: list[dict[str, Any]], sources: list[dict[str, Any]]
+    cfg: AppConfig,
+    intent: str,
+    docs: list[dict[str, Any]],
+    sources: list[dict[str, Any]],
+    question: str = "",
 ) -> dict[str, Any]:
     pdfs = [s for s in sources if s["kind"] == "pdf" and s["n_chunks"]]
     invoices = [s for s in sources if s["kind"] == "invoice"]
-    citations: list[dict[str, Any]] = []
-    lines: list[str] = []
+    chunks = _all_chunks(cfg)
+    out = AnswerBuilder()
 
     if intent == "document":
         for s in docs:
-            chunks = _section_chunks(cfg, s["id"])
-            lines.append(f"**{s['name']}**" + (f" — {s['title']}" if s["title"] else ""))
-            scope = _scope_sentence(chunks)
+            doc_chunks = chunks.get(s["id"], [])
+            out.paragraph(_doc_text(s) + ".", [c for c in [_doc_cite(s, doc_chunks)] if c])
+            scope = _scope_sentence(doc_chunks)
             if scope:
                 chunk, sentence = scope
-                lines.append(f"Según su apartado «{chunk['heading']}»: «{sentence}»")
-                citations.append({**_citation(chunk), "quote": sentence})
-            lines.append(
-                f"{_pages(s['n_pages'])} y {len(chunks)} secciones indexadas. Sus apartados son:"
+                _, title = split_heading(chunk["heading"])
+                out.paragraph(
+                    f"Según «{md_escape(title)}»: «{md_escape(sentence)}»",
+                    [_citation(chunk, sentence)],
+                )
+            out.paragraph(
+                f"{_pages(s['n_pages'])} y "
+                f"{_count(len(doc_chunks), 'apartado indexado', 'apartados indexados')}:"
             )
-            for c in chunks:
+            for c in doc_chunks:
                 pages = ", ".join(str(p) for p in c["pages"])
-                lines.append(f"- {c['heading']} (p. {pages})")
-                citations.append(_citation(c))
-            lines.append("")
-        lines.append(
-            "Solo muestro frases literales y el índice de apartados, no un resumen redactado: "
-            "pregúntame por cualquiera de ellos y te respondo con la cita exacta."
+                label = section_label(c["heading"])
+                out.bullet(f"{label} (p. {pages})", [_citation(c)])
+        out.paragraph(
+            "No redacto resúmenes: solo muestro frases literales y el índice de apartados. "
+            "Pregúntame por cualquiera de ellos y te respondo con la cita exacta."
         )
-        return _result("meta:document", "\n".join(lines).strip(), citations)
+        return _finish("meta:document", out)
 
     if not pdfs and not invoices:
-        return _result(
-            f"meta:{intent}",
-            "Todavía no hay fuentes indexadas. Sube PDFs técnicos o imágenes de facturas "
-            "en Fuentes y podré responder sobre ellos citando documento, sección y página.",
-            [],
-        )
+        return _empty()
 
     if intent == "capabilities":
-        lines.append(
+        out.paragraph(
             "Respondo preguntas sobre las fuentes indexadas y cito siempre documento, "
             "sección, página y el fragmento literal. Si algo no está en las fuentes, "
             "te lo digo en vez de inventarlo."
         )
-        lines.append("")
-        lines.append("Puedo ayudarte con:")
+        out.paragraph("Puedo ayudarte con:")
         if pdfs:
-            lines.append(
-                f"- Datos concretos de los {len(pdfs)} documentos técnicos, con la cita exacta."
+            out.bullet(
+                f"Datos concretos de {_count(len(pdfs), 'documento técnico', 'documentos técnicos')}, con la cita exacta."
             )
-            lines.append("- El índice de apartados de un documento («¿de qué trata <documento>?»).")
+            out.bullet(
+                f"El índice de apartados de un documento («¿de qué trata {md_escape('<documento>')}?»)."
+            )
         if invoices:
-            lines.append(
-                f"- Campos de {len(invoices)} facturas (número, fechas, emisor, importes, IVA)."
+            out.bullet(
+                f"Campos de {_count(len(invoices), 'factura', 'facturas')} "
+                "(número, fechas, emisor, importes, IVA)."
             )
-        lines.append("- Qué fuentes hay («¿qué documentos tienes?»).")
-        examples = []
+        out.bullet("Qué fuentes hay («¿qué documentos tienes?»).")
+        examples: list[tuple[str, dict[str, Any] | None]] = []
         for s in pdfs[:3]:
-            chunks = _section_chunks(cfg, s["id"])
-            if chunks:
-                c = chunks[min(1, len(chunks) - 1)]
-                examples.append(f"- «¿Qué dice {s['name']} sobre {c['heading']}?»")
-                citations.append(_citation(c))
+            doc_chunks = chunks.get(s["id"], [])
+            if doc_chunks:
+                c = doc_chunks[min(1, len(doc_chunks) - 1)]
+                _, title = split_heading(c["heading"])
+                examples.append(
+                    (f"«¿Qué dice {md_escape(s['name'])} sobre {md_escape(title)}?»", _citation(c))
+                )
         if invoices:
-            examples.append(f"- «¿Cuál es el importe total de la factura {invoices[0]['name']}?»")
+            examples.append(
+                (
+                    f"«¿Cuál es el importe total de la factura {md_escape(invoices[0]['name'])}?»",
+                    None,
+                )
+            )
         if examples:
-            lines.append("")
-            lines.append("Ejemplos con las fuentes actuales:")
-            lines.extend(examples)
-        return _result("meta:capabilities", "\n".join(lines), citations)
+            out.paragraph("Ejemplos con las fuentes actuales:")
+            for text, cite in examples:
+                out.bullet(text, [cite] if cite else None)
+        return _finish("meta:capabilities", out)
 
-    lines.append("Estas son las fuentes indexadas:")
-    for s in pdfs:
-        lines.append(_doc_line(s))
-        chunks = _section_chunks(cfg, s["id"])
-        if chunks:
-            lines.append("  Apartados: " + "; ".join(c["heading"] for c in chunks))
-            citations.extend(_citation(c) for c in chunks)
-    if invoices:
-        lines.append(_invoice_line(invoices))
-    lines.append("")
-    lines.append("Pregúntame por cualquier apartado y te respondo con la cita exacta.")
-    return _result("meta:inventory", "\n".join(lines), citations)
+    kinds = inventory_scope(question)
+    show_pdfs = pdfs if kinds in ("pdf", "all") else []
+    show_invoices = invoices if kinds in ("invoice", "all") else []
+    if not show_pdfs and not show_invoices:
+        what = "documentos" if kinds == "pdf" else "facturas"
+        out.paragraph(
+            f"Todavía no hay {what} indexados. Súbelos en Fuentes y podré responder sobre ellos."
+        )
+        return _finish("meta:inventory", out)
+
+    summary = []
+    if show_pdfs:
+        summary.append(_count(len(show_pdfs), "documento", "documentos"))
+    if show_invoices:
+        summary.append(_count(len(show_invoices), "factura", "facturas"))
+    out.paragraph(f"Hay {' y '.join(summary)}:")
+    if show_pdfs:
+        if kinds == "all":
+            out.paragraph("**Documentos**")
+        for s in show_pdfs:
+            cite = _doc_cite(s, chunks.get(s["id"], []))
+            out.bullet(_doc_item(s), [cite] if cite else None)
+    if show_invoices:
+        if kinds == "all":
+            out.paragraph("**Facturas**")
+        for s in show_invoices:
+            doc_chunks = chunks.get(s["id"], [])
+            header = next((c for c in doc_chunks if c["section"] == "cabecera"), None)
+            cite = _citation(header, f"Factura {s['name']}") if header else None
+            out.bullet(_invoice_item(s, header), [cite] if cite else None)
+    if kinds == "pdf" and invoices:
+        out.paragraph(
+            f"También hay {_count(len(invoices), 'factura indexada', 'facturas indexadas')}. "
+            "Pregunta «¿qué facturas tengo?» para verlas."
+        )
+    elif kinds == "invoice" and pdfs:
+        out.paragraph(
+            f"También hay {_count(len(pdfs), 'documento indexado', 'documentos indexados')}. "
+            "Pregunta «¿qué documentos tienes?» para verlos."
+        )
+    out.paragraph("Pregúntame por cualquiera y te respondo con la cita exacta.")
+    return _finish("meta:inventory", out)
 
 
-def _result(reason: str, answer: str, citations: list[dict[str, Any]]) -> dict[str, Any]:
+def _finish(reason: str, out: AnswerBuilder) -> dict[str, Any]:
+    answer, citations, segments = out.build()
+    return _result(reason, answer, citations, segments)
+
+
+def _result(
+    reason: str, answer: str, citations: list[dict[str, Any]], segments: list[dict[str, Any]]
+) -> dict[str, Any]:
     return {
         "ok": True,
         "answer": answer,
         "citations": citations,
+        "segments": segments,
+        "inline": "template",
         "reason": reason,
         "suggestions": [],
         "latencies": {},

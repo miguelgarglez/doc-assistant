@@ -9,11 +9,13 @@ import os
 import re
 import sqlite3
 import tempfile
+from collections.abc import Callable
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 from doc_assistant.adapters import LLM, Embedder, OcrPort, build_adapters, build_ocr
+from doc_assistant.answer_markup import AnswerBuilder, md_escape
 from doc_assistant.chunking import chunk_invoice, invoice_doc_id
 from doc_assistant.config import load_config
 from doc_assistant.invoice_extract import extract_invoice, parse_es_decimal
@@ -114,7 +116,22 @@ def _norm_num(s: str | None) -> str:
 
 
 def run_plan(db: InvoiceDB, plan: dict[str, Any]) -> dict[str, Any]:
-    """Returns {ok, answer, citations:[{numero, campo, valor}], reason}."""
+    """Returns {ok, answer, headline, review, kind, citations:[{numero, campo, valor}], reason}.
+
+    `headline` is the answer without the review note; `review` lists the invoice numbers
+    named in that note.
+    """
+    result = _run_plan(db, plan)
+    result["kind"] = plan.get("kind")
+    answer = result.get("answer") or ""
+    marker = " Nota: facturas pendientes de revisión: "
+    headline, _, note = answer.partition(marker)
+    result["headline"] = headline
+    result["review"] = note.split(", ") if note else []
+    return result
+
+
+def _run_plan(db: InvoiceDB, plan: dict[str, Any]) -> dict[str, Any]:
     rows = db.rows()
     kind = plan.get("kind")
 
@@ -250,6 +267,7 @@ def upload_invoice(
     ocr: OcrPort | None = None,
     llm: LLM | None = None,
     embedder: Embedder | None = None,
+    progress: Callable[..., None] | None = None,
 ) -> dict[str, Any]:
     """Extract, persist SQL row, index chunks+image in the same retrieval store."""
     cfg = load_config(config_path)
@@ -260,7 +278,7 @@ def upload_invoice(
         embedder = embedder or emb
         llm = llm or default_llm
 
-    extracted = extract_invoice(image, ocr=ocr, llm=llm)
+    extracted = extract_invoice(image, ocr=ocr, llm=llm, on_stage=progress)
     record = extracted["record"]
     numero = record.get("numero")
     if not numero:
@@ -272,6 +290,8 @@ def upload_invoice(
             "flags": extracted["flags"],
         }
 
+    if progress:
+        progress("indexing")
     chunks = chunk_invoice(record)
     embeddings = embedder.embed([c["text"] for c in chunks]) if chunks else []
 
@@ -351,6 +371,33 @@ def invoice_image(config_path: str | Path, invoice_id: str) -> bytes | None:
     return None
 
 
+def render_plan_answer(
+    result: dict[str, Any], citations: list[dict[str, Any]]
+) -> tuple[str, list[dict[str, Any]], list[dict[str, Any]]]:
+    """Markdown for a SQL answer: a headline and one cited bullet per invoice or field."""
+    out = AnswerBuilder()
+    if result.get("kind") == "campos" and citations:
+        number = citations[0]["doc"]
+        out.paragraph(f"Factura **{md_escape(number)}**:")
+        for cit in citations:
+            label = FIELDS.get(cit["section"], cit["section"])
+            out.bullet(f"{md_escape(label)}: {md_escape(cit['fragment'])}", [cit])
+    else:
+        headline = result.get("headline") or ""
+        if citations and headline.startswith("Facturas: "):
+            headline = "Facturas:"
+        out.paragraph(md_escape(headline))
+        for cit in citations:
+            value = "" if cit["section"] == "numero" else f": {md_escape(cit['fragment'])}"
+            out.bullet(f"**{md_escape(cit['doc'])}**{value}", [cit])
+    review = result.get("review") or []
+    if review:
+        out.paragraph(
+            "Nota: facturas pendientes de revisión: " + ", ".join(md_escape(n) for n in review)
+        )
+    return out.build()
+
+
 def ask_invoices(
     config_path: str | Path,
     question: str,
@@ -392,10 +439,13 @@ def ask_invoices(
             }
         )
     if result.get("ok"):
+        answer, citations, segments = render_plan_answer(result, citations)
         return {
             "ok": True,
-            "answer": result.get("answer") or "",
+            "answer": answer,
             "citations": citations,
+            "segments": segments,
+            "inline": "template",
             "reason": result.get("reason") or "sql",
             "latencies": {},
             "raw": plan,

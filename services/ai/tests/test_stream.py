@@ -214,7 +214,8 @@ def test_meta_answers_come_from_index_and_cite_literal_headings(
     assert "ACME-100" in done["answer"]
     for c in done["citations"]:
         assert c["quote"] and c["quote"] in c["fragment"]
-        assert c["quote"] in done["answer"] or reason == "meta:capabilities"
+        title = c["quote"].split(". ", 1)[-1]
+        assert title in done["answer"] or reason == "meta:capabilities"
 
 
 def test_empty_index_gives_useful_refusal(

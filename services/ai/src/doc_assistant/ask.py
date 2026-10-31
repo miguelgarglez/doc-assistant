@@ -17,6 +17,7 @@ from doc_assistant.adapters import (
     build_adapters,
 )
 from doc_assistant.config import load_config
+from doc_assistant.inline import assign_by_rules, validate_model_segments
 from doc_assistant.invoices import ask_invoices
 from doc_assistant.meta import answer_meta, classify, suggestions_from
 from doc_assistant.partial_json import FieldStreamer
@@ -69,6 +70,34 @@ EVIDENCE_FIRST_PROMPT = (
     "frases. Si ninguna frase responde exactamente, citations=[], answer=null, "
     "answerable=false. Si la respuesta usa datos de dos fragmentos, cita los dos."
 )
+
+SEGMENTS_SCHEMA: dict[str, Any] = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "text": {"type": "string"},
+            "chunk_ids": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["text", "chunk_ids"],
+    },
+}
+SEGMENTS_PROMPT = (
+    " Además, en segments divide answer en frases, en orden y copiadas literalmente de answer; "
+    "en chunk_ids de cada una pon los chunk_id de los fragmentos que la respaldan."
+)
+
+
+def answer_schema(mode: str, inline: str) -> dict[str, Any]:
+    base = EVIDENCE_FIRST_SCHEMA if mode == "evidence_first" else ANSWER_SCHEMA
+    if inline != "model":
+        return base
+    return {
+        **base,
+        "properties": {**base["properties"], "segments": SEGMENTS_SCHEMA},
+        "required": [*base["required"], "segments"],
+    }
+
 
 NO_INFO = "No dispongo de esa información en los documentos"
 MAX_QUESTION_CHARS = 1000
@@ -167,7 +196,7 @@ def ask_events(
     if intent != "rag":
         t = time.perf_counter()
         yield _step("meta", "running", "Leyendo el índice de fuentes")
-        result = answer_meta(cfg, intent, matched, sources)
+        result = answer_meta(cfg, intent, matched, sources, question)
         latencies["meta"] = round(time.perf_counter() - t, 4)
         yield _step(
             "meta",
@@ -280,13 +309,14 @@ def ask_events(
     messages = [
         {
             "role": "system",
-            "content": EVIDENCE_FIRST_PROMPT
-            if cfg.answer_mode == "evidence_first"
-            else SYSTEM_PROMPT,
+            "content": (
+                EVIDENCE_FIRST_PROMPT if cfg.answer_mode == "evidence_first" else SYSTEM_PROMPT
+            )
+            + (SEGMENTS_PROMPT if cfg.inline_citations == "model" else ""),
         },
         {"role": "user", "content": user_msg},
     ]
-    schema = EVIDENCE_FIRST_SCHEMA if cfg.answer_mode == "evidence_first" else ANSWER_SCHEMA
+    schema = answer_schema(cfg.answer_mode, cfg.inline_citations)
 
     t3 = time.perf_counter()
     yield _step("generate", "running", "Redactando la respuesta con los fragmentos")
@@ -364,18 +394,40 @@ def ask_events(
             }
         )
 
+    enriched, segments, inline_source = place_inline_citations(
+        cfg.inline_citations, answer, enriched, raw.get("segments")
+    )
     yield (
         "result",
         {
             "ok": True,
             "answer": answer,
             "citations": enriched,
+            "segments": segments,
+            "inline": inline_source,
             "reason": "verified",
             "suggestions": [],
             "latencies": latencies,
             "raw": raw,
         },
     )
+
+
+def place_inline_citations(
+    mode: str, answer: str, citations: list[dict[str, Any]], raw_segments: Any
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], str]:
+    """Returns (citations, segments, source) with source in model|rules|none."""
+    if mode == "off" or not citations:
+        return citations, [], "none"
+    if mode == "model":
+        ids = [c["chunk_id"] for c in citations]
+        placed = validate_model_segments(answer, raw_segments, citations, ids)
+        if placed and any(s["refs"] for s in placed[1]):
+            return placed[0], placed[1], "model"
+    ordered, segments = assign_by_rules(answer, citations)
+    if any(s["refs"] for s in segments):
+        return ordered, segments, "rules"
+    return citations, [], "none"
 
 
 def ask(
