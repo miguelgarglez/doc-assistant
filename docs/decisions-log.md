@@ -8,3 +8,8 @@
 
 ## ADR-002 shadcn/ui sobre Base UI (2026-10-31)
 - Decisión de Miguel (t172). Tokens CSS → primitivos → componentes de dominio. Sin Storybook.
+
+## ADR-003 Orquestación del monorepo: pnpm workspaces + uv + Makefile fino (2026-10-31) — PROVISIONAL
+- Contexto: Miguel está evaluando herramientas de monorepo.
+- Decisión provisional: sin Turborepo/Nx/moon. `make {setup,dev,check,test,build,gen-client}` es el único punto de entrada, para poder sustituir la herramienta sin cambiar los comandos documentados.
+- Confianza: alta para la entrega; revisable.
