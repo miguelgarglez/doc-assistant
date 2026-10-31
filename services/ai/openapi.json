@@ -27,6 +27,24 @@
         }
       }
     },
+    "/health/components": {
+      "get": {
+        "summary": "Health Components",
+        "operationId": "health_components_health_components_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComponentsHealth"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ingest": {
       "post": {
         "summary": "Ingest",
@@ -749,6 +767,75 @@
         ],
         "title": "Citation",
         "type": "object"
+      },
+      "ComponentHealth": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "ai",
+              "llm",
+              "embeddings",
+              "reranker",
+              "ocr",
+              "sqlite"
+            ],
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded",
+              "unavailable"
+            ],
+            "title": "Status"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "title": "ComponentHealth"
+      },
+      "ComponentsHealth": {
+        "properties": {
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/ComponentHealth"
+            },
+            "type": "array",
+            "title": "Components"
+          }
+        },
+        "type": "object",
+        "required": [
+          "components"
+        ],
+        "title": "ComponentsHealth"
       },
       "DocumentUploadResponse": {
         "properties": {

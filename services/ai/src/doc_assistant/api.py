@@ -16,6 +16,7 @@ from doc_assistant.adapters import AdapterError
 from doc_assistant.ask import ask, ask_events
 from doc_assistant.chunking import invoice_doc_id, pdf_doc_id
 from doc_assistant.config import load_config
+from doc_assistant.health import ComponentsHealth, check_components
 from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
 from doc_assistant.invoices import InvoiceDB, invoice_image, upload_invoice
 from doc_assistant.sources import find_source, list_sources, remove_source
@@ -286,6 +287,10 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/health/components", response_model=ComponentsHealth)
+    def health_components(request: Request) -> ComponentsHealth:
+        return check_components(request.app.state.config)
 
     @app.post(
         "/ingest",

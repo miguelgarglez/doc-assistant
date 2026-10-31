@@ -122,3 +122,61 @@ def test_ingest_confines_paths(
         assert calls == [data / "nested"]
         assert client.post("/ingest", json={}).status_code == 400
         assert client.post("/ingest", json={"directory": "missing"}).status_code == 404
+
+
+def _serve_status(status: int):  # type: ignore[no-untyped-def]
+    import threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            self.send_response(status)
+            self.send_header("content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(b'{"status":"ok"}')
+
+        def log_message(self, *args: object) -> None:
+            return
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server
+
+
+def test_health_components_reports_each_dependency(config_path: Path, synthetic_pdf: Path) -> None:
+    import yaml
+
+    ready = _serve_status(200)
+    loading = _serve_status(503)
+    raw = yaml.safe_load(config_path.read_text())
+    raw["llm"]["base_url"] = f"http://127.0.0.1:{ready.server_port}"
+    raw["embeddings"]["base_url"] = f"http://127.0.0.1:{loading.server_port}"
+    raw["reranker"]["base_url"] = "http://127.0.0.1:9"  # nothing listens here
+    raw["ocr"] = {"runtime": "llama", "base_url": f"http://127.0.0.1:{ready.server_port}"}
+    config_path.write_text(yaml.safe_dump(raw))
+    ingest_pdfs(config_path, synthetic_pdf.parent, embedder=FakeEmbedder())
+    try:
+        with TestClient(create_app(config_path)) as client:
+            response = client.get("/health/components")
+    finally:
+        ready.shutdown()
+        loading.shutdown()
+    assert response.status_code == 200
+    by_id = {item["id"]: item for item in response.json()["components"]}
+    assert set(by_id) == {"ai", "llm", "embeddings", "reranker", "ocr", "sqlite"}
+    assert by_id["llm"]["status"] == "ok" and by_id["llm"]["latency_ms"] > 0
+    assert by_id["embeddings"]["status"] == "degraded"
+    assert by_id["reranker"]["status"] == "unavailable"
+    assert by_id["reranker"]["latency_ms"] is None
+    assert by_id["ocr"]["status"] == "ok"
+    assert by_id["sqlite"]["status"] == "ok"
+    assert by_id["sqlite"]["detail"].endswith("fragmentos")
+
+
+def test_health_components_never_creates_the_index(config_path: Path) -> None:
+    cfg = load_config(config_path)
+    assert not cfg.db.exists()
+    with TestClient(create_app(config_path)) as client:
+        by_id = {c["id"]: c for c in client.get("/health/components").json()["components"]}
+    assert by_id["sqlite"]["status"] == "degraded"
+    assert not cfg.db.exists()

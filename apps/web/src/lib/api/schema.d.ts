@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/health/components": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Health Components */
+        get: operations["health_components_health_components_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ingest": {
         parameters: {
             query?: never;
@@ -273,6 +290,28 @@ export interface components {
             pages: number[];
             /** Fragment */
             fragment: string;
+        };
+        /** ComponentHealth */
+        ComponentHealth: {
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "ai" | "llm" | "embeddings" | "reranker" | "ocr" | "sqlite";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "degraded" | "unavailable";
+            /** Latency Ms */
+            latency_ms?: number | null;
+            /** Detail */
+            detail?: string | null;
+        };
+        /** ComponentsHealth */
+        ComponentsHealth: {
+            /** Components */
+            components: components["schemas"]["ComponentHealth"][];
         };
         /** DocumentUploadResponse */
         DocumentUploadResponse: {
@@ -622,6 +661,26 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    health_components_health_components_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComponentsHealth"];
                 };
             };
         };
