@@ -128,13 +128,18 @@ def split_sentences(answer: str) -> list[str]:
 def _reorder(
     citations: list[dict[str, Any]], segments: list[Segment]
 ) -> tuple[list[dict[str, Any]], list[Segment]]:
-    """Cited positions first, in order of first use, so markers read 1, 2, 3 along the text."""
+    """Keep only cited positions, in order of first use, so markers read 1, 2, 3 along the text.
+
+    A citation no sentence uses supports nothing the reader can see, so it is dropped. When no
+    sentence got a marker the list stays as it is and the sources go after the answer.
+    """
     order: list[int] = []
     for segment in segments:
         for ref in segment["refs"]:
             if ref not in order:
                 order.append(ref)
-    order += [i for i in range(len(citations)) if i not in order]
+    if not order:
+        order = list(range(len(citations)))
     position = {old: new for new, old in enumerate(order)}
     return (
         [citations[i] for i in order],

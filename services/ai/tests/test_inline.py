@@ -69,6 +69,25 @@ def raw(*pairs: tuple[str, list[str]]) -> list[dict[str, Any]]:
     return [{"text": t, "chunk_ids": ids} for t, ids in pairs]
 
 
+def test_citations_no_sentence_uses_are_dropped() -> None:
+    extra = {
+        "chunk_id": "c3",
+        "quote": "filtros",
+        "fragment": "[d · t · 4. Mantenimiento] Revisar los filtros cada 6 meses.",
+    }
+    ordered, segments = assign_by_rules(
+        "La parada tarda menos de 500 ms.", [CITATIONS[0], extra, CITATIONS[1]]
+    )
+    assert [c["chunk_id"] for c in ordered] == ["c2"]
+    assert segments == [{"text": "La parada tarda menos de 500 ms.", "refs": [0]}]
+
+
+def test_when_nothing_is_supported_every_citation_stays_for_the_end_list() -> None:
+    ordered, segments = assign_by_rules("Respuesta sin ninguna relación.", CITATIONS)
+    assert [c["chunk_id"] for c in ordered] == ["c1", "c2"]
+    assert all(segment["refs"] == [] for segment in segments)
+
+
 def test_model_segments_are_accepted_when_supported() -> None:
     model = raw(
         ("Usar cable de 2.5 mm2 para alimentar.", ["c1"]),
