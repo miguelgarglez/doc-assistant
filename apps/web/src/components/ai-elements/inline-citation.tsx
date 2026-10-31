@@ -49,7 +49,14 @@ export const InlineCitationCardBody = ({
   className,
   ...props
 }: ComponentProps<typeof HoverCardContent>) => (
-  <HoverCardContent className={cn("w-80 gap-2 p-3", className)} {...props} />
+  <HoverCardContent
+    align="center"
+    alignOffset={0}
+    className={cn("w-80 gap-2 p-3", className)}
+    collisionPadding={12}
+    sideOffset={6}
+    {...props}
+  />
 )
 
 export const InlineCitationSource = ({

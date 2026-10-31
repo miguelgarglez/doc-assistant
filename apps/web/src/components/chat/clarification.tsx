@@ -71,7 +71,7 @@ export function ClarificationCard({ data, onAsk }: ClarificationCardProps) {
                   <span className="truncate">{candidate.doc}</span>
                   {candidate.fecha ? <span className="shrink-0 font-normal text-muted-foreground">{candidate.fecha}</span> : null}
                 </ItemTitle>
-                {parties ? <ItemDescription className="line-clamp-1">{parties}</ItemDescription> : null}
+                {parties ? <ItemDescription>{parties}</ItemDescription> : null}
               </ItemContent>
               {total ? (
                 <ItemActions className="shrink-0 text-sm font-medium tabular-nums">{total}</ItemActions>
