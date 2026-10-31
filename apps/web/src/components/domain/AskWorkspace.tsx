@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { KeyboardIcon } from "lucide-react"
 
 import {
@@ -115,6 +115,12 @@ export function AskWorkspace() {
       }
     }
   }
+
+  // Cache Components (Activity): al ocultar la ruta se limpia el diálogo
+  // para que no reaparezca abierto al volver atrás/adelante.
+  useLayoutEffect(() => {
+    return () => setShortcutsOpen(false)
+  }, [])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
