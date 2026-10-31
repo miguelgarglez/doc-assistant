@@ -26,7 +26,15 @@ from _common import ARCHIVES, ASSETS, ROOT, models_dir
 from setup import download, sha256
 
 PLATFORMS = {"macos-arm64": "tar.gz", "ubuntu-x64": "tar.gz", "win-cpu-x64": "zip"}
-FORBIDDEN = ("_trash/", "_agents/", "node_modules/", ".venv/", "kit/", ".env.local", "data/")
+FORBIDDEN = (
+    "_trash/",
+    "_agents/",
+    "node_modules/",
+    ".venv/",
+    "kit/",
+    ".env.local",
+    "data/",
+)
 STORED = (".gguf", ".zip", ".tar.gz", ".png", ".pdf")
 
 
@@ -36,7 +44,11 @@ def tracked_files() -> list[str]:
     ).stdout.decode()
     files = [f for f in out.split("\0") if f and (ROOT / f).is_file()]
     dirty = subprocess.run(
-        ["git", "status", "--porcelain"], cwd=ROOT, capture_output=True, text=True, check=True
+        ["git", "status", "--porcelain"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout.strip()
     if dirty:
         print(
@@ -77,14 +89,22 @@ def build(zip_path: Path, prefix: str, src_models: Path, with_models: bool) -> N
     files = tracked_files()
     archives = llama_archives()
     models = model_files(src_models) if with_models else []
-    sums = "".join(f"{m['sha256']}  {m['file']}\n" for m in ASSETS["models"]) if models else ""
+    sums = (
+        "".join(f"{m['sha256']}  {m['file']}\n" for m in ASSETS["models"])
+        if models
+        else ""
+    )
     t0 = time.time()
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED, allowZip64=True) as z:
         for f in files:
             comp = zipfile.ZIP_STORED if f.endswith(STORED) else zipfile.ZIP_DEFLATED
             z.write(ROOT / f, f"{prefix}/{f}", compress_type=comp)
         for a in archives:
-            z.write(a, f"{prefix}/vendor/archives/{a.name}", compress_type=zipfile.ZIP_STORED)
+            z.write(
+                a,
+                f"{prefix}/vendor/archives/{a.name}",
+                compress_type=zipfile.ZIP_STORED,
+            )
         for m in models:
             z.write(m, f"{prefix}/models/{m.name}", compress_type=zipfile.ZIP_STORED)
         if sums:
@@ -102,7 +122,9 @@ def port_busy(port: int) -> bool:
         return s.connect_ex(("127.0.0.1", port)) == 0
 
 
-def http_ok(url: str, data: bytes | None = None, ctype: str = "application/json") -> str:
+def http_ok(
+    url: str, data: bytes | None = None, ctype: str = "application/json"
+) -> str:
     req = urllib.request.Request(url, data=data, headers={"content-type": ctype})
     with urllib.request.urlopen(req, timeout=120) as r:
         body: bytes = r.read()
@@ -125,14 +147,18 @@ def smoke(zip_path: Path, prefix: str, fake: bool) -> None:
     env = {k: v for k, v in os.environ.items() if k not in drop}
     uvrun = ["uv", "run", "--project", "services/ai", "python"]
     setup_cmd = [*uvrun, "scripts/setup.py", "--yes"] + (["--no-model"] if fake else [])
-    r = subprocess.run(setup_cmd, check=False, cwd=root, env=env, capture_output=True, text=True)
+    r = subprocess.run(
+        setup_cmd, check=False, cwd=root, env=env, capture_output=True, text=True
+    )
     log = r.stdout + r.stderr
     (td / "setup.log").write_text(log)
     if r.returncode != 0:
         raise SystemExit(f"[smoke] setup falló:\n{log[-2000:]}")
     if "[setup] descargando" in log:
         raise SystemExit("[smoke] setup descargó algo (debería usar lo empaquetado)")
-    print(f"[smoke] setup OK sin descargas de modelos/binarios ({time.time() - t0:.0f} s)")
+    print(
+        f"[smoke] setup OK sin descargas de modelos/binarios ({time.time() - t0:.0f} s)"
+    )
     if fake:
         env["DOC_ASSISTANT_FAKE_LLAMA"] = "1"
     kw: dict[str, object] = (
@@ -156,35 +182,53 @@ def smoke(zip_path: Path, prefix: str, fake: bool) -> None:
                         f"[smoke] start terminó: {(td / 'start.log').read_text()[-1500:]}"
                     )
                 time.sleep(2)
+
+        def upload(url: str, f: Path, ctype: str) -> str:
+            boundary = "docassistsmoke"
+            body = (
+                (
+                    f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
+                    f'filename="{f.name}"\r\nContent-Type: {ctype}\r\n\r\n'
+                ).encode()
+                + f.read_bytes()
+                + f"\r\n--{boundary}--\r\n".encode()
+            )
+            return http_ok(url, body, f"multipart/form-data; boundary={boundary}")
+
         pdf = root / "evidence/fixtures/docs/sensor-demo.pdf"
-        boundary = "docassistsmoke"
-        body = (
-            (
-                f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{pdf.name}"\r\n'
-                "Content-Type: application/pdf\r\n\r\n"
-            ).encode()
-            + pdf.read_bytes()
-            + f"\r\n--{boundary}--\r\n".encode()
-        )
         print(
             "[smoke] /documents:",
-            http_ok(
-                "http://127.0.0.1:3000/api/documents",
-                body,
-                f"multipart/form-data; boundary={boundary}",
-            )[:120],
+            upload("http://127.0.0.1:3000/api/documents", pdf, "application/pdf")[:120],
         )
         q = '{"question":"¿Qué alcance tiene el sensor?"}'.encode()
-        print("[smoke] /ask:", http_ok("http://127.0.0.1:3000/api/ask", q)[:300])
+        t1 = time.time()
+        ans = http_ok("http://127.0.0.1:3000/api/ask", q)
+        print(f"[smoke] /ask ({time.time() - t1:.0f} s):", ans[:300])
+        if not fake and '"citations":[]' in ans.replace(" ", ""):
+            raise SystemExit("[smoke] /ask sin cita")
+        if not fake:
+            inv = root / "evidence/fixtures/invoices/factura_001.png"
+            t1 = time.time()
+            r_inv = upload(
+                "http://127.0.0.1:3000/api/invoices/upload", inv, "image/png"
+            )
+            print(f"[smoke] /invoices/upload ({time.time() - t1:.0f} s):", r_inv[:300])
     finally:
         if sys.platform == "win32":
             p.send_signal(signal.CTRL_BREAK_EVENT)  # type: ignore[attr-defined]
         else:
-            os.killpg(p.pid, signal.SIGINT)  # todo el grupo: uv no reenvía SIGINT sin TTY
+            os.killpg(
+                p.pid, signal.SIGINT
+            )  # todo el grupo: uv no reenvía SIGINT sin TTY
         p.wait(timeout=30)
         out.close()
     if "Traceback" in (td / "start.log").read_text():
         raise SystemExit(f"[smoke] hubo un Traceback en start.log ({td})")
+    time.sleep(2)
+    still = [p for p in (3000, 8000, 8081, 8082, 8083) if port_busy(p)]
+    if still:
+        raise SystemExit(f"[smoke] puertos sin liberar tras parar: {still}")
+    print("[smoke] puertos 3000/8000/8081-8083 liberados")
     print(f"[smoke] OK en {time.time() - t0:.0f} s · logs en {td}")
 
 
