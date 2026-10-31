@@ -54,3 +54,19 @@ def test_vector_search_zero_vector_does_not_crash(
     store.upsert(chunks, [[0.0] * fake_embedder.dim for _ in chunks])
     hits = store.vector_search([0.0] * fake_embedder.dim, k=3)
     assert hits and all(score == 0.0 for _, score in hits)
+
+
+def test_old_schema_is_moved_aside_not_deleted(tmp_path: Path) -> None:
+    """Un índice de otra versión de esquema se renombra a .bak y se recrea vacío."""
+    import sqlite3
+
+    db = tmp_path / "old.db"
+    con = sqlite3.connect(db)
+    con.execute("CREATE TABLE chunks (chunk_id TEXT PRIMARY KEY, doc TEXT)")
+    con.commit()
+    con.close()
+    store = ChunkStore(db, dim=8)
+    assert (tmp_path / "old.db.schema-v0.bak").exists()
+    assert store.count() == 0
+    ChunkStore(db, dim=8)  # misma versión: no se aparta otra vez
+    assert len(list(tmp_path.glob("*.bak"))) == 1

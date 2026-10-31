@@ -55,16 +55,44 @@ def fts_query(q: str) -> str:
     return " OR ".join(parts) if parts else '""'
 
 
+# Súbelo cuando cambie el esquema de chunks/vec/pages/facturas. Un índice antiguo no
+# se migra: se aparta (renombrado, no borrado) y se recrea; basta reingestar.
+SCHEMA_VERSION = 2
+
+
+def ensure_schema(path: str | Path) -> None:
+    """Aparta un .db con otra versión de esquema a `<db>.schema-v<N>.bak`."""
+    p = Path(path)
+    if str(path) == ":memory:" or not p.exists():
+        return
+    con = sqlite3.connect(str(p))
+    try:
+        version = int(con.execute("PRAGMA user_version").fetchone()[0])
+        has_tables = (
+            con.execute("SELECT count(*) FROM sqlite_master WHERE type='table'").fetchone()[0] > 0
+        )
+    finally:
+        con.close()
+    if has_tables and version != SCHEMA_VERSION:
+        backup = p.with_name(f"{p.name}.schema-v{version}.bak")
+        p.replace(backup)
+        print(
+            f"[store] índice con esquema v{version} apartado en {backup}; reingesta los documentos"
+        )
+
+
 class ChunkStore:
     def __init__(self, path: str | Path, dim: int) -> None:
         self.path = Path(path)
         self.dim = dim
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        ensure_schema(self.path)
         self.db = sqlite3.connect(str(self.path))
         self.db.enable_load_extension(True)
         sqlite_vec.load(self.db)
         self.db.row_factory = sqlite3.Row
         self._init_schema()
+        self.db.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
 
     @classmethod
     def from_config(cls, config_path: str | Path) -> ChunkStore:

@@ -17,7 +17,7 @@ from doc_assistant.adapters import LLM, Embedder, OcrPort, build_adapters, build
 from doc_assistant.chunking import chunk_invoice, invoice_doc_id
 from doc_assistant.config import load_config
 from doc_assistant.invoice_extract import extract_invoice, parse_es_decimal
-from doc_assistant.store import ChunkStore
+from doc_assistant.store import SCHEMA_VERSION, ChunkStore, ensure_schema
 
 FIELDS = {
     "numero": "número",
@@ -68,11 +68,13 @@ PLAN_PROMPT = (
 
 class InvoiceDB:
     def __init__(self, path: str = ":memory:") -> None:
+        ensure_schema(path)
         self.con = sqlite3.connect(path)
         cols = ", ".join(f"{k} TEXT" for k in FIELDS)
         self.con.execute(
             f"CREATE TABLE IF NOT EXISTS facturas ({cols}, fichero TEXT, cuadra TEXT, motivo TEXT, PRIMARY KEY(numero))"
         )
+        self.con.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
 
     def upsert(
         self,
