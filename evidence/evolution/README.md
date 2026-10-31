@@ -44,7 +44,7 @@ _Sin capturas en esta versión._
 Qué cambió:
 - Cliente tipado openapi-fetch; la página pregunta a /ask, muestra citas y abre la página con el fragmento resaltado; rechazo y error visibles.
 - Playwright con API simulada → capturas deterministas en evidence/screenshots.
-- Setup: carpeta de modelos --models-dir > Doc Assistant_MODELS_DIR > .env.local > ./models; solo descarga lo que falta, con reanudación y confirmación > 1 GB.
+- Setup: carpeta de modelos --models-dir > DOC_ASSISTANT_MODELS_DIR > .env.local > ./models; solo descarga lo que falta, con reanudación y confirmación > 1 GB.
 - Ollama (GLM-OCR) en el arranque, reutilizado si ya corre.
 
 Qué se probó (CHECKPOINT 12:47–12:48):
@@ -116,7 +116,7 @@ Qué cambió:
 
 Qué se probó (CHECKPOINT 13:42):
 - mise run check → OK; mise run evidence → 11 passed.
-- Auditoría: 0 ficheros del kit en el historial; el historial aún contiene el nombre antiguo y referencias a un documento del kit (no publicado).
+- Auditoría: 0 ficheros del material del reto en el historial; el historial aún contiene el nombre antiguo y referencias a un documento del material del reto (no publicado).
 
 ![v0.6.0 ask-answer-with-source-mobile](v0.6.0/ask-answer-with-source-mobile.png)
 ![v0.6.0 ask-answer-with-source](v0.6.0/ask-answer-with-source.png)
