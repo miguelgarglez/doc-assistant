@@ -30,8 +30,8 @@ Qué cambió:
 - CHECKPOINT con horas reales, "Qué se probó" y "Decisión clave".
 
 Qué se probó (CHECKPOINT 12:40, prueba de humo, no evaluación):
-- Ingesta por el proxy de Next de 4 PDFs de prueba (no versionados) → 44 fragmentos en 1,8 s.
-- "¿Carga útil máxima del DOC-A?" → "N kg", cita DOC-A §2.1 p.1, 7 s.
+- Ingesta por el proxy de Next de 4 PDFs de prueba no versionados → 44 fragmentos en 1,8 s.
+- Pregunta de especificación sobre un datasheet → valor correcto con cita de sección y página, 7 s.
 - Pregunta de precio → rechazo, 5 s. GET página → 200 image/png.
 - Sin UI conectada aún: sin capturas.
 
@@ -44,7 +44,7 @@ _Sin capturas en esta versión._
 Qué cambió:
 - Cliente tipado openapi-fetch; la página pregunta a /ask, muestra citas y abre la página con el fragmento resaltado; rechazo y error visibles.
 - Playwright con API simulada → capturas deterministas en evidence/screenshots.
-- Setup: carpeta de modelos --models-dir > DOC_ASSISTANT_MODELS_DIR > .env.local > ./models; solo descarga lo que falta, con reanudación y confirmación > 1 GB.
+- Setup: carpeta de modelos --models-dir > Doc Assistant_MODELS_DIR > .env.local > ./models; solo descarga lo que falta, con reanudación y confirmación > 1 GB.
 - Ollama (GLM-OCR) en el arranque, reutilizado si ya corre.
 
 Qué se probó (CHECKPOINT 12:47–12:48):
@@ -64,7 +64,7 @@ Qué cambió:
 - Auditoría de los 81 tests del slice: 26 migrados, 55 excluidos a propósito (evaluación), 0 perdidos.
 - /ingest confinado a data_dir; POST /documents (subida idempotente por hash).
 - Facturas: OCR GLM → reglas Decimal para importes → LLM para texto; puertas de suma e IVA → "revisar"; SQL en /ask con citas.
-- Web: dominio "Doc Assistant", visor lado a lado, navegación de citas, estados, capturas escritorio y móvil.
+- Web: dominio corregido (título de producto), visor lado a lado, navegación de citas, estados, capturas escritorio y móvil.
 - Arreglos del integrador: fuente Geist autorreferente y Courier forzado en e2e; el proxy reenviaba Expect (rompía subidas).
 
 Qué se probó (CHECKPOINT 13:16):
