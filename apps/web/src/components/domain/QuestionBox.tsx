@@ -29,6 +29,7 @@ type QuestionBoxProps = {
   loading?: boolean
   onSubmit: (question: string) => void
   onCancel?: () => void
+  historyActive?: boolean
   onHistory?: (direction: "up" | "down") => string | null
   onPasteFiles?: (files: File[]) => void
   ref?: Ref<QuestionBoxHandle>
@@ -40,11 +41,13 @@ export function QuestionBox({
   onSubmit,
   onCancel,
   onHistory,
+  historyActive = false,
   onPasteFiles,
   ref,
 }: QuestionBoxProps) {
   const id = useId()
   const [question, setQuestion] = useState("")
+  const composingRef = useRef(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useImperativeHandle(ref, () => ({
@@ -74,6 +77,7 @@ export function QuestionBox({
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (composingRef.current || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault()
       submit()
@@ -87,7 +91,7 @@ export function QuestionBox({
     if (
       onHistory &&
       (event.key === "ArrowUp" || event.key === "ArrowDown") &&
-      question.trim().length === 0 &&
+      (question.trim().length === 0 || historyActive) &&
       !event.shiftKey &&
       !isModKey(event)
     ) {
@@ -130,6 +134,8 @@ export function QuestionBox({
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
           onKeyDown={handleKeyDown}
+          onCompositionStart={() => { composingRef.current = true }}
+          onCompositionEnd={() => { composingRef.current = false }}
           onPaste={(event) => {
             const files = Array.from(event.clipboardData.files)
             if (files.length > 0) {

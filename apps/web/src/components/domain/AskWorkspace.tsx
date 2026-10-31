@@ -124,6 +124,7 @@ export function AskWorkspace() {
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      if (event.isComposing || event.keyCode === 229 || shortcutsOpen) return
       if (isModKey(event) && event.key.toLowerCase() === "k") {
         event.preventDefault()
         questionRef.current?.focus()
@@ -194,6 +195,7 @@ export function AskWorkspace() {
             cancel()
           }}
           onHistory={questionHistory.peek}
+          historyActive={questionHistory.cursor !== null}
           onPasteFiles={handleFiles}
         />
       </section>
