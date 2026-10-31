@@ -26,3 +26,4 @@
 
 ## Comandos
 `mise install && DOC_ASSISTANT_MODELS_DIR=<carpeta de modelos> mise run setup` · `mise run start` · `mise run check` · `DOC_ASSISTANT_FAKE_LLAMA=1 mise run start` (sin modelos)
+- Ficheros de agentes: prompts/logs en `_agents/` (git-ignorado); worktrees fusionados movidos a `_trash/agents/` (no borrados). El worktree tt-ai se eliminó con `git worktree remove` a las 12:41 (estaba fusionado y limpio).
