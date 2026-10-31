@@ -25,6 +25,9 @@ Sin mise (con uv y node ya instalados): `uv run --project services/ai python scr
 ## Probado en
 macOS (Apple Silicon, M4 16 GB). Windows: no probado en un equipo real; el workflow `cross-platform.yml` ejecuta un smoke test, pero aún no se ha lanzado. Linux: solo vía ese CI. Limitación: `sqlite-vec` no publica wheel para Windows ARM.
 
+## Huecos del enunciado
+Decisiones sobre lo que el enunciado deja abierto: [docs/open-gaps.md](docs/open-gaps.md). Cobertura requisito a requisito: [docs/requirements-coverage.md](docs/requirements-coverage.md).
+
 ## Evidencia
 - `evidence/screenshots/`: capturas Playwright de consulta, rechazo, error y facturas, en escritorio y móvil.
 - `evidence/live/results.md`: corrida real con documentos y facturas **sintéticos** (`evidence/fixtures`).
