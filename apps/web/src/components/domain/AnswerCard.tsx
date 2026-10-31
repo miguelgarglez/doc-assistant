@@ -5,29 +5,37 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { CitationChip } from "@/components/domain/CitationChip"
-import type { Answer } from "@/lib/domain/types"
+import { CitationChips } from "@/components/domain/CitationChips"
+import type { Citation } from "@/lib/api/types"
 
 type AnswerCardProps = {
-  answer: Answer
+  question: string
+  answer: string
+  citations: readonly Citation[]
+  selectedChunkId?: string | null
+  onSelectCitation: (citation: Citation) => void
 }
 
-export function AnswerCard({ answer }: AnswerCardProps) {
+export function AnswerCard({
+  question,
+  answer,
+  citations,
+  selectedChunkId = null,
+  onSelectCitation,
+}: AnswerCardProps) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>Respuesta</CardTitle>
-        <CardDescription>{answer.question}</CardDescription>
+        <CardDescription>{question}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <p className="text-sm leading-relaxed text-foreground">{answer.body}</p>
-        {answer.citations.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {answer.citations.map((citation) => (
-              <CitationChip key={citation.id} citation={citation} />
-            ))}
-          </div>
-        ) : null}
+        <p className="text-sm leading-relaxed text-foreground">{answer}</p>
+        <CitationChips
+          citations={citations}
+          selectedChunkId={selectedChunkId}
+          onSelect={onSelectCitation}
+        />
       </CardContent>
     </Card>
   )
