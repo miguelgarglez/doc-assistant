@@ -3,16 +3,16 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from doc_assistant.adapters import AdapterError
 from doc_assistant.ask import ask
 from doc_assistant.config import load_config
-from doc_assistant.ingest import ingest_pdfs
+from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
 from doc_assistant.invoices import InvoiceDB
 from doc_assistant.store import ChunkStore
 
@@ -33,6 +33,17 @@ class IngestResponse(BaseModel):
     chunk_ids: list[str]
     warnings: list[str]
     timings: dict[str, float]
+
+
+class DocumentUploadResponse(BaseModel):
+    n_chunks: int
+    chunk_ids: list[str]
+    warnings: list[str]
+    timings: dict[str, float]
+    doc_id: str
+    path: str
+    content_hash: str
+    created: bool
 
 
 class AskRequest(BaseModel):
@@ -125,6 +136,33 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
                 ).model_dump(),
             )
         return ingest_pdfs(config_path, target)
+
+    @app.post(
+        "/documents",
+        response_model=DocumentUploadResponse,
+        responses={400: {"model": ErrorBody}, 502: {"model": ErrorBody}},
+    )
+    async def upload_document(file: Annotated[UploadFile, File()]) -> Any:
+        filename = file.filename or "document.pdf"
+        if not filename.lower().endswith(".pdf"):
+            return JSONResponse(
+                status_code=400,
+                content=ErrorBody(
+                    code="invalid_file", message="Only PDF uploads are accepted"
+                ).model_dump(),
+            )
+        data = await file.read()
+        if not data:
+            return JSONResponse(
+                status_code=400,
+                content=ErrorBody(code="invalid_file", message="Empty file").model_dump(),
+            )
+        if not data.startswith(b"%PDF"):
+            return JSONResponse(
+                status_code=400,
+                content=ErrorBody(code="invalid_file", message="File is not a PDF").model_dump(),
+            )
+        return save_and_ingest_pdf(config_path, data, filename)
 
     @app.post("/ask", response_model=AskResponse, responses={502: {"model": ErrorBody}})
     def query(payload: AskRequest) -> Any:

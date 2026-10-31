@@ -50,6 +50,43 @@ def test_invalid_config_fails_at_startup(tmp_path: Path) -> None:
         pass
 
 
+def test_documents_upload_sanitizes_and_is_idempotent_by_hash(
+    config_path: Path, synthetic_pdf: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "doc_assistant.ingest.build_adapters",
+        lambda cfg, fake=False: (FakeEmbedder(dim=8), None, None),
+    )
+    payload = synthetic_pdf.read_bytes()
+    with TestClient(create_app(config_path)) as client:
+        first = client.post(
+            "/documents",
+            files={"file": ("../../evil name.pdf", payload, "application/pdf")},
+        )
+        assert first.status_code == 200
+        body = first.json()
+        assert body["created"] is True
+        assert body["doc_id"] == "evil_name"
+        assert body["path"] == "documents/evil_name.pdf"
+        assert body["n_chunks"] > 0
+        second = client.post(
+            "/documents",
+            files={"file": ("other.pdf", payload, "application/pdf")},
+        )
+        assert second.status_code == 200
+        again = second.json()
+        assert again["created"] is False
+        assert again["content_hash"] == body["content_hash"]
+        assert again["path"] == body["path"]
+        assert again["chunk_ids"] == body["chunk_ids"]
+        bad = client.post(
+            "/documents",
+            files={"file": ("nota.txt", b"not a pdf", "text/plain")},
+        )
+        assert bad.status_code == 400
+        assert bad.json()["code"] == "invalid_file"
+
+
 def test_ingest_confines_paths(
     config_path: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import re
 import time
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,27 @@ from doc_assistant.adapters import Embedder, build_adapters
 from doc_assistant.chunking import chunk_invoice, chunk_pdf
 from doc_assistant.config import load_config
 from doc_assistant.store import ChunkStore
+
+
+def content_hash(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def sanitize_pdf_filename(name: str) -> str:
+    base = Path(name or "document.pdf").name
+    safe = re.sub(r"[^\w.\-]+", "_", base, flags=re.UNICODE).strip("._") or "document"
+    if not safe.lower().endswith(".pdf"):
+        safe = f"{safe}.pdf"
+    return safe
+
+
+def find_pdf_by_hash(directory: Path, digest: str) -> Path | None:
+    if not directory.is_dir():
+        return None
+    for pdf in sorted(directory.glob("*.pdf")):
+        if content_hash(pdf.read_bytes()) == digest:
+            return pdf
+    return None
 
 
 def ingest_pdfs(
@@ -36,9 +58,11 @@ def ingest_pdfs(
     store = ChunkStore(cfg.db, dim=dim)
 
     all_chunks: list[dict[str, Any]] = []
-    pdfs = sorted(pdf_dir.glob("*.pdf")) if pdf_dir.is_dir() else []
     warnings: list[str] = []
-    if pdf_dir.is_dir():
+    if pdf_dir.is_file() and pdf_dir.suffix.lower() == ".pdf":
+        pdfs = [pdf_dir]
+    elif pdf_dir.is_dir():
+        pdfs = sorted(pdf_dir.glob("*.pdf"))
         for other in sorted(pdf_dir.iterdir()):
             if (
                 other.is_file()
@@ -46,6 +70,8 @@ def ingest_pdfs(
                 and not other.name.startswith(".")
             ):
                 warnings.append(f"ignorado (tipo no soportado): {other.name}")
+    else:
+        pdfs = []
     seen_hashes: dict[str, str] = {}
     documents: list[tuple[str, list[dict[str, Any]], list[bytes]]] = []
     t_extract = time.perf_counter()
@@ -104,7 +130,6 @@ def ingest_pdfs(
         }
 
     t_emb = time.perf_counter()
-    # Batch to keep Fake/HTTP simple
     embeddings = embedder.embed([c["text"] for c in all_chunks]) if all_chunks else []
     embed_s = time.perf_counter() - t_emb
 
@@ -129,3 +154,36 @@ def ingest_pdfs(
             "total_s": round(time.perf_counter() - t0, 4),
         },
     }
+
+
+def save_and_ingest_pdf(
+    config_path: str | Path,
+    data: bytes,
+    filename: str,
+    *,
+    embedder: Embedder | None = None,
+) -> dict[str, Any]:
+    """Save a PDF under data_dir/documents (sanitized name) and ingest it.
+
+    Idempotent by content hash: an existing file with the same bytes is reused.
+    """
+    cfg = load_config(config_path)
+    docs_dir = cfg.data_dir / "documents"
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    digest = content_hash(data)
+    existing = find_pdf_by_hash(docs_dir, digest)
+    if existing is not None:
+        path = existing
+        created = False
+    else:
+        path = docs_dir / sanitize_pdf_filename(filename)
+        if path.exists() and content_hash(path.read_bytes()) != digest:
+            path = docs_dir / f"{digest[:12]}_{sanitize_pdf_filename(filename)}"
+        path.write_bytes(data)
+        created = True
+    result = ingest_pdfs(config_path, path, embedder=embedder)
+    result["doc_id"] = path.stem
+    result["path"] = str(path.relative_to(cfg.data_dir))
+    result["content_hash"] = digest
+    result["created"] = created
+    return result
