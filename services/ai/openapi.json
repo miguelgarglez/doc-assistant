@@ -279,46 +279,10 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/Invoice"
+                    "$ref": "#/components/schemas/InvoiceListItem"
                   },
                   "type": "array",
                   "title": "Response Invoices Invoices Get"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "summary": "Put Invoice",
-        "operationId": "put_invoice_invoices_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Invoice"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Invoice"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -533,6 +497,10 @@
             "type": "string",
             "title": "Doc"
           },
+          "doc_id": {
+            "type": "string",
+            "title": "Doc Id"
+          },
           "section": {
             "type": "string",
             "title": "Section"
@@ -554,6 +522,7 @@
           "chunk_id",
           "quote",
           "doc",
+          "doc_id",
           "section",
           "pages",
           "fragment"
@@ -852,6 +821,179 @@
           "numero"
         ],
         "title": "Invoice"
+      },
+      "InvoiceListItem": {
+        "properties": {
+          "numero": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Numero"
+          },
+          "fecha_emision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Emision"
+          },
+          "fecha_vencimiento": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Vencimiento"
+          },
+          "emisor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emisor"
+          },
+          "nif_emisor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nif Emisor"
+          },
+          "cliente": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cliente"
+          },
+          "nif_cliente": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nif Cliente"
+          },
+          "base_imponible_total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Imponible Total"
+          },
+          "cuota_iva_total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cuota Iva Total"
+          },
+          "irpf_tipo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Irpf Tipo"
+          },
+          "irpf_importe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Irpf Importe"
+          },
+          "recargo_total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recargo Total"
+          },
+          "importe_total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Importe Total"
+          },
+          "iban": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iban"
+          },
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          },
+          "motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "numero",
+          "estado"
+        ],
+        "title": "InvoiceListItem"
       },
       "InvoiceUploadResponse": {
         "properties": {

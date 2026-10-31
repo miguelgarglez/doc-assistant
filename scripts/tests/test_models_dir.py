@@ -39,7 +39,10 @@ def test_file_wins_over_default(
     tmp_path: Path, env_local: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv(MODELS_DIR_KEY, raising=False)
-    assert models_dir(None, env_local) == ((tmp_path / "from-file").resolve(), ".env.local")
+    assert models_dir(None, env_local) == (
+        (tmp_path / "from-file").resolve(),
+        ".env.local",
+    )
 
 
 def test_default_is_repo_models(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

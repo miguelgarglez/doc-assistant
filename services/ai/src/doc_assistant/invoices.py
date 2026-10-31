@@ -5,14 +5,16 @@ null field -> refusal. The LLM never sees or writes SQL."""
 
 from __future__ import annotations
 
+import os
 import re
 import sqlite3
+import tempfile
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 from doc_assistant.adapters import LLM, Embedder, OcrPort, build_adapters, build_ocr
-from doc_assistant.chunking import chunk_invoice
+from doc_assistant.chunking import chunk_invoice, invoice_doc_id
 from doc_assistant.config import load_config
 from doc_assistant.invoice_extract import extract_invoice, parse_es_decimal
 from doc_assistant.store import ChunkStore
@@ -69,14 +71,25 @@ class InvoiceDB:
         self.con = sqlite3.connect(path)
         cols = ", ".join(f"{k} TEXT" for k in FIELDS)
         self.con.execute(
-            f"CREATE TABLE IF NOT EXISTS facturas ({cols}, fichero TEXT, cuadra TEXT, PRIMARY KEY(numero))"
+            f"CREATE TABLE IF NOT EXISTS facturas ({cols}, fichero TEXT, cuadra TEXT, motivo TEXT, PRIMARY KEY(numero))"
         )
 
-    def upsert(self, rec: dict[str, Any], fichero: str = "", cuadra: str = "") -> None:
+    def upsert(
+        self,
+        rec: dict[str, Any],
+        fichero: str = "",
+        cuadra: str = "",
+        motivo: str | None = None,
+        *,
+        commit: bool = True,
+    ) -> None:
         vals = [None if rec.get(k) in (None, "") else str(rec[k]) for k in FIELDS]
-        q = ",".join("?" * (len(FIELDS) + 2))
-        self.con.execute(f"INSERT OR REPLACE INTO facturas VALUES ({q})", [*vals, fichero, cuadra])
-        self.con.commit()
+        q = ",".join("?" * (len(FIELDS) + 3))
+        self.con.execute(
+            f"INSERT OR REPLACE INTO facturas VALUES ({q})", [*vals, fichero, cuadra, motivo]
+        )
+        if commit:
+            self.con.commit()
 
     def rows(self) -> list[dict[str, Any]]:
         cur = self.con.execute("SELECT * FROM facturas ORDER BY numero")
@@ -85,10 +98,10 @@ class InvoiceDB:
 
     def get(self, numero: str) -> dict[str, Any] | None:
         want = _norm_num(numero)
-        for row in self.rows():
-            if row.get("numero") and _norm_num(row["numero"]) == want:
-                return row
-        return None
+        rows = self.rows()
+        exact = [row for row in rows if row["numero"] == numero]
+        hits = exact or [row for row in rows if want and _norm_num(row["numero"]) == want]
+        return hits[0] if len(hits) == 1 else None
 
 
 _dec = parse_es_decimal
@@ -102,6 +115,10 @@ def run_plan(db: InvoiceDB, plan: dict[str, Any]) -> dict[str, Any]:
     """Returns {ok, answer, citations:[{numero, campo, valor}], reason}."""
     rows = db.rows()
     kind = plan.get("kind")
+
+    def warning(selected: list[dict[str, Any]]) -> str:
+        review = [r["numero"] for r in selected if r["cuadra"] == "0"]
+        return " Nota: facturas pendientes de revisión: " + ", ".join(review) if review else ""
 
     def refuse(why: str) -> dict[str, Any]:
         return {"ok": False, "answer": None, "citations": [], "reason": why}
@@ -125,7 +142,7 @@ def run_plan(db: InvoiceDB, plan: dict[str, Any]) -> dict[str, Any]:
         ans = "; ".join(f"{FIELDS[c]}: {r[c]}" for c in campos)
         return {
             "ok": True,
-            "answer": f"Factura {r['numero']}: {ans}",
+            "answer": f"Factura {r['numero']}: {ans}" + warning([r]),
             "citations": cits,
             "reason": "sql",
         }
@@ -163,7 +180,7 @@ def run_plan(db: InvoiceDB, plan: dict[str, Any]) -> dict[str, Any]:
         if kind == "contar":
             return {
                 "ok": True,
-                "answer": f"{len(sel)} facturas",
+                "answer": f"{len(sel)} facturas" + warning(sel),
                 "reason": "sql",
                 "citations": [loc(r, f or "numero") for r in sel],
             }
@@ -177,7 +194,8 @@ def run_plan(db: InvoiceDB, plan: dict[str, Any]) -> dict[str, Any]:
             total = sum((v for _, v in vals if v is not None), Decimal(0))
             return {
                 "ok": True,
-                "answer": f"Suma de {FIELDS[c]}: {total} EUR en {len(vals)} facturas",
+                "answer": f"Suma de {FIELDS[c]}: {total} EUR en {len(vals)} facturas"
+                + warning(sel),
                 "reason": "sql",
                 "citations": [loc(r, c) for r, _ in vals],
             }
@@ -190,7 +208,7 @@ def run_plan(db: InvoiceDB, plan: dict[str, Any]) -> dict[str, Any]:
             }
         return {
             "ok": True,
-            "answer": "Facturas: " + ", ".join(r["numero"] for r in sel),
+            "answer": "Facturas: " + ", ".join(r["numero"] for r in sel) + warning(sel),
             "reason": "sql",
             "citations": [loc(r, f or "numero") for r in sel],
         }
@@ -257,26 +275,45 @@ def upload_invoice(
 
     invoices_dir = cfg.data_dir / "invoices"
     invoices_dir.mkdir(parents=True, exist_ok=True)
-    path = invoices_dir / sanitize_image_filename(filename, numero)
-    path.write_bytes(image)
+    path = invoices_dir / (
+        invoice_doc_id(numero) + Path(sanitize_image_filename(filename, numero)).suffix
+    )
     relative = str(path.relative_to(cfg.data_dir))
-
-    db = InvoiceDB(str(cfg.db))
+    fd, temporary = tempfile.mkstemp(dir=invoices_dir, prefix=".invoice-")
     try:
-        db.upsert(
-            record,
-            fichero=relative,
-            cuadra="1" if extracted["estado"] == "ok" else "0",
-        )
+        with os.fdopen(fd, "wb") as f:
+            f.write(image)
+        dim = getattr(embedder, "dim", None) or cfg.embeddings.dim or 8
+        store = ChunkStore(cfg.db, dim=dim)
+        try:
+            cols = ", ".join(f"{k} TEXT" for k in FIELDS)
+            store.db.execute(
+                f"CREATE TABLE IF NOT EXISTS facturas ({cols}, fichero TEXT, cuadra TEXT, motivo TEXT, PRIMARY KEY(numero))"
+            )
+            values = [None if record.get(k) in (None, "") else str(record[k]) for k in FIELDS]
+            placeholders = ",".join("?" * (len(FIELDS) + 3))
+            store.db.execute(
+                f"INSERT OR REPLACE INTO facturas VALUES ({placeholders})",
+                [
+                    *values,
+                    relative,
+                    "1" if extracted["estado"] == "ok" else "0",
+                    extracted["motivo"],
+                ],
+            )
+            store.replace_document(
+                invoice_doc_id(numero), chunks, embeddings, [image], commit=False
+            )
+            store.db.commit()
+        except Exception:
+            store.db.rollback()
+            raise
+        finally:
+            store.db.close()
+        os.replace(temporary, path)
     finally:
-        db.con.close()
-
-    dim = getattr(embedder, "dim", None) or cfg.embeddings.dim or 8
-    store = ChunkStore(cfg.db, dim=dim)
-    try:
-        store.replace_document(numero, chunks, embeddings, [image])
-    finally:
-        store.db.close()
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 
     return {
         "record": record,
@@ -299,7 +336,7 @@ def invoice_image(config_path: str | Path, invoice_id: str) -> bytes | None:
         return None
     store = ChunkStore(cfg.db, dim=cfg.embeddings.dim or 8)
     try:
-        png = store.page(row["numero"], 1)
+        png = store.page(invoice_doc_id(row["numero"]), 1)
     finally:
         store.db.close()
     if png is not None:
@@ -346,6 +383,7 @@ def ask_invoices(
                 "chunk_id": f"{cit.get('numero')}:{cit.get('campo')}",
                 "quote": fragment,
                 "doc": cit.get("numero") or "",
+                "doc_id": invoice_doc_id(cit.get("numero") or ""),
                 "section": cit.get("campo") or "",
                 "pages": [1],
                 "fragment": fragment,

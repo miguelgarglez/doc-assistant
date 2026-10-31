@@ -200,6 +200,8 @@ class HttpReranker:
         )
         try:
             results = data["results"]
+            if len(results) != len(documents):
+                raise ValueError("incorrect cardinality")
             indices = [x["index"] for x in results]
             if any(type(i) is not int or i < 0 or i >= len(documents) for i in indices) or len(
                 set(indices)
