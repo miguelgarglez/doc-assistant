@@ -1,0 +1,99 @@
+{
+  "ground_truth": {
+    "invoice_number": "F-2026-031",
+    "issue_date": "2026-07-03",
+    "due_date": "2026-12-31",
+    "seller": {
+      "name": "María Soler García",
+      "tax_id": "36477214L"
+    },
+    "buyer": {
+      "name": "Talleres Puig, S.A.",
+      "tax_id": "A48846083"
+    },
+    "lines": [
+      {
+        "description": "Licencia de software",
+        "quantity": "8",
+        "unit_price": "269.96",
+        "discount_pct": "5",
+        "vat_rate": 21,
+        "amount": "2051.70"
+      },
+      {
+        "description": "Asesoría técnica",
+        "quantity": "2",
+        "unit_price": "76.81",
+        "discount_pct": "10",
+        "vat_rate": 21,
+        "amount": "138.26"
+      },
+      {
+        "description": "Asesoría técnica",
+        "quantity": "19",
+        "unit_price": "168.04",
+        "discount_pct": "15",
+        "vat_rate": 21,
+        "amount": "2713.85"
+      },
+      {
+        "description": "Licencia de software",
+        "quantity": "12",
+        "unit_price": "368.49",
+        "discount_pct": "15",
+        "vat_rate": 21,
+        "amount": "3758.60"
+      },
+      {
+        "description": "Servicio de mantenimiento",
+        "quantity": "11",
+        "unit_price": "168.32",
+        "discount_pct": "10",
+        "vat_rate": 21,
+        "amount": "1666.37"
+      },
+      {
+        "description": "Licencia de software",
+        "quantity": "2",
+        "unit_price": "414.14",
+        "discount_pct": "15",
+        "vat_rate": 21,
+        "amount": "704.04"
+      },
+      {
+        "description": "Cable industrial",
+        "quantity": "6",
+        "unit_price": "90.85",
+        "discount_pct": "5",
+        "vat_rate": 21,
+        "amount": "517.85"
+      }
+    ],
+    "vat_breakdown": [
+      {
+        "rate": 21,
+        "base": "11550.67",
+        "vat": "2425.64"
+      }
+    ],
+    "subtotal": "11550.67",
+    "vat_total": "2425.64",
+    "irpf_rate": 15,
+    "irpf_amount": "1732.60",
+    "re_total": null,
+    "total": "12243.71",
+    "iban": null
+  },
+  "axes": [
+    "layout_1",
+    "subtotal_si",
+    "fecha_numerica",
+    "numero_guion",
+    "total_TOTAL",
+    "limpio",
+    "irpf_15",
+    "descuento",
+    "sin_iban"
+  ],
+  "subtotal_printed": true
+}

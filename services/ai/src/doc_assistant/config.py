@@ -24,6 +24,7 @@ class AppConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     db: Path
     docs: Path
+    data_dir: Path
     llm: EndpointConfig
     embeddings: EndpointConfig
     reranker: EndpointConfig
@@ -42,6 +43,10 @@ def load_config(path: str | Path) -> AppConfig:
     # Relative paths are anchored to the configuration file, not the process cwd.
     cfg.db = (path.parent / cfg.db).resolve()
     cfg.docs = (path.parent / cfg.docs).resolve()
+    cfg.data_dir = (path.parent / cfg.data_dir).resolve()
+    cfg.data_dir.mkdir(parents=True, exist_ok=True)
+    if not cfg.data_dir.is_dir():
+        raise ValueError("data_dir must be a directory")
     if cfg.embeddings.dim is None:
         raise ValueError("embeddings.dim is required")
     return cfg

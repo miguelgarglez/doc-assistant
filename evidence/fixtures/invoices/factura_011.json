@@ -1,0 +1,128 @@
+{
+  "ground_truth": {
+    "invoice_number": "2026/6064",
+    "issue_date": "2026-11-11",
+    "due_date": "2026-12-31",
+    "seller": {
+      "name": "Mecanizados Ebro, S.L.",
+      "tax_id": "A31818255"
+    },
+    "buyer": {
+      "name": "Talleres Puig, S.A.",
+      "tax_id": "A96967971"
+    },
+    "lines": [
+      {
+        "description": "Cable industrial",
+        "quantity": "16",
+        "unit_price": "41.17",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "658.72"
+      },
+      {
+        "description": "Producto alimentario",
+        "quantity": "8",
+        "unit_price": "304",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "2432.00"
+      },
+      {
+        "description": "Cable industrial",
+        "quantity": "9",
+        "unit_price": "339.07",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "3051.63"
+      },
+      {
+        "description": "Material de oficina",
+        "quantity": "5",
+        "unit_price": "398.15",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "1990.75"
+      },
+      {
+        "description": "Asesoría técnica",
+        "quantity": "12",
+        "unit_price": "454.89",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "5458.68"
+      },
+      {
+        "description": "Cable industrial",
+        "quantity": "3",
+        "unit_price": "28.71",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "86.13"
+      },
+      {
+        "description": "Licencia de software",
+        "quantity": "5",
+        "unit_price": "372.74",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "1863.70"
+      },
+      {
+        "description": "Producto alimentario",
+        "quantity": "8",
+        "unit_price": "204.02",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "1632.16"
+      },
+      {
+        "description": "Asesoría técnica",
+        "quantity": "10",
+        "unit_price": "221.16",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "2211.60"
+      },
+      {
+        "description": "Cable industrial",
+        "quantity": "8",
+        "unit_price": "455.12",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "3640.96"
+      },
+      {
+        "description": "Licencia de software",
+        "quantity": "3",
+        "unit_price": "123.39",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "370.17"
+      }
+    ],
+    "vat_breakdown": [
+      {
+        "rate": 10,
+        "base": "23396.50",
+        "vat": "2339.65"
+      }
+    ],
+    "subtotal": "23396.50",
+    "vat_total": "2339.65",
+    "irpf_rate": null,
+    "irpf_amount": null,
+    "re_total": null,
+    "total": "25736.15",
+    "iban": "ES76 2100 0418 4502 0005 1332"
+  },
+  "axes": [
+    "layout_2",
+    "subtotal_si",
+    "fecha_numerica",
+    "numero_barra",
+    "total_Importe total",
+    "escaner"
+  ],
+  "subtotal_printed": true
+}

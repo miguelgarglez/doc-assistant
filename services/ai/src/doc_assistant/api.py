@@ -25,7 +25,7 @@ class ErrorBody(BaseModel):
 
 
 class IngestRequest(BaseModel):
-    directory: Path
+    directory: str = ""
 
 
 class IngestResponse(BaseModel):
@@ -94,17 +94,37 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
     @app.post(
         "/ingest",
         response_model=IngestResponse,
-        responses={404: {"model": ErrorBody}, 502: {"model": ErrorBody}},
+        responses={400: {"model": ErrorBody}, 404: {"model": ErrorBody}, 502: {"model": ErrorBody}},
     )
-    def ingest(payload: IngestRequest) -> Any:
-        if not payload.directory.is_dir():
+    def ingest(payload: IngestRequest, request: Request) -> Any:
+        base = request.app.state.config.data_dir
+        relative = Path(payload.directory)
+        if relative.is_absolute() or ".." in relative.parts:
+            return JSONResponse(
+                status_code=400,
+                content=ErrorBody(
+                    code="invalid_directory", message="Directory must be relative to data_dir"
+                ).model_dump(),
+            )
+        target = (base / relative).resolve()
+        if not target.is_relative_to(base) or (
+            target.is_dir()
+            and any(not child.resolve().is_relative_to(base) for child in target.iterdir())
+        ):
+            return JSONResponse(
+                status_code=400,
+                content=ErrorBody(
+                    code="invalid_directory", message="Directory contains a path outside data_dir"
+                ).model_dump(),
+            )
+        if not target.is_dir():
             return JSONResponse(
                 status_code=404,
                 content=ErrorBody(
                     code="directory_not_found", message="Directory does not exist"
                 ).model_dump(),
             )
-        return ingest_pdfs(config_path, payload.directory)
+        return ingest_pdfs(config_path, target)
 
     @app.post("/ask", response_model=AskResponse, responses={502: {"model": ErrorBody}})
     def query(payload: AskRequest) -> Any:

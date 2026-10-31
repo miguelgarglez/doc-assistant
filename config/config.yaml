@@ -1,5 +1,6 @@
 db: data/doc-assistant.db
 docs: data/documents
+data_dir: data
 llm:
   base_url: http://127.0.0.1:8081
   endpoint: /v1/chat/completions

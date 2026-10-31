@@ -1,0 +1,80 @@
+{
+  "ground_truth": {
+    "invoice_number": "2026/3431",
+    "issue_date": "2026-05-13",
+    "due_date": "2026-12-31",
+    "seller": {
+      "name": "Mecanizados Ebro, S.L.",
+      "tax_id": "A22061519"
+    },
+    "buyer": {
+      "name": "Talleres Puig, S.A.",
+      "tax_id": "A53947008"
+    },
+    "lines": [
+      {
+        "description": "Material de oficina",
+        "quantity": "18",
+        "unit_price": "365.52",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "6579.36"
+      },
+      {
+        "description": "Asesoría técnica",
+        "quantity": "14",
+        "unit_price": "182.41",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "2553.74"
+      },
+      {
+        "description": "Material de oficina",
+        "quantity": "2",
+        "unit_price": "353.04",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "706.08"
+      },
+      {
+        "description": "Licencia de software",
+        "quantity": "9",
+        "unit_price": "251.38",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "2262.42"
+      },
+      {
+        "description": "Producto alimentario",
+        "quantity": "14",
+        "unit_price": "61.01",
+        "discount_pct": "0",
+        "vat_rate": 10,
+        "amount": "854.14"
+      }
+    ],
+    "vat_breakdown": [
+      {
+        "rate": 10,
+        "base": "12955.74",
+        "vat": "1295.57"
+      }
+    ],
+    "subtotal": "12955.74",
+    "vat_total": "1295.57",
+    "irpf_rate": null,
+    "irpf_amount": null,
+    "re_total": null,
+    "total": "14251.31",
+    "iban": "ES76 2100 0418 4502 0005 1332"
+  },
+  "axes": [
+    "layout_2",
+    "subtotal_si",
+    "fecha_numerica",
+    "numero_barra",
+    "total_Importe total",
+    "escaner"
+  ],
+  "subtotal_printed": true
+}

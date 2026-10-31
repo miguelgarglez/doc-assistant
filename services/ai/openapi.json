@@ -52,6 +52,16 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -373,14 +383,11 @@
         "properties": {
           "directory": {
             "type": "string",
-            "format": "path",
-            "title": "Directory"
+            "title": "Directory",
+            "default": ""
           }
         },
         "type": "object",
-        "required": [
-          "directory"
-        ],
         "title": "IngestRequest"
       },
       "IngestResponse": {

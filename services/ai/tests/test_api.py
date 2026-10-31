@@ -48,3 +48,28 @@ def test_invalid_config_fails_at_startup(tmp_path: Path) -> None:
     config.write_text("top_k: 0\n")
     with pytest.raises(ValueError), TestClient(create_app(config)):
         pass
+
+
+def test_ingest_confines_paths(
+    config_path: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "nested").mkdir()
+    (data / "escape").symlink_to(tmp_path, target_is_directory=True)
+    calls = []
+    monkeypatch.setattr(
+        "doc_assistant.api.ingest_pdfs",
+        lambda _cfg, path: (
+            calls.append(path) or {"n_chunks": 0, "chunk_ids": [], "warnings": [], "timings": {}}
+        ),
+    )
+    with TestClient(create_app(config_path)) as client:
+        for path in ("../outside", str(tmp_path), "escape"):
+            response = client.post("/ingest", json={"directory": path})
+            assert response.status_code == 400
+            assert response.json()["code"] == "invalid_directory"
+        assert client.post("/ingest", json={"directory": "nested"}).status_code == 200
+        assert calls == [data / "nested"]
+        assert client.post("/ingest", json={}).status_code == 400
+        assert client.post("/ingest", json={"directory": "missing"}).status_code == 404
