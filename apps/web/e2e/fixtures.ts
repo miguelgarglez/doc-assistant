@@ -8,7 +8,7 @@ export const DEMO_QUESTION = "¿Cuál es la carga útil máxima del GR-50?"
 export const askAnswerWithCitation = {
   ok: true,
   answer:
-    "La carga útil máxima del end-effector GR-50 es de 12 kg (ISO 9409-1), según la ficha técnica ACME-DEMO-DS.",
+    "La carga útil máxima del pinza GR-50 es de 12 kg (ISO 9409-1), según la ficha técnica ACME-DEMO-DS.",
   citations: [
     {
       chunk_id: "chunk-acme-ds-2-1",

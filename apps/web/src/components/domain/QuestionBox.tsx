@@ -37,7 +37,7 @@ export function QuestionBox({ disabled = false, onSubmit }: QuestionBoxProps) {
           name="question"
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
-          placeholder="¿Cuál es la carga útil máxima del GR-50?"
+          placeholder="Pregunta sobre tus documentos o facturas…"
           rows={3}
           disabled={disabled}
           maxLength={1000}
