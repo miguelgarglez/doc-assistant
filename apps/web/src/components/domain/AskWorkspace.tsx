@@ -26,7 +26,7 @@ export function AskWorkspace() {
     citations.length > 0 ? (citations[safeIndex] ?? null) : null
   const page = selected ? (citationPage(selected) ?? null) : null
   const pageImageSrc =
-    selected && page !== null ? sourcePageUrl(selected.doc, page) : null
+    selected && page !== null ? sourcePageUrl(selected.doc_id, page) : null
 
   function handleSelectCitation(citation: Citation) {
     const index = citations.findIndex((item) => item.chunk_id === citation.chunk_id)

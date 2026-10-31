@@ -14,6 +14,7 @@ export const askAnswerWithCitation = {
       chunk_id: "chunk-acme-ds-2-1",
       quote: "Carga útil máxima: 12 kg",
       doc: "ACME-DEMO-DS",
+      doc_id: "pdf-acme-demo-ds",
       section: "2.1",
       pages: [1],
       fragment:
@@ -23,6 +24,7 @@ export const askAnswerWithCitation = {
       chunk_id: "chunk-acme-ds-flange",
       quote: "ISO 9409-1-50-4-M6",
       doc: "ACME-DEMO-DS",
+      doc_id: "pdf-acme-demo-ds",
       section: "2.1",
       pages: [1],
       fragment:

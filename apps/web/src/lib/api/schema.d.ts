@@ -99,8 +99,7 @@ export interface paths {
         /** Invoices */
         get: operations["invoices_invoices_get"];
         put?: never;
-        /** Put Invoice */
-        post: operations["put_invoice_invoices_post"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -179,6 +178,8 @@ export interface components {
             quote: string;
             /** Doc */
             doc: string;
+            /** Doc Id */
+            doc_id: string;
             /** Section */
             section: string;
             /** Pages */
@@ -270,6 +271,41 @@ export interface components {
             importe_total?: string | null;
             /** Iban */
             iban?: string | null;
+        };
+        /** InvoiceListItem */
+        InvoiceListItem: {
+            /** Numero */
+            numero: string;
+            /** Fecha Emision */
+            fecha_emision?: string | null;
+            /** Fecha Vencimiento */
+            fecha_vencimiento?: string | null;
+            /** Emisor */
+            emisor?: string | null;
+            /** Nif Emisor */
+            nif_emisor?: string | null;
+            /** Cliente */
+            cliente?: string | null;
+            /** Nif Cliente */
+            nif_cliente?: string | null;
+            /** Base Imponible Total */
+            base_imponible_total?: string | null;
+            /** Cuota Iva Total */
+            cuota_iva_total?: string | null;
+            /** Irpf Tipo */
+            irpf_tipo?: string | null;
+            /** Irpf Importe */
+            irpf_importe?: string | null;
+            /** Recargo Total */
+            recargo_total?: string | null;
+            /** Importe Total */
+            importe_total?: string | null;
+            /** Iban */
+            iban?: string | null;
+            /** Estado */
+            estado: string;
+            /** Motivo */
+            motivo?: string | null;
         };
         /** InvoiceUploadResponse */
         InvoiceUploadResponse: {
@@ -552,40 +588,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Invoice"][];
-                };
-            };
-        };
-    };
-    put_invoice_invoices_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Invoice"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Invoice"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["InvoiceListItem"][];
                 };
             };
         };

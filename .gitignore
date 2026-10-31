@@ -13,3 +13,4 @@ vendor/
 models/
 _agents/
 _dist/
+evidence/live/start.log
