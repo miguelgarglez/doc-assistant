@@ -7,7 +7,9 @@ import { ChatProvider } from "@/components/providers/chat-provider"
 import { SourcesProvider } from "@/components/providers/sources-provider"
 import { UploadsProvider } from "@/components/providers/uploads-provider"
 import { AppShell } from "@/components/shell/app-shell"
-import { ToastProvider } from "@/components/ui/toast"
+import { Toaster } from "@/components/ui/sonner"
+import { UploadToast } from "@/components/uploads/upload-toast"
+import { AddSourcesProvider } from "@/components/providers/add-sources-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { DEFAULT_THEME, THEME_NAMES, COLOR_MODES, THEME_STORAGE_KEY, MODE_STORAGE_KEY } from "@/lib/theme"
 
@@ -61,19 +63,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="h-dvh overflow-hidden">
         <ThemeProvider>
-          <ToastProvider>
-            <TooltipProvider delay={300}>
-              <SourcesProvider>
-                <UploadsProvider>
+          <TooltipProvider delay={300}>
+            <SourcesProvider>
+              <UploadsProvider>
+                <AddSourcesProvider>
                   <ChatProvider>
                     <PromptInputProvider>
                       <AppShell>{children}</AppShell>
                     </PromptInputProvider>
                   </ChatProvider>
-                </UploadsProvider>
-              </SourcesProvider>
-            </TooltipProvider>
-          </ToastProvider>
+                </AddSourcesProvider>
+                <Toaster />
+                <UploadToast />
+              </UploadsProvider>
+            </SourcesProvider>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>

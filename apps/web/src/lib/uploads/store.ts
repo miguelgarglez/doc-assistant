@@ -1,4 +1,8 @@
+import { followIngestJob, type IngestStage } from "../api/ingest-events"
 import { classifyDroppedFile, uploadDocumentFile, uploadInvoiceFile } from "../api/upload"
+import { describeUploadError, UNSUPPORTED_MESSAGE } from "./errors"
+
+export { CANCELLED_MESSAGE, UNSUPPORTED_MESSAGE } from "./errors"
 
 export type UploadStatus = "queued" | "uploading" | "processing" | "done" | "error"
 export type UploadOrigin = "chat" | "sources"
@@ -11,16 +15,22 @@ export type UploadItem = {
   status: UploadStatus
   /** 0 to 100 while the bytes are on the wire. */
   progress: number
+  /** Step the service reports while it processes the file. */
+  stage?: IngestStage
   /** Result summary when done, reason when it failed. */
   detail?: string
+  /** The service already had this file: nothing was added. */
+  duplicate?: boolean
+  /** False when trying the same file again cannot work. */
+  retryable: boolean
+  /** The notification no longer lists it. */
+  hidden?: boolean
   origin: UploadOrigin
   /** True once a chat message has taken this upload as its attachment. */
   attached: boolean
   previewUrl?: string
 }
 
-export const UNSUPPORTED_MESSAGE = "Solo se admiten PDF e imágenes (PNG, JPG)."
-export const CANCELLED_MESSAGE = "Subida cancelada."
 
 /**
  * Upload queue outside React: one file at a time, state changes publish an immutable snapshot.
@@ -57,10 +67,11 @@ export class UploadStore {
         origin,
         attached: false,
         progress: 0,
+        retryable: true,
         previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined,
       }
       if (kind === "unsupported") {
-        return { ...base, kind: "document", status: "error", detail: UNSUPPORTED_MESSAGE }
+        return { ...base, kind: "document", status: "error", detail: UNSUPPORTED_MESSAGE, retryable: false }
       }
       return { ...base, kind, status: "queued" }
     })
@@ -69,12 +80,20 @@ export class UploadStore {
   }
 
   retry(id: string) {
-    this.patch(id, { status: "queued", progress: 0, detail: undefined })
+    this.patch(id, { status: "queued", progress: 0, detail: undefined, stage: undefined, duplicate: undefined, hidden: false })
     this.pump()
   }
 
+  /** Only possible while the bytes are still travelling: once the service has the file it finishes the job. */
   cancel(id: string) {
-    this.controllers.get(id)?.abort()
+    const item = this.items.find((candidate) => candidate.id === id)
+    if (item?.status === "queued") this.dismiss(id)
+    else if (item?.status === "uploading") this.controllers.get(id)?.abort()
+  }
+
+  /** Hides the finished items from the notification; they keep their result in the sources list. */
+  hideFinished() {
+    this.publish(this.items.map((item) => (item.status === "done" || item.status === "error" ? { ...item, hidden: true } : item)))
   }
 
   dismiss(id: string) {
@@ -111,23 +130,46 @@ export class UploadStore {
   }
 
   private async run(item: UploadItem, signal: AbortSignal) {
+    const jobId = crypto.randomUUID()
+    const follow = new AbortController()
     const onProgress = (progress: number) =>
       this.patch(item.id, { progress, status: progress >= 100 ? "processing" : "uploading" })
-    const result =
-      item.kind === "invoice"
-        ? await uploadInvoiceFile(item.file, onProgress, signal).then((outcome) =>
-            outcome.ok ? { ok: true as const, detail: outcome.data.estado === "ok" ? "Factura extraída" : "Factura para revisar" } : outcome
-          )
-        : await uploadDocumentFile(item.file, onProgress, signal).then((outcome) =>
-            outcome.ok
-              ? { ok: true as const, detail: outcome.data.created ? `${outcome.data.n_chunks} fragmentos` : "Ya estaba indexado" }
-              : outcome
-          )
-    if (result.ok) {
-      this.patch(item.id, { status: "done", progress: 100, detail: result.detail })
-      await this.onUploaded()
-    } else {
-      this.patch(item.id, { status: "error", detail: result.error.message })
+    void followIngestJob(
+      jobId,
+      (event) => {
+        const current = this.items.find((candidate) => candidate.id === item.id)
+        if (current?.status === "uploading" || current?.status === "processing") {
+          this.patch(item.id, { stage: event.stage, status: "processing", progress: 100 })
+        }
+      },
+      follow.signal
+    )
+    try {
+      const result =
+        item.kind === "invoice"
+          ? await uploadInvoiceFile(item.file, onProgress, signal, jobId).then((outcome) =>
+              outcome.ok
+                ? { ok: true as const, duplicate: false, detail: outcome.data.estado === "ok" ? "Factura extraída" : "Factura para revisar" }
+                : outcome
+            )
+          : await uploadDocumentFile(item.file, onProgress, signal, jobId).then((outcome) =>
+              outcome.ok
+                ? {
+                    ok: true as const,
+                    duplicate: !outcome.data.created,
+                    detail: outcome.data.created ? `${outcome.data.n_chunks} fragmentos indexados` : "Ya estaba indexado, no se añadió de nuevo",
+                  }
+                : outcome
+            )
+      if (result.ok) {
+        this.patch(item.id, { status: "done", progress: 100, stage: "done", detail: result.detail, duplicate: result.duplicate })
+        await this.onUploaded()
+      } else {
+        const { message, retryable } = describeUploadError(result.error)
+        this.patch(item.id, { status: "error", stage: "error", detail: message, retryable })
+      }
+    } finally {
+      follow.abort()
     }
   }
 }

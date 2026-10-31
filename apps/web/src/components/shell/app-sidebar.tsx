@@ -4,6 +4,7 @@ import {
   ActivityIcon,
   FileSearchIcon,
   LibraryIcon,
+  PlusIcon,
   MessageSquareIcon,
   SettingsIcon,
   SquarePenIcon,
@@ -11,6 +12,7 @@ import {
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 
+import { useAddSources } from "@/components/providers/add-sources-provider"
 import { useConversation } from "@/components/providers/chat-provider"
 import { useSources } from "@/components/providers/sources-provider"
 import {
@@ -39,6 +41,7 @@ export function AppSidebar() {
   const { setOpenMobile } = useSidebar()
   const { messages, clear } = useConversation()
   const sources = useSources()
+  const addSources = useAddSources()
 
   const newConversation = () => {
     clear()
@@ -68,6 +71,18 @@ export function AppSidebar() {
         >
           <SquarePenIcon className="size-4" />
           Nueva conversación
+        </button>
+        <button
+          className="flex h-9 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-sidebar-primary px-2.5 text-sm font-medium text-sidebar-primary-foreground transition-[background-color,transform] duration-150 ease-[var(--ease-out)] outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring active:scale-[0.97] motion-reduce:active:scale-100 [@media(hover:hover)]:hover:bg-sidebar-primary/90"
+          data-testid="add-sources"
+          onClick={() => {
+            setOpenMobile(false)
+            addSources.setOpen(true)
+          }}
+          type="button"
+        >
+          <PlusIcon className="size-4" />
+          Añadir fuentes
         </button>
       </SidebarHeader>
       <SidebarContent>

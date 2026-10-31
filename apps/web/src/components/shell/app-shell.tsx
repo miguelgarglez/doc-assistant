@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import { usePromptInput } from "@/components/ai-elements/prompt-input"
+import { useAddSources } from "@/components/providers/add-sources-provider"
 import { useUploads, type UploadOrigin } from "@/components/providers/uploads-provider"
 import { AppSidebar, NAV_ITEMS } from "@/components/shell/app-sidebar"
 import { ShortcutsHelp } from "@/components/shell/shortcuts-help"
@@ -20,6 +21,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { enqueue } = useUploads()
+  const addSources = useAddSources()
   const { textareaRef } = usePromptInput()
   const [helpOpen, setHelpOpen] = useState(false)
   const [dragging, setDragging] = useState(false)
@@ -28,6 +30,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const title = NAV_ITEMS.find((item) => (item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)))?.label ?? "Doc Assistant"
 
   useEffect(() => {
+    // While the dialog is open its own drop zone takes the files.
+    if (addSources.open) return
     const hasFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files")
     const enter = (event: DragEvent) => {
       if (!hasFiles(event)) return
@@ -61,7 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       window.removeEventListener("dragleave", leave)
       window.removeEventListener("drop", drop)
     }
-  }, [enqueue, origin])
+  }, [enqueue, origin, addSources.open])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

@@ -27,12 +27,12 @@ async function uploadWithProgress<T>(
   path: string,
   file: File,
   onProgress?: ProgressHandler,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  jobId?: string
 ): Promise<UploadResult<T>> {
-
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest()
-    xhr.open("POST", `/api${path}`)
+    xhr.open("POST", `/api${path}${jobId ? `?job=${encodeURIComponent(jobId)}` : ""}`)
     xhr.responseType = "json"
     xhr.timeout = 180_000
 
@@ -103,14 +103,16 @@ async function uploadWithProgress<T>(
 export async function uploadInvoiceFile(
   file: File,
   onProgress?: ProgressHandler,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  jobId?: string
 ): Promise<UploadResult<InvoiceUploadResponse>> {
   if (onProgress || signal) {
     return uploadWithProgress<InvoiceUploadResponse>(
       "/invoices/upload",
       file,
       onProgress,
-      signal
+      signal,
+      jobId
     )
   }
   const { data, error } = await api.POST("/invoices/upload", multipartFile(file))
@@ -133,14 +135,16 @@ export async function uploadInvoiceFile(
 export async function uploadDocumentFile(
   file: File,
   onProgress?: ProgressHandler,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  jobId?: string
 ): Promise<UploadResult<DocumentUploadResponse>> {
   if (onProgress || signal) {
     return uploadWithProgress<DocumentUploadResponse>(
       "/documents",
       file,
       onProgress,
-      signal
+      signal,
+      jobId
     )
   }
   const { data, error } = await api.POST("/documents", multipartFile(file))

@@ -1,9 +1,9 @@
 "use client"
 
-import { FileSearchIcon, PaperclipIcon } from "lucide-react"
+import { FileSearchIcon, PlusIcon } from "lucide-react"
 
-import { usePromptInput } from "@/components/ai-elements/prompt-input"
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion"
+import { useAddSources } from "@/components/providers/add-sources-provider"
 import { useSources } from "@/components/providers/sources-provider"
 import { Button } from "@/components/ui/button"
 import type { Source } from "@/lib/api/types"
@@ -19,7 +19,7 @@ export function suggestionsFor(sources: readonly Source[]): string[] {
 
 export function EmptyState({ onAsk }: { onAsk: (question: string) => void }) {
   const sources = useSources()
-  const { openFileDialog } = usePromptInput()
+  const addSources = useAddSources()
   const ready = sources.status === "ready"
   const suggestions = suggestionsFor(sources.items)
   const count = sources.items.length
@@ -49,8 +49,8 @@ export function EmptyState({ onAsk }: { onAsk: (question: string) => void }) {
         </Suggestions>
       ) : null}
       {ready && count === 0 ? (
-        <Button data-testid="empty-add-source" onClick={openFileDialog} type="button" variant="outline">
-          <PaperclipIcon data-icon="inline-start" />
+        <Button data-testid="empty-add-source" onClick={() => addSources.setOpen(true)} size="lg" type="button">
+          <PlusIcon data-icon="inline-start" />
           Añadir fuentes
         </Button>
       ) : null}

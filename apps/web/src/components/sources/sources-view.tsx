@@ -1,20 +1,20 @@
 "use client"
 
-import { ArrowDownIcon, ArrowUpIcon, FileTextIcon, ReceiptTextIcon, SearchIcon } from "lucide-react"
+import { ArrowDownIcon, ArrowUpIcon, FileTextIcon, ReceiptTextIcon, PlusIcon, SearchIcon } from "lucide-react"
 import { useMemo, useState } from "react"
+import { toast } from "sonner"
 
+import { useAddSources } from "@/components/providers/add-sources-provider"
 import { useSources } from "@/components/providers/sources-provider"
 import { Page, PageHeader } from "@/components/shell/page"
 import { SourceDetail } from "@/components/sources/source-detail"
 import { KindLabel, StatusBadge } from "@/components/sources/status-badge"
-import { UploadStrip } from "@/components/sources/upload-strip"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useToast } from "@/components/ui/toast"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import type { Source } from "@/lib/api/types"
 import { cn } from "@/lib/utils"
@@ -35,7 +35,7 @@ function dateLabel(value: string | null | undefined) {
 
 export function SourcesView() {
   const sources = useSources()
-  const { toast } = useToast()
+  const addSources = useAddSources()
   const [filter, setFilter] = useState<Filter>("all")
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "added", dir: "desc" })
@@ -104,9 +104,14 @@ export function SourcesView() {
       <Page className="min-w-0 lg:min-h-0">
         <PageHeader
           description="Documentos y facturas que el asistente puede citar."
+          actions={
+            <Button data-testid="upload-trigger" onClick={() => addSources.setOpen(true)} size="lg" type="button">
+              <PlusIcon data-icon="inline-start" />
+              Añadir fuentes
+            </Button>
+          }
           title="Fuentes"
         />
-        <UploadStrip />
         <section aria-label="Fuentes indexadas" className="flex min-h-0 flex-1 flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div aria-label="Filtrar por tipo" className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-1" role="group">

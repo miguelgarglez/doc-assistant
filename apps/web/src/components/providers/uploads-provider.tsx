@@ -14,6 +14,7 @@ type UploadsContextValue = {
   cancel: (id: string) => void
   dismiss: (id: string) => void
   markAttached: (ids: string[]) => void
+  hideFinished: () => void
 }
 
 const UploadsContext = createContext<UploadsContextValue | null>(null)
@@ -35,6 +36,7 @@ export function UploadsProvider({ children }: { children: ReactNode }) {
       cancel: (id) => store.cancel(id),
       dismiss: (id) => store.dismiss(id),
       markAttached: (ids) => store.markAttached(ids),
+      hideFinished: () => store.hideFinished(),
     }),
     [items, store]
   )
