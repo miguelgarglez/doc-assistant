@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -239,9 +240,19 @@ def to_invoice_record(
     return record
 
 
-def extract_invoice(image: bytes, *, ocr: OcrPort, llm: LLM) -> dict[str, Any]:
+def extract_invoice(
+    image: bytes,
+    *,
+    ocr: OcrPort,
+    llm: LLM,
+    on_stage: Callable[[str], None] | None = None,
+) -> dict[str, Any]:
     """Devuelve record, estado, motivo, evidencias, flags y texto OCR."""
+    if on_stage:
+        on_stage("ocr")
     ocr_text = ocr.extract(image)
+    if on_stage:
+        on_stage("extracting")
     amounts, amount_evidence, flags = extract_amounts(ocr_text)
     text_fields, text_evidence = extract_text_fields(ocr_text, llm)
     for record_field, source_field in RECORD_MAP.items():

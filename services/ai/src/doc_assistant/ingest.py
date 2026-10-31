@@ -7,6 +7,7 @@ import io
 import json
 import re
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -46,8 +47,10 @@ def ingest_pdfs(
     invoice_path: str | Path | None = None,
     image_path: str | Path | None = None,  # reservado; no OCR en esta rebanada
     embedder: Embedder | None = None,
+    progress: Callable[..., None] | None = None,
 ) -> dict[str, Any]:
     t0 = time.perf_counter()
+    report = progress or (lambda *_args, **_kwargs: None)
     cfg = load_config(config_path)
     pdf_dir = Path(pdf_dir)
 
@@ -75,6 +78,7 @@ def ingest_pdfs(
     seen_hashes: dict[str, str] = {}
     documents: list[tuple[str, list[dict[str, Any]], list[bytes]]] = []
     t_extract = time.perf_counter()
+    report("reading")
     for pdf in pdfs:
         digest = hashlib.sha256(pdf.read_bytes()).hexdigest()
         if digest in seen_hashes:
@@ -129,6 +133,7 @@ def ingest_pdfs(
             },
         }
 
+    report("indexing")
     t_emb = time.perf_counter()
     embeddings = embedder.embed([c["text"] for c in all_chunks]) if all_chunks else []
     embed_s = time.perf_counter() - t_emb
@@ -162,6 +167,7 @@ def save_and_ingest_pdf(
     filename: str,
     *,
     embedder: Embedder | None = None,
+    progress: Callable[..., None] | None = None,
 ) -> dict[str, Any]:
     """Save a PDF under data_dir/documents (sanitized name) and ingest it.
 
@@ -181,7 +187,7 @@ def save_and_ingest_pdf(
             path = docs_dir / f"{digest[:12]}_{sanitize_pdf_filename(filename)}"
         path.write_bytes(data)
         created = True
-    result = ingest_pdfs(config_path, path, embedder=embedder)
+    result = ingest_pdfs(config_path, path, embedder=embedder, progress=progress)
     result["doc_id"] = pdf_doc_id(path.stem)
     result["path"] = str(path.relative_to(cfg.data_dir))
     result["content_hash"] = digest

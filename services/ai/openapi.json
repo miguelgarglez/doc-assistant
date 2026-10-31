@@ -117,15 +117,34 @@
       "post": {
         "summary": "Upload Document",
         "operationId": "upload_document_documents_post",
+        "parameters": [
+          {
+            "name": "job",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{8,64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Job"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/Body_upload_document_documents_post"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -139,34 +158,34 @@
             }
           },
           "400": {
-            "description": "Bad Request",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            }
+            },
+            "description": "Bad Request"
           },
           "413": {
-            "description": "Request Entity Too Large",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            }
+            },
+            "description": "Request Entity Too Large"
           },
           "502": {
-            "description": "Bad Gateway",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            }
+            },
+            "description": "Bad Gateway"
           },
           "422": {
             "description": "Validation Error",
@@ -318,6 +337,115 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ingest/jobs/{job_id}/events": {
+      "get": {
+        "summary": "Ingest Events",
+        "operationId": "ingest_events_ingest_jobs__job_id__events_get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{8,64}$",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server-Sent Events, one `stage` event per step until `done` or `error`. Follow it with the id sent as `?job=` on the upload.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestStageEvent"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sources/{source_id}/pages/{n}/highlight": {
+      "get": {
+        "summary": "Page Highlight",
+        "operationId": "page_highlight_sources__source_id__pages__n__highlight_get",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          },
+          {
+            "name": "n",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "N"
+            }
+          },
+          {
+            "name": "quote",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "title": "Quote"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageHighlight"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            },
+            "description": "Not Found"
           },
           "422": {
             "description": "Validation Error",
@@ -526,15 +654,34 @@
       "post": {
         "summary": "Invoices Upload",
         "operationId": "invoices_upload_invoices_upload_post",
+        "parameters": [
+          {
+            "name": "job",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{8,64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Job"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/Body_invoices_upload_invoices_upload_post"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -548,34 +695,34 @@
             }
           },
           "400": {
-            "description": "Bad Request",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            }
+            },
+            "description": "Bad Request"
           },
           "413": {
-            "description": "Request Entity Too Large",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            }
+            },
+            "description": "Request Entity Too Large"
           },
           "502": {
-            "description": "Bad Gateway",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
                 }
               }
-            }
+            },
+            "description": "Bad Gateway"
           },
           "422": {
             "description": "Validation Error",
@@ -672,6 +819,24 @@
             },
             "type": "array",
             "title": "Citations"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/Segment"
+            },
+            "type": "array",
+            "title": "Segments"
+          },
+          "inline": {
+            "type": "string",
+            "enum": [
+              "model",
+              "rules",
+              "template",
+              "none"
+            ],
+            "title": "Inline",
+            "default": "none"
           },
           "reason": {
             "type": "string",
@@ -1364,6 +1529,94 @@
         ],
         "title": "InvoiceUploadResponse"
       },
+      "PageHighlight": {
+        "properties": {
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "found": {
+            "type": "boolean",
+            "title": "Found"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "no_positions",
+              "no_file"
+            ],
+            "title": "Reason"
+          },
+          "rects": {
+            "items": {
+              "$ref": "#/components/schemas/Rect"
+            },
+            "type": "array",
+            "title": "Rects"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page",
+          "found",
+          "reason"
+        ],
+        "title": "PageHighlight",
+        "description": "Where a cited quote sits on a page. `reason` says why there are no rectangles."
+      },
+      "Rect": {
+        "properties": {
+          "x": {
+            "type": "number",
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "title": "Y"
+          },
+          "w": {
+            "type": "number",
+            "title": "W"
+          },
+          "h": {
+            "type": "number",
+            "title": "H"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x",
+          "y",
+          "w",
+          "h"
+        ],
+        "title": "Rect",
+        "description": "A rectangle as fractions of the page, origin at the top left."
+      },
+      "Segment": {
+        "description": "A piece of the answer and the citations that support it.\n\n`refs` are positions in `citations`. The `text` of all segments concatenates to the answer.",
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "refs": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Refs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "text",
+          "refs"
+        ],
+        "title": "Segment",
+        "type": "object"
+      },
       "Source": {
         "properties": {
           "id": {
@@ -1649,6 +1902,24 @@
             "title": "Citations",
             "type": "array"
           },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/Segment"
+            },
+            "title": "Segments",
+            "type": "array"
+          },
+          "inline": {
+            "default": "none",
+            "enum": [
+              "model",
+              "rules",
+              "template",
+              "none"
+            ],
+            "title": "Inline",
+            "type": "string"
+          },
           "reason": {
             "title": "Reason",
             "type": "string"
@@ -1854,6 +2125,44 @@
             "$ref": "#/components/schemas/ErrorEvent"
           }
         ]
+      },
+      "IngestStageEvent": {
+        "description": "One step of an upload being processed (`event: stage`).",
+        "properties": {
+          "stage": {
+            "enum": [
+              "received",
+              "reading",
+              "ocr",
+              "extracting",
+              "indexing",
+              "done",
+              "error"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "seq": {
+            "title": "Seq",
+            "type": "integer"
+          },
+          "detail": {
+            "additionalProperties": true,
+            "title": "Detail",
+            "type": "object"
+          }
+        },
+        "required": [
+          "stage",
+          "label",
+          "seq"
+        ],
+        "title": "IngestStageEvent",
+        "type": "object"
       }
     }
   }

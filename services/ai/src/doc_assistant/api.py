@@ -2,13 +2,14 @@
 
 import copy
 import json
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Callable, Iterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
 import pypdfium2 as pdfium
-from fastapi import FastAPI, File, Request, UploadFile
+from fastapi import FastAPI, File, Query, Request, UploadFile
+from fastapi import Path as PathParam
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field, TypeAdapter
 
@@ -17,7 +18,9 @@ from doc_assistant.ask import ask, ask_events
 from doc_assistant.chunking import invoice_doc_id, pdf_doc_id
 from doc_assistant.config import load_config
 from doc_assistant.health import ComponentsHealth, check_components
+from doc_assistant.highlight import locate
 from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
+from doc_assistant.ingest_jobs import IngestJobs, Progress, Stage
 from doc_assistant.invoices import InvoiceDB, invoice_image, upload_invoice
 from doc_assistant.sources import find_source, list_sources, remove_source
 from doc_assistant.store import ChunkStore
@@ -76,10 +79,22 @@ class Suggestion(BaseModel):
     pages: list[int]
 
 
+class Segment(BaseModel):
+    """A piece of the answer and the citations that support it.
+
+    `refs` are positions in `citations`. The `text` of all segments concatenates to the answer.
+    """
+
+    text: str
+    refs: list[int]
+
+
 class AskResponse(BaseModel):
     ok: bool
     answer: str
     citations: list[Citation]
+    segments: list[Segment] = Field(default_factory=list)
+    inline: Literal["model", "rules", "template", "none"] = "none"
     reason: str
     suggestions: list[Suggestion] = Field(default_factory=list)
 
@@ -156,6 +171,36 @@ class Source(BaseModel):
     status: Literal["indexed", "review", "no_text"]
     status_detail: str | None = None
     file: str | None = None
+
+
+class Rect(BaseModel):
+    """A rectangle as fractions of the page, origin at the top left."""
+
+    x: float
+    y: float
+    w: float
+    h: float
+
+
+class PageHighlight(BaseModel):
+    """Where a cited quote sits on a page. `reason` says why there are no rectangles."""
+
+    page: int
+    found: bool
+    reason: Literal["ok", "not_found", "no_positions", "no_file"]
+    rects: list[Rect] = Field(default_factory=list)
+
+
+class IngestStageEvent(BaseModel):
+    """One step of an upload being processed (`event: stage`)."""
+
+    stage: Stage
+    label: str
+    seq: int
+    detail: dict[str, Any] = Field(default_factory=dict)
+
+
+JOB_ID = r"^[A-Za-z0-9_-]{8,64}$"
 
 
 class Invoice(BaseModel):
@@ -255,10 +300,63 @@ def ask_stream_events(config_path: Path, question: str) -> Iterator[str]:
 STREAM_SCHEMA = TypeAdapter(StreamEvent).json_schema(ref_template="#/components/schemas/{model}")
 
 
+def summarize_document(result: Any) -> dict[str, Any]:
+    return {
+        "kind": "document",
+        "doc_id": result["doc_id"],
+        "created": result["created"],
+        "n_chunks": result["n_chunks"],
+    }
+
+
+def summarize_invoice(result: Any) -> dict[str, Any]:
+    return {"kind": "invoice", "numero": result.record.numero, "estado": result.estado}
+
+
+def tracked(
+    jobs: IngestJobs,
+    job: str | None,
+    run: Callable[[Progress], Any],
+    summarize: Callable[[Any], dict[str, Any]],
+) -> Any:
+    """Run an upload and publish its stages when the client sent a job id."""
+    progress = Progress(jobs, job)
+    progress("received")
+    try:
+        result = run(progress)
+    except AdapterError as exc:
+        if job:
+            jobs.fail(job, "adapter_error", str(exc))
+        raise
+    except Exception:
+        if job:
+            jobs.fail(job, "internal_error", "Error interno al procesar el archivo")
+        raise
+    if job:
+        if isinstance(result, JSONResponse):
+            body = json.loads(bytes(result.body))
+            jobs.fail(job, body["code"], body["message"])
+        else:
+            jobs.done(job, **summarize(result))
+    return result
+
+
+def ingest_event_stream(jobs: IngestJobs, job_id: str) -> Iterator[str]:
+    for state in jobs.follow(job_id):
+        if state is None:
+            yield ": keep-alive\n\n"
+            continue
+        event = IngestStageEvent(
+            stage=state.stage, label=state.label, seq=state.seq, detail=state.detail
+        )
+        yield f"event: stage\ndata: {json.dumps(event.model_dump(mode='json'), ensure_ascii=False)}\n\n"
+
+
 def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.config = load_config(config_path)
+        app.state.jobs = IngestJobs()
         app.state.config.db.parent.mkdir(parents=True, exist_ok=True)
         yield
 
@@ -273,6 +371,9 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
             stream = copy.deepcopy(STREAM_SCHEMA)
             components.update(stream.pop("$defs", {}))
             components["StreamEvent"] = stream
+            ingest = IngestStageEvent.model_json_schema(ref_template="#/components/schemas/{model}")
+            components.update(ingest.pop("$defs", {}))
+            components["IngestStageEvent"] = ingest
             app.openapi_schema = schema
         return app.openapi_schema
 
@@ -332,42 +433,51 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         response_model=DocumentUploadResponse,
         responses={400: {"model": ErrorBody}, 413: {"model": ErrorBody}, 502: {"model": ErrorBody}},
     )
-    def upload_document(file: Annotated[UploadFile, File()], request: Request) -> Any:
-        filename = file.filename or "document.pdf"
-        if not filename.lower().endswith(".pdf"):
-            return JSONResponse(
-                status_code=400,
-                content=ErrorBody(
-                    code="invalid_file", message="Only PDF uploads are accepted"
-                ).model_dump(),
-            )
-        cfg = request.app.state.config
-        if not safe_upload_directory(cfg.data_dir, "documents"):
-            return upload_error("invalid_directory", "Upload path escapes data_dir", 400)
-        data = read_upload(file, cfg.upload_pdf_max_bytes)
-        if data is None:
-            return upload_error("upload_too_large", "PDF exceeds upload limit", 413)
-        if not data:
-            return JSONResponse(
-                status_code=400,
-                content=ErrorBody(code="invalid_file", message="Empty file").model_dump(),
-            )
-        if not data.startswith(b"%PDF"):
-            return JSONResponse(
-                status_code=400,
-                content=ErrorBody(code="invalid_file", message="File is not a PDF").model_dump(),
-            )
-        try:
-            pdf = pdfium.PdfDocument(data)
+    def upload_document(
+        file: Annotated[UploadFile, File()],
+        request: Request,
+        job: Annotated[str | None, Query(pattern=JOB_ID)] = None,
+    ) -> Any:
+        def run(progress: Progress) -> Any:
+            filename = file.filename or "document.pdf"
+            if not filename.lower().endswith(".pdf"):
+                return JSONResponse(
+                    status_code=400,
+                    content=ErrorBody(
+                        code="invalid_file", message="Only PDF uploads are accepted"
+                    ).model_dump(),
+                )
+            cfg = request.app.state.config
+            if not safe_upload_directory(cfg.data_dir, "documents"):
+                return upload_error("invalid_directory", "Upload path escapes data_dir", 400)
+            data = read_upload(file, cfg.upload_pdf_max_bytes)
+            if data is None:
+                return upload_error("upload_too_large", "PDF exceeds upload limit", 413)
+            if not data:
+                return JSONResponse(
+                    status_code=400,
+                    content=ErrorBody(code="invalid_file", message="Empty file").model_dump(),
+                )
+            if not data.startswith(b"%PDF"):
+                return JSONResponse(
+                    status_code=400,
+                    content=ErrorBody(
+                        code="invalid_file", message="File is not a PDF"
+                    ).model_dump(),
+                )
             try:
-                pages = len(pdf)
-            finally:
-                pdf.close()
-        except pdfium.PdfiumError:
-            return upload_error("invalid_file", "Invalid PDF", 400)
-        if pages > cfg.upload_pdf_max_pages:
-            return upload_error("upload_too_large", "PDF exceeds page limit", 413)
-        return save_and_ingest_pdf(config_path, data, filename)
+                pdf = pdfium.PdfDocument(data)
+                try:
+                    pages = len(pdf)
+                finally:
+                    pdf.close()
+            except pdfium.PdfiumError:
+                return upload_error("invalid_file", "Invalid PDF", 400)
+            if pages > cfg.upload_pdf_max_pages:
+                return upload_error("upload_too_large", "PDF exceeds page limit", 413)
+            return save_and_ingest_pdf(config_path, data, filename, progress=progress)
+
+        return tracked(request.app.state.jobs, job, run, summarize_document)
 
     @app.post("/ask", response_model=AskResponse, responses={502: {"model": ErrorBody}})
     def query(payload: AskRequest) -> Any:
@@ -416,6 +526,60 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
             ]
         finally:
             store.db.close()
+
+    @app.get(
+        "/ingest/jobs/{job_id}/events",
+        response_class=StreamingResponse,
+        responses={
+            200: {
+                "description": "Server-Sent Events, one `stage` event per step until `done` or "
+                "`error`. Follow it with the id sent as `?job=` on the upload.",
+                "content": {
+                    "text/event-stream": {
+                        "schema": {"$ref": "#/components/schemas/IngestStageEvent"}
+                    }
+                },
+            }
+        },
+    )
+    def ingest_events(
+        job_id: Annotated[str, PathParam(pattern=JOB_ID)], request: Request
+    ) -> StreamingResponse:
+        return StreamingResponse(
+            ingest_event_stream(request.app.state.jobs, job_id),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
+    @app.get(
+        "/sources/{source_id}/pages/{n}/highlight",
+        response_model=PageHighlight,
+        responses={404: {"model": ErrorBody}},
+    )
+    def page_highlight(
+        source_id: str,
+        n: int,
+        quote: Annotated[str, Query(min_length=1, max_length=2000)],
+        request: Request,
+    ) -> Any:
+        cfg = request.app.state.config
+        source = find_source(cfg, source_id)
+        if source is None:
+            return upload_error("source_not_found", "Source does not exist", 404)
+        if source["kind"] != "pdf":
+            return PageHighlight(page=n, found=False, reason="no_positions")
+        path = cfg.data_dir / source["file"] if source["file"] else None
+        if path is None or not path.is_file():
+            return PageHighlight(page=n, found=False, reason="no_file")
+        rects = locate(path, n, quote)
+        if rects is None:
+            return PageHighlight(page=n, found=False, reason="not_found")
+        return PageHighlight(
+            page=n,
+            found=True,
+            reason="ok",
+            rects=[Rect(x=r.x, y=r.y, w=r.w, h=r.h) for r in rects],
+        )
 
     @app.delete("/sources/{source_id}", status_code=204, responses={404: {"model": ErrorBody}})
     def delete_source(source_id: str, request: Request) -> Response:
@@ -487,51 +651,58 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         response_model=InvoiceUploadResponse,
         responses={400: {"model": ErrorBody}, 413: {"model": ErrorBody}, 502: {"model": ErrorBody}},
     )
-    def invoices_upload(file: Annotated[UploadFile, File()], request: Request) -> Any:
-        filename = file.filename or "factura.png"
-        lower = filename.lower()
-        if not lower.endswith((".png", ".jpg", ".jpeg")):
-            return JSONResponse(
-                status_code=400,
-                content=ErrorBody(
-                    code="invalid_file", message="Only PNG/JPG invoice images are accepted"
-                ).model_dump(),
+    def invoices_upload(
+        file: Annotated[UploadFile, File()],
+        request: Request,
+        job: Annotated[str | None, Query(pattern=JOB_ID)] = None,
+    ) -> Any:
+        def run(progress: Progress) -> Any:
+            filename = file.filename or "factura.png"
+            lower = filename.lower()
+            if not lower.endswith((".png", ".jpg", ".jpeg")):
+                return JSONResponse(
+                    status_code=400,
+                    content=ErrorBody(
+                        code="invalid_file", message="Only PNG/JPG invoice images are accepted"
+                    ).model_dump(),
+                )
+            cfg = request.app.state.config
+            if not safe_upload_directory(cfg.data_dir, "invoices"):
+                return upload_error("invalid_directory", "Upload path escapes data_dir", 400)
+            data = read_upload(file, cfg.upload_image_max_bytes)
+            if data is None:
+                return upload_error("upload_too_large", "Image exceeds upload limit", 413)
+            if not data:
+                return JSONResponse(
+                    status_code=400,
+                    content=ErrorBody(code="invalid_file", message="Empty file").model_dump(),
+                )
+            if not data.startswith((b"\x89PNG", b"\xff\xd8\xff")):
+                return JSONResponse(
+                    status_code=400,
+                    content=ErrorBody(
+                        code="invalid_file", message="File is not a PNG/JPG image"
+                    ).model_dump(),
+                )
+            result = upload_invoice(config_path, data, filename, progress=progress)
+            if not result["record"].get("numero"):
+                return JSONResponse(
+                    status_code=400,
+                    content=ErrorBody(
+                        code="extraction_failed",
+                        message=result.get("motivo") or "Invoice number missing",
+                    ).model_dump(),
+                )
+            return InvoiceUploadResponse(
+                record=Invoice.model_validate(result["record"]),
+                estado=result["estado"],
+                motivo=result.get("motivo"),
+                evidencias=result.get("evidencias") or {},
+                flags=result.get("flags") or {},
+                fichero=result.get("fichero"),
             )
-        cfg = request.app.state.config
-        if not safe_upload_directory(cfg.data_dir, "invoices"):
-            return upload_error("invalid_directory", "Upload path escapes data_dir", 400)
-        data = read_upload(file, cfg.upload_image_max_bytes)
-        if data is None:
-            return upload_error("upload_too_large", "Image exceeds upload limit", 413)
-        if not data:
-            return JSONResponse(
-                status_code=400,
-                content=ErrorBody(code="invalid_file", message="Empty file").model_dump(),
-            )
-        if not data.startswith((b"\x89PNG", b"\xff\xd8\xff")):
-            return JSONResponse(
-                status_code=400,
-                content=ErrorBody(
-                    code="invalid_file", message="File is not a PNG/JPG image"
-                ).model_dump(),
-            )
-        result = upload_invoice(config_path, data, filename)
-        if not result["record"].get("numero"):
-            return JSONResponse(
-                status_code=400,
-                content=ErrorBody(
-                    code="extraction_failed",
-                    message=result.get("motivo") or "Invoice number missing",
-                ).model_dump(),
-            )
-        return InvoiceUploadResponse(
-            record=Invoice.model_validate(result["record"]),
-            estado=result["estado"],
-            motivo=result.get("motivo"),
-            evidencias=result.get("evidencias") or {},
-            flags=result.get("flags") or {},
-            fichero=result.get("fichero"),
-        )
+
+        return tracked(request.app.state.jobs, job, run, summarize_invoice)
 
     @app.get(
         "/invoices/{invoice_id:path}/image",
