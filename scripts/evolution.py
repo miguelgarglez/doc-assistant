@@ -2,7 +2,9 @@
 
 Uso: `mise run evolution`. Reescribe evidence/evolution/ entera a partir de los tags
 anotados (fecha = commit etiquetado; texto = mensaje del tag; capturas = git show).
-Cada versión enseña solo las capturas que cambian respecto a la anterior con capturas.
+Desde v0.13.0 cada versión enseña solo las capturas que cambian respecto a la anterior;
+las galerías anteriores se conservan completas. Los tags con sufijo (`-pre-merge`) no
+tienen galería.
 Una nota que no cabe en el mensaje del tag va en docs/evolution-notes/<tag>.md.
 """
 
@@ -18,6 +20,7 @@ OUT = ROOT / "evidence" / "evolution"
 SHOTS = "evidence/screenshots"
 NOTES = ROOT / "docs" / "evolution-notes"
 TRASH = ROOT / "_trash" / "evolution"
+DEDUPE_FROM = (0, 13, 0)
 
 
 def git(*args: str) -> str:
@@ -34,7 +37,12 @@ def tags() -> list[tuple[str, str, str]]:
         "--format=%(refname:short)|%(*objectname:short)|%(*committerdate:format:%Y-%m-%d %H:%M %z)",
         "refs/tags/v*",
     )
-    return [tuple(line.split("|")) for line in out.splitlines() if line]  # type: ignore[misc]
+    rows = [tuple(line.split("|")) for line in out.splitlines() if line]
+    return [row for row in rows if "-" not in row[0]]  # type: ignore[misc]
+
+
+def version_of(tag: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in tag.removeprefix("v").split("."))
 
 
 def shots_at(tag: str) -> dict[str, str]:
@@ -57,9 +65,9 @@ def main() -> int:
         "# Evolución por versión",
         "",
         "Galerías históricas generadas por `mise run evolution` (scripts/evolution.py) desde los tags anotados de git.",
-        "Cada versión enseña las capturas que cambian respecto a la anterior con capturas",
-        "(`git show <tag>:evidence/screenshots/…`); el texto es el mensaje del tag y, si existe,",
-        "su nota en `docs/evolution-notes/`.",
+        "Las capturas son las versionadas en cada tag (`git show <tag>:evidence/screenshots/…`);",
+        "desde v0.13.0 solo se enseñan las que cambian respecto a la versión anterior.",
+        "El texto es el mensaje del tag y, si existe, su nota en `docs/evolution-notes/`.",
         "",
         "Nota de honestidad: al publicar se reescribió el historial (nombre público y fixtures neutros).",
         "Las capturas versionadas de cada commit se regeneraron entonces ejecutando el e2e del código",
@@ -79,7 +87,8 @@ def main() -> int:
         if note.exists():
             lines += [note.read_text(encoding="utf-8").strip(), ""]
         current = shots_at(tag)
-        names = [n for n, blob in current.items() if previous.get(n) != blob]
+        dedupe = version_of(tag) >= DEDUPE_FROM
+        names = [n for n, blob in current.items() if not dedupe or previous.get(n) != blob]
         if current:
             previous = current
         if not names:
