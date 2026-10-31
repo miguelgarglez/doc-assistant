@@ -37,6 +37,7 @@ class Proc:
     cwd: Path = ROOT
     env: dict[str, str] = field(default_factory=dict)
     timeout_s: float = 90
+    reuse_if_running: bool = False  # servicio del sistema (Ollama): se reutiliza, no se cierra
     popen: subprocess.Popen[bytes] | None = None
 
 
@@ -94,8 +95,23 @@ def plan(dev: bool, ai_port: int, web_port: int, with_llm: bool) -> list[Proc]:
         if with_llm
         else []
     )
+    ollama = shutil.which("ollama")
+    ocr = (
+        [
+            Proc(
+                "ocr",
+                [ollama, "serve"],
+                11434,
+                f"http://{LOOPBACK}:11434/api/version",
+                reuse_if_running=True,
+            )
+        ]
+        if with_llm and ollama and os.environ.get("DOC_ASSISTANT_FAKE_LLAMA") != "1"
+        else []
+    )
     return [
         *models,
+        *ocr,
         Proc("ai", api, ai_port, f"http://{LOOPBACK}:{ai_port}/health", ROOT / "services" / "ai"),
         Proc(
             "web",
@@ -200,6 +216,10 @@ def main() -> int:
     atexit.register(stop_all)
 
     procs = plan(a.dev, a.ai_port, a.web_port, with_llm=not a.no_llm)
+    reused = [p for p in procs if p.reuse_if_running and port_busy(p.port)]
+    procs = [p for p in procs if p not in reused]
+    for p in reused:
+        print(f"[dev] {p.name}: ya en marcha en {p.port}, se reutiliza (no se cerrará)", flush=True)
     busy = [p for p in procs if port_busy(p.port)]
     for p in busy:
         print(
