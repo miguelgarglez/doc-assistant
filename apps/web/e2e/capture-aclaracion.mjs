@@ -1,5 +1,6 @@
 // Capturas de la aclaración de facturas y de la vista previa de una cita, contra un stack con las fuentes de evidence/fixtures indexadas.
 // Uso desde apps/web: BASE=http://127.0.0.1:3000 node e2e/capture-aclaracion.mjs
+// Imprime cuántos píxeles invade la tarjeta al composer (0 = no lo toca).
 // Variables: OUT (carpeta), THEMES (tema-modo separados por coma), ONLY (tamaños), DOC_QUESTION (pregunta de documento con cita).
 import { chromium } from "@playwright/test"
 
@@ -47,6 +48,12 @@ for (const [name, viewport] of sizes) {
       else await marker.focus()
       await page.waitForTimeout(600)
       await shot("cita-vista-previa")
+      const overlap = await page.evaluate(() => {
+        const card = document.querySelector('[data-slot="hover-card-content"]')?.getBoundingClientRect()
+        const composer = document.querySelector('[data-testid="composer"]')?.getBoundingClientRect()
+        return card && composer ? Math.max(0, Math.round(card.bottom - composer.top)) : null
+      })
+      console.log(`${name}-${th}: la tarjeta invade el composer ${overlap} px`)
     } else console.warn(`sin marcador en ${name}-${th}`)
     await ctx.close()
   }
