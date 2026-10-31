@@ -18,9 +18,10 @@ test.describe("stack real", () => {
     await page.keyboard.press("Enter")
     const answer = page.locator('[data-testid="assistant-message"][data-kind="answer"]').first()
     await expect(answer).toBeVisible({ timeout: 120_000 })
-    await expect(page.getByTestId("citation-1").first()).toBeVisible()
-    await page.getByTestId("citation-1").first().click()
+    await expect(page.getByTestId("citation-marker-1").first()).toBeVisible()
+    await page.getByTestId("citation-marker-1").first().click()
     await expect(page.getByTestId("source-viewer")).toBeVisible()
+    await expect(page.getByTestId("page-highlight").first()).toBeVisible({ timeout: 15_000 })
   })
 
   test("una pregunta sin respaldo en las fuentes se rechaza con diseño propio", async ({ page }) => {
