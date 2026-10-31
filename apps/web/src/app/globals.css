@@ -4,6 +4,8 @@
 @import "../themes/industrial.css";
 @import "../themes/neutral.css";
 
+@source "../../node_modules/streamdown/dist/*.js";
+
 @custom-variant dark (&:is(.dark *));
 @custom-variant motion-safe (@media (prefers-reduced-motion: no-preference));
 @custom-variant motion-reduce (@media (prefers-reduced-motion: reduce));
@@ -85,5 +87,39 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+@layer utilities {
+  .text-shimmer {
+    color: transparent;
+    background-image:
+      linear-gradient(
+        90deg,
+        transparent calc(50% - var(--shimmer-spread)),
+        var(--background),
+        transparent calc(50% + var(--shimmer-spread))
+      ),
+      linear-gradient(var(--muted-foreground), var(--muted-foreground));
+    background-size: 250% 100%, auto;
+    background-repeat: no-repeat, padding-box;
+    background-clip: text;
+    animation: text-shimmer var(--shimmer-duration) linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .text-shimmer {
+      color: var(--muted-foreground);
+      background-image: none;
+      animation: none;
+    }
+  }
+}
+
+@keyframes text-shimmer {
+  from {
+    background-position: 100% center, 0 0;
+  }
+  to {
+    background-position: 0% center, 0 0;
   }
 }

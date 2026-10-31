@@ -1,0 +1,48 @@
+import type { UIMessage } from "ai"
+
+import type { components } from "../api/schema"
+
+export type Citation = components["schemas"]["Citation"]
+export type Suggestion = components["schemas"]["Suggestion"]
+export type StepEvent = components["schemas"]["StepEvent"]
+export type DoneEvent = components["schemas"]["DoneEvent"]
+export type StreamEvent = components["schemas"]["StreamEvent"]
+
+export type StepId = StepEvent["id"]
+
+export type StepData = {
+  id: StepId
+  status: StepEvent["status"]
+  label: string
+  elapsed_s: number | null
+  data: Record<string, unknown>
+}
+
+export type ResultData = {
+  ok: boolean
+  reason: string
+  suggestions: Suggestion[]
+  timings: Record<string, number>
+}
+
+export type RefusalData = {
+  answer: string
+  reason: string
+  suggestions: Suggestion[]
+}
+
+export type FailureData = { code: string; message: string }
+
+/**
+ * Data parts of the assistant message. Text parts carry the answer tokens. Everything the
+ * service sends besides tokens travels as a typed data part, so the UI never parses text.
+ */
+export type AskDataParts = {
+  step: StepData
+  citations: Citation[]
+  result: ResultData
+  refusal: RefusalData
+  failure: FailureData
+}
+
+export type AskMessage = UIMessage<never, AskDataParts>
