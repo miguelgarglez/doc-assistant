@@ -11,9 +11,16 @@ type AskErrorNoticeProps = {
 
 export function AskErrorNotice({ error, onRetry }: AskErrorNoticeProps) {
   return (
-    <Alert variant="destructive" data-testid="ask-error-notice">
+    <Alert
+      variant="destructive"
+      data-testid={
+        error.code === "cancelled" ? "ask-cancelled" : "ask-error-notice"
+      }
+    >
       <AlertCircleIcon />
-      <AlertTitle>Error ({error.code})</AlertTitle>
+      <AlertTitle>
+        {error.code === "cancelled" ? "Cancelada" : `Error (${error.code})`}
+      </AlertTitle>
       <AlertDescription>{error.message}</AlertDescription>
       {onRetry ? (
         <AlertAction>

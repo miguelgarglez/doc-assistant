@@ -89,6 +89,13 @@ export function InvoiceReviewCard({ data }: InvoiceReviewCardProps) {
             <Badge
               variant={isReview ? "destructive" : isOk ? "default" : "secondary"}
               data-testid="invoice-estado"
+              className={
+                isOk
+                  ? "border-transparent bg-[color:var(--ok-bg)] text-[color:var(--ok-fg)]"
+                  : isReview
+                    ? "border-transparent bg-[color:var(--review-bg)] text-[color:var(--review-fg)]"
+                    : undefined
+              }
             >
               {estado}
             </Badge>

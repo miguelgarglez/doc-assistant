@@ -7,7 +7,7 @@ import { uploadDocumentFile } from "@/lib/api/upload"
 
 export type DocumentUploadStatus =
   | { kind: "idle" }
-  | { kind: "uploading"; fileName: string }
+  | { kind: "uploading"; fileName: string; progress: number }
   | { kind: "success"; data: DocumentUploadResponse }
   | { kind: "error"; file: File; error: ErrorBody }
 
@@ -15,8 +15,10 @@ export function useDocumentUpload() {
   const [status, setStatus] = useState<DocumentUploadStatus>({ kind: "idle" })
 
   async function upload(file: File) {
-    setStatus({ kind: "uploading", fileName: file.name })
-    const result = await uploadDocumentFile(file)
+    setStatus({ kind: "uploading", fileName: file.name, progress: 0 })
+    const result = await uploadDocumentFile(file, (progress) => {
+      setStatus({ kind: "uploading", fileName: file.name, progress })
+    })
     if (!result.ok) {
       setStatus({ kind: "error", file, error: result.error })
       return

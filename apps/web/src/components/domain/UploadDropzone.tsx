@@ -5,6 +5,7 @@ import { UploadIcon } from "lucide-react"
 
 import { AskErrorNotice } from "@/components/domain/AskErrorNotice"
 import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { ErrorBody } from "@/lib/api/types"
 import { cn } from "@/lib/utils"
@@ -16,6 +17,7 @@ export type UploadDropzoneProps = {
   description: string
   disabled?: boolean
   uploading?: boolean
+  progress?: number | null
   error?: ErrorBody | null
   compact?: boolean
   onFile: (file: File) => void
@@ -30,6 +32,7 @@ export function UploadDropzone({
   description,
   disabled = false,
   uploading = false,
+  progress = null,
   error = null,
   compact = false,
   onFile,
@@ -68,11 +71,9 @@ export function UploadDropzone({
 
       <div
         className={cn(
-          "flex flex-col items-center gap-3 rounded-lg border border-dashed px-4 text-center",
+          "flex flex-col items-center gap-3 rounded-lg border border-dashed px-4 text-center transition-[border-color,background-color] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
           compact ? "py-5" : "px-6 py-10",
-          active
-            ? "border-primary bg-muted/60"
-            : "border-border bg-card",
+          active ? "border-primary bg-muted/60" : "border-border bg-card",
           busy ? "pointer-events-none opacity-70" : null
         )}
         onDragEnter={(event) => {
@@ -100,9 +101,23 @@ export function UploadDropzone({
             aria-live="polite"
             data-testid={`${testId}-loading`}
           >
-            <Skeleton className={compact ? "h-8 w-8 rounded-full" : "h-10 w-10 rounded-full"} />
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-3 w-56" />
+            {progress == null ? (
+              <>
+                <Skeleton
+                  className={
+                    compact ? "h-8 w-8 rounded-full" : "h-10 w-10 rounded-full"
+                  }
+                />
+                <Skeleton className="h-4 w-40" />
+              </>
+            ) : (
+              <Progress
+                value={progress}
+                label="Subiendo archivo"
+                className="w-full max-w-xs"
+                data-testid={`${testId}-progress`}
+              />
+            )}
             <p className="sr-only">Subiendo archivo…</p>
           </div>
         ) : (
@@ -111,13 +126,16 @@ export function UploadDropzone({
             <p className="text-sm text-muted-foreground">
               Arrastra un archivo aquí o elige desde el disco.
             </p>
-            <p className="font-mono text-xs text-muted-foreground">{acceptLabel}</p>
+            <p className="font-mono text-xs text-muted-foreground">
+              {acceptLabel}
+            </p>
             <Button
               type="button"
               variant="outline"
               size="sm"
               disabled={busy}
               onClick={() => inputRef.current?.click()}
+              className="active:scale-[0.97] motion-reduce:active:scale-100"
             >
               Elegir archivo
             </Button>
@@ -138,9 +156,7 @@ export function UploadDropzone({
         />
       </div>
 
-      {error ? (
-        <AskErrorNotice error={error} onRetry={onRetry} />
-      ) : null}
+      {error ? <AskErrorNotice error={error} onRetry={onRetry} /> : null}
     </div>
   )
 }

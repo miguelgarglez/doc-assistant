@@ -22,6 +22,8 @@ export function InvoicesWorkspace() {
   const uploading = uploadStatus.kind === "uploading"
   const uploadError =
     uploadStatus.kind === "error" ? uploadStatus.error : null
+  const progress =
+    uploadStatus.kind === "uploading" ? uploadStatus.progress : null
 
   return (
     <div className="flex flex-col gap-8" data-testid="invoices-workspace">
@@ -31,6 +33,7 @@ export function InvoicesWorkspace() {
         title="Subir factura"
         description="Arrastra o elige una imagen de factura. La extracción muestra el estado ok o revisar sin inventar campos."
         uploading={uploading}
+        progress={progress}
         error={uploadError}
         onFile={(file) => void upload(file)}
         onRetry={retryUpload}

@@ -9,7 +9,7 @@ import { uploadInvoiceFile } from "@/lib/api/upload"
 
 export type InvoiceUploadStatus =
   | { kind: "idle" }
-  | { kind: "uploading"; fileName: string }
+  | { kind: "uploading"; fileName: string; progress: number }
   | { kind: "success"; data: InvoiceUploadResponse }
   | { kind: "error"; file: File; error: ErrorBody }
 
@@ -56,8 +56,10 @@ export function useInvoices() {
   }
 
   async function upload(file: File) {
-    setUploadStatus({ kind: "uploading", fileName: file.name })
-    const result = await uploadInvoiceFile(file)
+    setUploadStatus({ kind: "uploading", fileName: file.name, progress: 0 })
+    const result = await uploadInvoiceFile(file, (progress) => {
+      setUploadStatus({ kind: "uploading", fileName: file.name, progress })
+    })
     if (!result.ok) {
       setUploadStatus({ kind: "error", file, error: result.error })
       return

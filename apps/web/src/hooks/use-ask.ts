@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 
 import { api } from "@/lib/api/client"
 import { toErrorBody } from "@/lib/api/errors"
@@ -11,9 +11,23 @@ export type AskStatus =
   | { kind: "loading"; question: string }
   | { kind: "success"; question: string; data: AskResponse }
   | { kind: "error"; question: string; error: ErrorBody }
+  | { kind: "cancelled"; question: string }
+
+export type AskTurn = {
+  id: string
+  question: string
+  data: AskResponse
+}
+
+function newId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+}
 
 export function useAsk() {
   const [status, setStatus] = useState<AskStatus>({ kind: "idle" })
+  const [history, setHistory] = useState<AskTurn[]>([])
+  const abortRef = useRef<AbortController | null>(null)
+  const generationRef = useRef(0)
 
   async function ask(question: string) {
     const trimmed = question.trim()
@@ -21,35 +35,97 @@ export function useAsk() {
       return
     }
 
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+    const generation = ++generationRef.current
+
     setStatus({ kind: "loading", question: trimmed })
 
-    const { data, error } = await api.POST("/ask", {
-      body: { question: trimmed },
-    })
+    try {
+      const { data, error } = await api.POST("/ask", {
+        body: { question: trimmed },
+        signal: controller.signal,
+      })
 
-    if (error) {
-      setStatus({ kind: "error", question: trimmed, error: toErrorBody(error) })
-      return
-    }
+      if (generation !== generationRef.current || controller.signal.aborted) {
+        return
+      }
 
-    if (!data) {
+      if (error) {
+        setStatus({
+          kind: "error",
+          question: trimmed,
+          error: toErrorBody(error),
+        })
+        return
+      }
+
+      if (!data) {
+        setStatus({
+          kind: "error",
+          question: trimmed,
+          error: {
+            code: "empty_response",
+            message: "El servicio no devolvió una respuesta.",
+          },
+        })
+        return
+      }
+
+      setHistory((current) => [
+        ...current,
+        { id: newId(), question: trimmed, data },
+      ])
+      setStatus({ kind: "success", question: trimmed, data })
+    } catch (error) {
+      if (generation !== generationRef.current || controller.signal.aborted) {
+        return
+      }
+      if (
+        (error instanceof DOMException && error.name === "AbortError") ||
+        (error instanceof Error && error.name === "AbortError")
+      ) {
+        setStatus({ kind: "cancelled", question: trimmed })
+        return
+      }
+      const message =
+        error instanceof Error ? error.message : "Error desconocido"
       setStatus({
         kind: "error",
         question: trimmed,
-        error: {
-          code: "empty_response",
-          message: "El servicio no devolvió una respuesta.",
-        },
+        error: { code: "network_error", message },
       })
-      return
+    } finally {
+      if (abortRef.current === controller) {
+        abortRef.current = null
+      }
     }
+  }
 
-    setStatus({ kind: "success", question: trimmed, data })
+  function cancel() {
+    generationRef.current += 1
+    abortRef.current?.abort()
+    abortRef.current = null
+    setStatus((current) => {
+      if (current.kind !== "loading") {
+        return current
+      }
+      return { kind: "cancelled", question: current.question }
+    })
+    return true
   }
 
   function reset() {
+    generationRef.current += 1
+    abortRef.current?.abort()
+    abortRef.current = null
     setStatus({ kind: "idle" })
   }
 
-  return { status, ask, reset }
+  function clearHistory() {
+    setHistory([])
+  }
+
+  return { status, history, ask, cancel, reset, clearHistory }
 }
