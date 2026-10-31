@@ -1,0 +1,128 @@
+{
+  "fecha": "2026-10-31 13:22 CET",
+  "documentos": [
+    {
+      "fichero": "robot-demo.pdf",
+      "n_chunks": 2
+    },
+    {
+      "fichero": "sensor-demo.pdf",
+      "n_chunks": 2
+    }
+  ],
+  "facturas": [
+    {
+      "fichero": "factura_001.png",
+      "estado": "ok",
+      "motivo": null,
+      "discrepancias": {},
+      "segundos": 23.3
+    },
+    {
+      "fichero": "factura_011.png",
+      "estado": "ok",
+      "motivo": null,
+      "discrepancias": {},
+      "segundos": 29.7
+    },
+    {
+      "fichero": "factura_021.png",
+      "estado": "ok",
+      "motivo": null,
+      "discrepancias": {},
+      "segundos": 32.7
+    },
+    {
+      "fichero": "factura_031.png",
+      "estado": "ok",
+      "motivo": null,
+      "discrepancias": {},
+      "segundos": 27.0
+    },
+    {
+      "fichero": "factura_041.png",
+      "estado": "ok",
+      "motivo": null,
+      "discrepancias": {},
+      "segundos": 33.2
+    },
+    {
+      "fichero": "factura_051.png",
+      "estado": "ok",
+      "motivo": null,
+      "discrepancias": {},
+      "segundos": 39.3
+    }
+  ],
+  "preguntas": [
+    {
+      "tipo": "documento",
+      "pregunta": "¿Qué alcance tiene el sensor SX-20?",
+      "ok": true,
+      "respuesta": "El alcance del sensor SX-20 es de 4 m.",
+      "motivo": "verified",
+      "citas": [
+        [
+          "sensor-demo",
+          [
+            1
+          ],
+          "Alcance: 4 m."
+        ]
+      ],
+      "segundos": 9.4
+    },
+    {
+      "tipo": "documento",
+      "pregunta": "¿Qué temperatura de trabajo admite el sensor?",
+      "ok": true,
+      "respuesta": "0 a 50 C",
+      "motivo": "verified",
+      "citas": [
+        [
+          "sensor-demo",
+          [
+            1
+          ],
+          "Temperatura de trabajo: 0 a 50 C."
+        ]
+      ],
+      "segundos": 9.3
+    },
+    {
+      "tipo": "factura",
+      "pregunta": "¿Cuál es el importe total de la factura F-2026-001?",
+      "ok": true,
+      "respuesta": "Factura F-2026-001: importe total: 537.94",
+      "motivo": "sql",
+      "citas": [
+        [
+          "F-2026-001",
+          [
+            1
+          ],
+          "537.94"
+        ]
+      ],
+      "segundos": 6.1
+    },
+    {
+      "tipo": "rechazo esperado",
+      "pregunta": "¿Cuál es el precio del robot?",
+      "ok": false,
+      "respuesta": "No dispongo de esa información en los documentos",
+      "motivo": "llm_unanswerable",
+      "citas": [],
+      "segundos": 5.5
+    },
+    {
+      "tipo": "rechazo esperado",
+      "pregunta": "¿Quién ganó el mundial de 2010?",
+      "ok": false,
+      "respuesta": "No dispongo de esa información en los documentos",
+      "motivo": "llm_unanswerable",
+      "citas": [],
+      "segundos": 5.7
+    }
+  ]
+}
