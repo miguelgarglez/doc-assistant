@@ -27,4 +27,9 @@ No incluido (lo descarga quien lo use): modelo OCR glm-ocr para Ollama
 instalan desde sus registros con `mise run setup`; sus licencias están en
 uv.lock / pnpm-lock.yaml y en cada paquete.
 
+Textos de licencia incluidos en licenses/: Qwen3.5-4B.LICENSE (copia del LICENSE
+del repo Qwen/Qwen3.5-4B), Apache-2.0.txt (bge-reranker-v2-m3), MIT.txt (bge-m3) y
+llama.cpp-b12020.LICENSE. Los repos BAAI/bge-m3 y BAAI/bge-reranker-v2-m3 no
+publican fichero LICENSE: la licencia sale solo de la etiqueta de su ficha.
+
 Los PDFs y facturas de evidence/fixtures son sintéticos, generados para este proyecto.
