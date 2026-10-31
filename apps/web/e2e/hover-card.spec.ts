@@ -57,6 +57,27 @@ async function settled(page: Page, marker: string, nth = -1) {
 const centerX = (rect: Rect) => rect.x + rect.width / 2
 const bottom = (rect: Rect) => rect.y + rect.height
 
+/** Waits until the thread stops moving (smooth stick-to-bottom), so a hover lands on a marker that stays put. */
+async function quiet(page: Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        let scroller: HTMLElement | null = document.querySelector<HTMLElement>('[data-testid="thread"]')
+        while (scroller && scroller.scrollHeight <= scroller.clientHeight + 1) scroller = scroller.parentElement
+        let last = -1
+        let still = 0
+        const tick = () => {
+          const top = scroller?.scrollTop ?? 0
+          still = top === last ? still + 1 : 0
+          last = top
+          if (still >= 20) resolve()
+          else requestAnimationFrame(tick)
+        }
+        tick()
+      })
+  )
+}
+
 async function frames(page: Page) {
   return page.evaluate(() => {
     let scroller: HTMLElement | null = document.querySelector<HTMLElement>('[data-testid="thread"]')
@@ -104,7 +125,7 @@ test.describe("vista previa de la cita inline", () => {
       return element
     })
     await expect.poll(() => scroller.evaluate((el) => (el as HTMLElement).scrollTop)).toBeGreaterThan(0)
-    await page.waitForTimeout(700)
+    await quiet(page)
     await page.getByTestId("citation-marker-1").nth(3).hover()
     const start = await settled(page, "citation-marker-1", 3)
     const offsetY = start.card.y - start.marker.y
@@ -122,7 +143,7 @@ test.describe("vista previa de la cita inline", () => {
 
   test("si el marcador sale del hilo, la tarjeta no queda flotando sola", async ({ page }) => {
     await thread(page, 6)
-    await page.waitForTimeout(700)
+    await quiet(page)
     await page.getByTestId("citation-marker-1").last().focus()
     await expect(page.locator(CARD)).toBeVisible()
     await page.getByTestId("thread").evaluate((node) => {
@@ -139,7 +160,7 @@ test.describe("vista previa de la cita inline", () => {
   ] as const) {
     test(`${name} al final del hilo: abre hacia arriba, sin solapar el composer`, async ({ page }) => {
       await thread(page, 6, [...segments], LONG_QUOTE)
-      await page.waitForTimeout(700)
+      await quiet(page)
       await page.getByTestId(marker).last().hover()
       const { marker: anchor, card } = await settled(page, marker)
       const { thread: area, composer: box } = await frames(page)
@@ -153,7 +174,7 @@ test.describe("vista previa de la cita inline", () => {
   test("con el hilo más bajo que la tarjeta, la tarjeta se ciñe al hilo y no toca el composer", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 300 })
     await thread(page, 6, SEGMENTS, LONG_QUOTE)
-    await page.waitForTimeout(700)
+    await quiet(page)
     await page.getByTestId("citation-marker-2").last().hover()
     const { card } = await settled(page, "citation-marker-2")
     const { thread: area, composer: box } = await frames(page)
