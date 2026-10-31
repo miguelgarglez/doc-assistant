@@ -5,9 +5,17 @@ null field -> refusal. The LLM never sees or writes SQL."""
 
 from __future__ import annotations
 
+import re
 import sqlite3
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 from typing import Any
+
+from doc_assistant.adapters import LLM, Embedder, OcrPort, build_adapters, build_ocr
+from doc_assistant.chunking import chunk_invoice
+from doc_assistant.config import load_config
+from doc_assistant.invoice_extract import extract_invoice
+from doc_assistant.store import ChunkStore
 
 FIELDS = {
     "numero": "número",
@@ -74,6 +82,13 @@ class InvoiceDB:
         cur = self.con.execute("SELECT * FROM facturas ORDER BY numero")
         names = [d[0] for d in cur.description]
         return [dict(zip(names, r)) for r in cur.fetchall()]
+
+    def get(self, numero: str) -> dict[str, Any] | None:
+        want = _norm_num(numero)
+        for row in self.rows():
+            if row.get("numero") and _norm_num(row["numero"]) == want:
+                return row
+        return None
 
 
 def _dec(v: Any) -> Decimal | None:
@@ -200,3 +215,159 @@ def is_invoice_question(q: str, db: InvoiceDB) -> bool:
             if r.get(c) and r[c].lower() in low:
                 return True
     return False
+
+
+def sanitize_image_filename(name: str, numero: str) -> str:
+    base = Path(name or f"{numero}.png").name
+    safe = re.sub(r"[^\w.\-]+", "_", base, flags=re.UNICODE).strip("._") or numero
+    lower = safe.lower()
+    if not lower.endswith((".png", ".jpg", ".jpeg")):
+        safe = f"{safe}.png"
+    return safe
+
+
+def upload_invoice(
+    config_path: str | Path,
+    image: bytes,
+    filename: str,
+    *,
+    ocr: OcrPort | None = None,
+    llm: LLM | None = None,
+    embedder: Embedder | None = None,
+) -> dict[str, Any]:
+    """Extract, persist SQL row, index chunks+image in the same retrieval store."""
+    cfg = load_config(config_path)
+    if ocr is None:
+        ocr = build_ocr(cfg)
+    if embedder is None or llm is None:
+        emb, _, default_llm = build_adapters(cfg, fake=False)
+        embedder = embedder or emb
+        llm = llm or default_llm
+
+    extracted = extract_invoice(image, ocr=ocr, llm=llm)
+    record = extracted["record"]
+    numero = record.get("numero")
+    if not numero:
+        return {
+            "record": record,
+            "estado": "revisar",
+            "motivo": "sin_numero",
+            "evidencias": extracted["evidencias"],
+            "flags": extracted["flags"],
+        }
+
+    invoices_dir = cfg.data_dir / "invoices"
+    invoices_dir.mkdir(parents=True, exist_ok=True)
+    path = invoices_dir / sanitize_image_filename(filename, numero)
+    path.write_bytes(image)
+    relative = str(path.relative_to(cfg.data_dir))
+
+    db = InvoiceDB(str(cfg.db))
+    try:
+        db.upsert(
+            record,
+            fichero=relative,
+            cuadra="1" if extracted["estado"] == "ok" else "0",
+        )
+    finally:
+        db.con.close()
+
+    dim = getattr(embedder, "dim", None) or cfg.embeddings.dim or 8
+    store = ChunkStore(cfg.db, dim=dim)
+    try:
+        chunks = chunk_invoice(record)
+        embeddings = embedder.embed([c["text"] for c in chunks]) if chunks else []
+        store.replace_document(numero, chunks, embeddings, [image])
+    finally:
+        store.db.close()
+
+    return {
+        "record": record,
+        "estado": extracted["estado"],
+        "motivo": extracted["motivo"],
+        "evidencias": extracted["evidencias"],
+        "flags": extracted["flags"],
+        "fichero": relative,
+    }
+
+
+def invoice_image(config_path: str | Path, invoice_id: str) -> bytes | None:
+    cfg = load_config(config_path)
+    db = InvoiceDB(str(cfg.db))
+    try:
+        row = db.get(invoice_id)
+    finally:
+        db.con.close()
+    if row is None:
+        return None
+    store = ChunkStore(cfg.db, dim=cfg.embeddings.dim or 8)
+    try:
+        png = store.page(row["numero"], 1)
+    finally:
+        store.db.close()
+    if png is not None:
+        return png
+    fichero = row.get("fichero") or ""
+    if fichero:
+        path = cfg.data_dir / fichero
+        if path.is_file():
+            return path.read_bytes()
+    return None
+
+
+def ask_invoices(
+    config_path: str | Path,
+    question: str,
+    *,
+    llm: LLM,
+) -> dict[str, Any] | None:
+    """If the question is about invoices, run the SQL plan path; else return None."""
+    cfg = load_config(config_path)
+    db = InvoiceDB(str(cfg.db))
+    try:
+        if not is_invoice_question(question, db):
+            return None
+        plan = llm.chat(
+            [
+                {"role": "system", "content": PLAN_PROMPT},
+                {"role": "user", "content": question},
+            ],
+            schema=PLAN_SCHEMA,
+        )
+        if plan.get("kind") == "documentos":
+            return None
+        result = run_plan(db, plan)
+    finally:
+        db.con.close()
+
+    citations = []
+    for cit in result.get("citations") or []:
+        valor = cit.get("valor")
+        fragment = "" if valor is None else str(valor)
+        citations.append(
+            {
+                "chunk_id": f"{cit.get('numero')}:{cit.get('campo')}",
+                "quote": fragment,
+                "doc": cit.get("numero") or "",
+                "section": cit.get("campo") or "",
+                "pages": [1],
+                "fragment": fragment,
+            }
+        )
+    if result.get("ok"):
+        return {
+            "ok": True,
+            "answer": result.get("answer") or "",
+            "citations": citations,
+            "reason": result.get("reason") or "sql",
+            "latencies": {},
+            "raw": plan,
+        }
+    return {
+        "ok": False,
+        "answer": "No dispongo de esa información en los documentos",
+        "citations": [],
+        "reason": f"invoice:{result.get('reason')}",
+        "latencies": {},
+        "raw": plan,
+    }

@@ -1,7 +1,8 @@
-"""Puertos Embedder / Reranker / LLM: Protocol + HTTP + Fake."""
+"""Puertos Embedder / Reranker / LLM / OCR: Protocol + HTTP + Fake."""
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import math
 import struct
@@ -17,8 +18,11 @@ class AdapterError(RuntimeError):
 
 
 @runtime_checkable
-class OCR(Protocol):
+class OcrPort(Protocol):
     def extract(self, image: bytes) -> str: ...
+
+
+OCR = OcrPort
 
 
 @runtime_checkable
@@ -61,6 +65,14 @@ class FakeReranker:
         return scored
 
 
+class FakeOCR:
+    def __init__(self, text: str = "") -> None:
+        self.text = text
+
+    def extract(self, image: bytes) -> str:
+        return self.text
+
+
 class FakeLLM:
     def __init__(
         self,
@@ -83,6 +95,43 @@ class FakeLLM:
             self._i += 1
             return out
         return self._response
+
+
+class OllamaOCR:
+    """Adaptador GLM-OCR vía Ollama (/api/chat con imagen en base64)."""
+
+    def __init__(
+        self,
+        base_url: str = "http://127.0.0.1:11434",
+        model: str = "glm-ocr",
+        timeout_s: float = 300,
+    ) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.model = model
+        self.timeout_s = timeout_s
+
+    def extract(self, image: bytes) -> str:
+        url = f"{self.base_url}/api/chat"
+        payload = {
+            "model": self.model,
+            "stream": False,
+            "options": {"temperature": 0, "num_ctx": 8192},
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Text Recognition:",
+                    "images": [base64.b64encode(image).decode()],
+                }
+            ],
+        }
+        data = _request_json("POST", url, timeout=self.timeout_s, json=payload)
+        try:
+            content = data["message"]["content"]
+        except (KeyError, TypeError) as e:
+            raise AdapterError(f"Formato inesperado de OCR en {url}") from e
+        if not isinstance(content, str):
+            raise AdapterError(f"Contenido OCR no es texto desde {url}")
+        return content
 
 
 def _request_json(method: str, url: str, *, timeout: float, **kwargs: Any) -> Any:
@@ -174,6 +223,12 @@ class HttpLLM:
             return parsed
         except (TypeError, ValueError) as e:
             raise AdapterError(f"Contenido LLM no es JSON válido desde {self.url}") from e
+
+
+def build_ocr(cfg: AppConfig, *, fake: bool = False, text: str = "") -> OcrPort:
+    if fake:
+        return FakeOCR(text=text)
+    return OllamaOCR(cfg.ocr.base_url, cfg.ocr.model, cfg.ocr.timeout_s)
 
 
 def build_adapters(cfg: AppConfig, *, fake: bool = False) -> tuple[Embedder, Reranker, LLM]:

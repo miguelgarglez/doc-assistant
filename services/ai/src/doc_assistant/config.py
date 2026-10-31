@@ -20,6 +20,13 @@ class EndpointConfig(BaseModel):
         return self.base_url.rstrip("/") + self.endpoint
 
 
+class OcrConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    base_url: str = Field(default="http://127.0.0.1:11434", pattern=r"^https?://")
+    model: str = Field(default="glm-ocr", min_length=1)
+    timeout_s: float = Field(default=300, gt=0)
+
+
 class AppConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     db: Path
@@ -28,6 +35,7 @@ class AppConfig(BaseModel):
     llm: EndpointConfig
     embeddings: EndpointConfig
     reranker: EndpointConfig
+    ocr: OcrConfig = Field(default_factory=OcrConfig)
     top_k: int = Field(default=5, gt=0)
     answer_mode: Literal["decide_first", "evidence_first"] = "decide_first"
     path: Path = Path("config.yaml")

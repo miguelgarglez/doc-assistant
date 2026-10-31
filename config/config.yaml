@@ -17,5 +17,9 @@ reranker:
   endpoint: /v1/rerank
   model: rerank-local
   timeout_s: 90
+ocr:
+  base_url: http://127.0.0.1:11434
+  model: glm-ocr
+  timeout_s: 300
 top_k: 5
 answer_mode: decide_first
