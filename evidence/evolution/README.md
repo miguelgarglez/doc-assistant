@@ -1,8 +1,9 @@
 # Evolución por versión
 
-Galerías históricas generadas por `mise run evolution` (scripts/evolution.py) desde los tags anotados de git. La nota de integración de v0.13.0 se mantiene al final.
-Las capturas son las que estaban versionadas en ese tag (`git show <tag>:evidence/screenshots/…`);
-el texto es el mensaje del tag.
+Galerías históricas generadas por `mise run evolution` (scripts/evolution.py) desde los tags anotados de git.
+Las capturas son las versionadas en cada tag (`git show <tag>:evidence/screenshots/…`);
+desde v0.13.0 solo se enseñan las que cambian respecto a la versión anterior.
+El texto es el mensaje del tag y, si existe, su nota en `docs/evolution-notes/`.
 
 Nota de honestidad: al publicar se reescribió el historial (nombre público y fixtures neutros).
 Las capturas versionadas de cada commit se regeneraron entonces ejecutando el e2e del código
@@ -371,7 +372,7 @@ Qué se probó:
 ![v0.11.0 sistema-390x844-neutral-dark](v0.11.0/sistema-390x844-neutral-dark.png)
 ![v0.11.0 sistema-390x844-neutral-light](v0.11.0/sistema-390x844-neutral-light.png)
 
-## v0.12.0 · 2026-10-31 20:06 +0100 · commit `a697fc8`
+## v0.12.0 · 2026-10-31 20:06 +0100 · commit `c0b45b5`
 
 **v0.12.0 — Markdown y citas correctos, citas inline, visor a pantalla completa y subida con progreso real**
 
@@ -539,8 +540,75 @@ Qué se probó:
 ![v0.12.0 subida-aviso-390x844-neutral-dark](v0.12.0/subida-aviso-390x844-neutral-dark.png)
 ![v0.12.0 subida-aviso-390x844-neutral-light](v0.12.0/subida-aviso-390x844-neutral-light.png)
 
-## v0.13.0 · integración sobre v0.12.0
+## v0.13.0 · 2026-10-31 21:11 +0100 · commit `6f3908c`
+
+**v0.13.0 · Fusión de facturas sobre v0.12.0 (ADR-012)**
+
+Merge --no-ff de feat/invoices-v013 (9b6552a) sobre v0.12.0 (c0b45b5).
+Conserva Markdown válido, citas inline, visor y progreso de subida (ADR-011).
+Añade plan v2, SQL generado en código y aclaraciones de facturas (ADR-012).
+v0.13.0-pre-merge conserva el commit y el mensaje del tag original.
+
+Probado: mise run check OK, 218 tests del servicio y 14 de scripts,
+contrato sin deriva, lint, tipos y build. Playwright 118/118 en tres pasadas,
+con axe sin violaciones serias ni críticas.
+Migración aditiva e idempotente al primer acceso a InvoiceDB, sin reindexación.
 
 La versión integrada conserva las citas inline, el visor y la subida con progreso de v0.12.0 (ADR-011), y añade las consultas de facturas con plan v2, SQL generado en código y aclaraciones (ADR-012). El tag `v0.13.0-pre-merge` conserva la revisión original de facturas `9b6552a`; `v0.13.0` identifica la fusión validada.
 
 Las capturas con facturas reales de esta integración son locales y no se publican. Las galerías anteriores mantienen las capturas sintéticas de sus tags.
+
+_Sin capturas nuevas en esta versión._
+
+## v0.13.1 · 2026-10-31 22:37 +0100 · commit `eb7c592`
+
+**v0.13.1 · Aclaración de facturas con tarjeta propia y vista previa de cita anclada (ADR-013)**
+
+Qué cambió
+- La ambigüedad en facturas ya no se muestra como «Sin evidencia suficiente». El servicio emite el evento SSE `clarification` (y `done.clarification`) con hasta 5 candidatas: número, emisor, cliente, fecha y total solo si existen, y la pregunta original desambiguada. OpenAPI y cliente regenerados.
+- La web pinta la aclaración como una tarjeta con las candidatas como botones accesibles. Un clic reenvía la pregunta desambiguada. Se mueve con teclado.
+- La vista previa de la cita inline se centra en su marcador, deja margen en los bordes y se oculta si el marcador sale del hilo.
+- scripts/evolution.py muestra solo las capturas que cambian y toma notas de docs/evolution-notes/.
+
+Qué se probó
+- mise run check OK: 225 tests del servicio (7 nuevos), 14 de scripts, contrato sin deriva, lint, tipos y build.
+- Playwright 139/139 en tres pasadas seguidas (21 nuevos), con axe sin violaciones serias ni críticas, incluida la aclaración en cuatro temas y modos.
+- Los tests de la vista previa se vieron fallar antes del arreglo y pasan después.
+- Capturas antes y después con el kit real (solo en local) y capturas sintéticas en evidence/.
+
+![v0.13.1 aclaracion-1280x720-industrial-dark](v0.13.1/aclaracion-1280x720-industrial-dark.png)
+![v0.13.1 aclaracion-1280x720-industrial-light](v0.13.1/aclaracion-1280x720-industrial-light.png)
+![v0.13.1 aclaracion-1280x720-neutral-dark](v0.13.1/aclaracion-1280x720-neutral-dark.png)
+![v0.13.1 aclaracion-1280x720-neutral-light](v0.13.1/aclaracion-1280x720-neutral-light.png)
+![v0.13.1 aclaracion-1440x900-industrial-dark](v0.13.1/aclaracion-1440x900-industrial-dark.png)
+![v0.13.1 aclaracion-1440x900-industrial-light](v0.13.1/aclaracion-1440x900-industrial-light.png)
+![v0.13.1 aclaracion-1440x900-neutral-dark](v0.13.1/aclaracion-1440x900-neutral-dark.png)
+![v0.13.1 aclaracion-1440x900-neutral-light](v0.13.1/aclaracion-1440x900-neutral-light.png)
+![v0.13.1 aclaracion-390x844-industrial-dark](v0.13.1/aclaracion-390x844-industrial-dark.png)
+![v0.13.1 aclaracion-390x844-industrial-light](v0.13.1/aclaracion-390x844-industrial-light.png)
+![v0.13.1 aclaracion-390x844-neutral-dark](v0.13.1/aclaracion-390x844-neutral-dark.png)
+![v0.13.1 aclaracion-390x844-neutral-light](v0.13.1/aclaracion-390x844-neutral-light.png)
+![v0.13.1 aclaracion-respuesta-1280x720-industrial-dark](v0.13.1/aclaracion-respuesta-1280x720-industrial-dark.png)
+![v0.13.1 aclaracion-respuesta-1280x720-industrial-light](v0.13.1/aclaracion-respuesta-1280x720-industrial-light.png)
+![v0.13.1 aclaracion-respuesta-1280x720-neutral-dark](v0.13.1/aclaracion-respuesta-1280x720-neutral-dark.png)
+![v0.13.1 aclaracion-respuesta-1280x720-neutral-light](v0.13.1/aclaracion-respuesta-1280x720-neutral-light.png)
+![v0.13.1 aclaracion-respuesta-1440x900-industrial-dark](v0.13.1/aclaracion-respuesta-1440x900-industrial-dark.png)
+![v0.13.1 aclaracion-respuesta-1440x900-industrial-light](v0.13.1/aclaracion-respuesta-1440x900-industrial-light.png)
+![v0.13.1 aclaracion-respuesta-1440x900-neutral-dark](v0.13.1/aclaracion-respuesta-1440x900-neutral-dark.png)
+![v0.13.1 aclaracion-respuesta-1440x900-neutral-light](v0.13.1/aclaracion-respuesta-1440x900-neutral-light.png)
+![v0.13.1 aclaracion-respuesta-390x844-industrial-dark](v0.13.1/aclaracion-respuesta-390x844-industrial-dark.png)
+![v0.13.1 aclaracion-respuesta-390x844-industrial-light](v0.13.1/aclaracion-respuesta-390x844-industrial-light.png)
+![v0.13.1 aclaracion-respuesta-390x844-neutral-dark](v0.13.1/aclaracion-respuesta-390x844-neutral-dark.png)
+![v0.13.1 aclaracion-respuesta-390x844-neutral-light](v0.13.1/aclaracion-respuesta-390x844-neutral-light.png)
+![v0.13.1 cita-vista-previa-1280x720-industrial-dark](v0.13.1/cita-vista-previa-1280x720-industrial-dark.png)
+![v0.13.1 cita-vista-previa-1280x720-industrial-light](v0.13.1/cita-vista-previa-1280x720-industrial-light.png)
+![v0.13.1 cita-vista-previa-1280x720-neutral-dark](v0.13.1/cita-vista-previa-1280x720-neutral-dark.png)
+![v0.13.1 cita-vista-previa-1280x720-neutral-light](v0.13.1/cita-vista-previa-1280x720-neutral-light.png)
+![v0.13.1 cita-vista-previa-1440x900-industrial-dark](v0.13.1/cita-vista-previa-1440x900-industrial-dark.png)
+![v0.13.1 cita-vista-previa-1440x900-industrial-light](v0.13.1/cita-vista-previa-1440x900-industrial-light.png)
+![v0.13.1 cita-vista-previa-1440x900-neutral-dark](v0.13.1/cita-vista-previa-1440x900-neutral-dark.png)
+![v0.13.1 cita-vista-previa-1440x900-neutral-light](v0.13.1/cita-vista-previa-1440x900-neutral-light.png)
+![v0.13.1 cita-vista-previa-390x844-industrial-dark](v0.13.1/cita-vista-previa-390x844-industrial-dark.png)
+![v0.13.1 cita-vista-previa-390x844-industrial-light](v0.13.1/cita-vista-previa-390x844-industrial-light.png)
+![v0.13.1 cita-vista-previa-390x844-neutral-dark](v0.13.1/cita-vista-previa-390x844-neutral-dark.png)
+![v0.13.1 cita-vista-previa-390x844-neutral-light](v0.13.1/cita-vista-previa-390x844-neutral-light.png)
