@@ -27,5 +27,21 @@ LLM, embeddings, reranker y OCR son `Protocol`s; los adaptadores HTTP se eligen 
 
 ## Por qué así (resumen; detalle en decisions-log.md)
 - Python solo donde hace falta (modelos, OCR, índice); la web puede crecer sin tocar la IA.
-- Cero alucinación como propiedad de diseño: el LLM nunca es la última palabra; el código verifica citas y aritmética.
+- Reducir respuestas inventadas por diseño: el LLM nunca tiene la última palabra; el código verifica citas y aritmética y, si duda, rechaza. No hay aún una cifra de error validada (el gold no está aprobado).
 - Límite conocido: el verificador es literal/heurístico; no prueba implicación semántica. La evaluación con LLM juez llega después.
+
+## Fronteras y seguridad
+- Todo en `127.0.0.1`; el proxy de Next reenvía solo `content-type`, `accept` y `accept-language`, recodifica cada segmento de ruta y comprueba el origen final (sin SSRF). Si el servicio cae, devuelve 502 `{code, message}`.
+- Ficheros: `/ingest` solo admite rutas dentro de `data_dir` (sin `..`, absolutas ni symlinks que salgan); las subidas escriben en `data_dir/documents` y `data_dir/invoices` con nombre saneado, límite de tamaño y de páginas configurable, y 413 tipado.
+- Datos reales (kit, facturas) nunca entran en el repo ni en el ZIP: `.gitignore` + comprobación en `scripts/package.py`.
+
+## Procesos y arranque
+`mise run start` → `scripts/dev.py` (solo stdlib): comprueba puertos, lanza cada proceso en su propio grupo, espera su health check en orden (LLM, embeddings, reranker, OCR reutilizado si ya corre, IA, web) y, con Ctrl-C, para en dos fases (amable y luego forzado a los 5 s) con `atexit` de respaldo. `DOC_ASSISTANT_FAKE_LLAMA=1` sustituye los tres llama-server por un simulador para CI y pruebas.
+
+## Calidad y evidencia
+- `mise run check`: ruff, mypy (estricto en scripts), pytest (servicio y scripts), deriva del contrato OpenAPI→TS, eslint, typecheck y build.
+- `mise run evidence`: capturas Playwright deterministas (API simulada con fixtures). `--live`: corrida real con documentos y facturas sintéticos → `evidence/live/results.md`.
+- Revisión independiente por otro modelo: `docs/reviews/`, triaje en ADR-006.
+
+## Entrega
+`mise run package` crea un ZIP64 con código, docs, evidence, los tres GGUF (con `models/SHA256SUMS`) y los binarios llama.cpp b12020 de macOS arm64, Linux x64 y Windows x64 en `vendor/archives/`. `setup` usa lo empaquetado antes de descargar nada (SHA256). El script descomprime en limpio y hace setup + start + pregunta para probarlo.
