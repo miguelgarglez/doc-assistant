@@ -15,79 +15,79 @@ const invoiceId = (value: string) => value as InvoiceId
 
 export const exampleSources = [
   {
-    id: sourceId("src-iva-2024"),
-    title: "Manual IVA 2024 — Cap. 3",
+    id: sourceId("src-acme-demo-ds"),
+    title: "ACME-DEMO-DS — Ficha técnica GR-50",
     excerpt:
-      "Las facturas rectificativas deben identificar la factura original y el motivo de la rectificación. El tipo impositivo aplicable es el vigente en la fecha de la operación.",
-    pageCount: 42,
+      "Carga útil máxima: 12 kg (ISO 9409-1). Momento máximo en brida: 45 N·m. Interfaz ISO 9409-1-50-4-M6.",
+    pageCount: 4,
   },
   {
-    id: sourceId("src-modelo-303"),
-    title: "Instrucciones Modelo 303",
+    id: sourceId("src-cell-install"),
+    title: "Manual de instalación — célula ACME-C12",
     excerpt:
-      "En la casilla 28 se consignará el IVA deducible en operaciones interiores. No incluir cuotas soportadas en adquisiciones de bienes de inversión.",
-    pageCount: 18,
+      "La zona de seguridad debe mantener un perímetro libre de 800 mm alrededor del robot colaborativo durante el modo teach.",
+    pageCount: 36,
   },
 ] as const satisfies readonly SourceDocument[]
 
 export const exampleAnswer = {
-  question: "¿Puedo deducir el IVA de esta factura de material de oficina?",
-  body: "Sí, el IVA soportado en material de oficina es deducible si la factura cumple los requisitos formales y el gasto está afecto a la actividad. Conserva el justificante y consúltalo en la casilla correspondiente del modelo 303.",
+  question: "¿Cuál es la carga útil máxima del GR-50?",
+  body: "La carga útil máxima del end-effector GR-50 es de 12 kg según la ficha técnica ACME-DEMO-DS, sección 2.1.",
   citations: [
     {
       id: citationId("cit-1"),
-      label: "Manual IVA §3.2",
-      sourceId: sourceId("src-iva-2024"),
-      page: 14,
+      label: "ACME-DEMO-DS §2.1",
+      sourceId: sourceId("src-acme-demo-ds"),
+      page: 1,
     },
     {
       id: citationId("cit-2"),
-      label: "Modelo 303 — casilla 28",
-      sourceId: sourceId("src-modelo-303"),
-      page: 7,
+      label: "ACME-DEMO-DS — brida",
+      sourceId: sourceId("src-acme-demo-ds"),
+      page: 1,
     },
   ],
 } as const satisfies Answer
 
 export const exampleRefusal = {
-  reason: "La consulta pide una estrategia de elusión fiscal.",
+  reason: "No hay pasajes indexados que respondan a la consulta.",
   guidance:
-    "Reformula la pregunta sobre obligaciones, plazos o requisitos formales. Puedo ayudarte a interpretar la normativa publicada, no a eludirla.",
+    "No hay evidencia en los documentos indexados; no se inventa una respuesta. Reformula con el modelo, la sección o el parámetro concreto.",
 } as const satisfies Refusal
 
 export const exampleInvoice = {
   id: invoiceId("inv-2024-118"),
-  vendor: "Papelería Norte S.L.",
+  vendor: "Robótica Norte S.L.",
   issuedOn: "2024-11-12",
   currency: "EUR",
   status: "flagged",
-  total: 145.2,
+  total: 1452.0,
   lines: [
     {
-      description: "Resmas A4 80g (pack 5)",
-      quantity: 4,
-      unitPrice: 12.5,
+      description: "Brida adaptadora ISO 9409-1",
+      quantity: 2,
+      unitPrice: 120.0,
       taxRate: 0.21,
     },
     {
-      description: "Tóner compatible HP 85A",
-      quantity: 2,
-      unitPrice: 38.0,
+      description: "Cableado GR-50 (kit)",
+      quantity: 1,
+      unitPrice: 980.0,
       taxRate: 0.21,
     },
   ],
-  notes: "Falta NIF del destinatario en la copia OCR.",
+  notes: "Revisar referencia de pedido en la página 1 del PDF.",
 } as const satisfies InvoiceReview
 
 export const exampleUploads = [
   {
-    name: "factura-papeleria.pdf",
+    name: "ACME-DEMO-DS.pdf",
     sizeBytes: 248_832,
     mimeType: "application/pdf",
   },
   {
-    name: "extracto-noviembre.csv",
+    name: "factura-brida.pdf",
     sizeBytes: 12_480,
-    mimeType: "text/csv",
+    mimeType: "application/pdf",
   },
 ] as const satisfies readonly UploadFile[]

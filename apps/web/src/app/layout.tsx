@@ -9,13 +9,14 @@ const geistSans = Geist({
 })
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+  variable: "--font-mono",
   subsets: ["latin"],
 })
 
 export const metadata: Metadata = {
-  title: "tt-web",
-  description: "UI Next.js para revisión fiscal con citas",
+  title: "Doc Assistant",
+  description:
+    "Consulta local de documentación técnica de robótica industrial con citas verificables.",
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

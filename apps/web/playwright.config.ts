@@ -13,7 +13,7 @@ export default defineConfig({
   },
   use: {
     baseURL: "http://127.0.0.1:3000",
-    viewport: { width: 1280, height: 720 },
+    viewport: { width: 1280, height: 800 },
     deviceScaleFactor: 1,
     locale: "es-ES",
     timezoneId: "Europe/Madrid",
@@ -26,6 +26,7 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         defaultBrowserType: "chromium",
+        viewport: { width: 1280, height: 800 },
       },
     },
   ],
