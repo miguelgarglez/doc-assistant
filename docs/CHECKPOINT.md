@@ -76,4 +76,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## v0.10.0 · Chat, fuentes y sistema
 - Chat acumulado con SSE, texto provisional y pasos; navegación separada para Fuentes, Ajustes y Sistema. El catálogo permite revisar páginas y fragmentos.
 - El estado por pieza queda sin medir si el servicio no ofrece el endpoint; la propuesta está en el contrato compartido.
-- Probado: `mise run check` correcto (87 tests del servicio y 14 de scripts); 69 pruebas Playwright en tres pasadas, con axe en chat, fuentes, ajustes y sistema × dos temas × claro/oscuro.
+- Probado: `mise run check` correcto (88 tests del servicio y 14 de scripts); 69 pruebas Playwright en tres pasadas, con axe en chat, fuentes, ajustes y sistema × dos temas × claro/oscuro.
+
+## Cierre v0.10.0 · streaming y panorámicas
+- Incorporadas las mejoras del servicio y el ADR-009. Una prueba en vivo con FastAPI y eventos espaciados comprobó que el proxy entrega los eventos de forma incremental. Un rechazo con `retract:true` sustituye el texto provisional antes de `done`.

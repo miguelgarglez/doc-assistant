@@ -8,7 +8,7 @@ import type { AskResponse, ErrorBody } from "@/lib/api/types"
 
 export type AskStatus =
   | { kind: "idle" }
-  | { kind: "loading"; question: string; text: string }
+  | { kind: "loading"; question: string; text: string; refusal?: { answer: string; reason: string } }
   | { kind: "success"; question: string; data: AskResponse }
   | { kind: "error"; question: string; error: ErrorBody }
   | { kind: "cancelled"; question: string }
@@ -56,7 +56,7 @@ export function useAsk() {
           if (generation !== generationRef.current || controller.signal.aborted) return
           if (event === "step") trace.record(data as TraceStep)
           if (event === "token") setStatus((current) => current.kind === "loading" ? { ...current, text: current.text + String(data.text) } : current)
-          if (event === "refusal" && data.retract) setStatus((current) => current.kind === "loading" ? { ...current, text: "" } : current)
+          if (event === "refusal") setStatus((current) => current.kind === "loading" ? { ...current, text: "", refusal: { answer: String(data.answer), reason: String(data.reason) } } : current)
           if (event === "done") { terminal = true; setStatus({ kind: "success", question: trimmed, data: data as AskResponse }) }
           if (event === "error") { terminal = true; setStatus({ kind: "error", question: trimmed, error: { code: String(data.code), message: String(data.message) } }) }
         }
