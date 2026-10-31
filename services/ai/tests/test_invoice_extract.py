@@ -188,12 +188,14 @@ def test_api_invoice_upload_and_ask(config_path: Path, monkeypatch: pytest.Monke
     plan_llm = FakeLLM(
         responses=[
             {
-                "kind": "campos",
+                "intent": "valor",
                 "numero": "A120",
+                "parte": None,
                 "campos": ["importe_total"],
-                "filtro_campo": None,
-                "filtro_op": None,
-                "filtro_valor": None,
+                "filtros": [],
+                "fecha_desde": None,
+                "fecha_hasta": None,
+                "tiene": [],
             }
         ]
     )
