@@ -33,3 +33,10 @@
 - No se aplican ahora (limitaciones documentadas): #13 Ollama/glm-ocr no lo instala setup (decisión de Miguel pendiente: runtime OCR del ZIP); #14 descendientes de un padre ya muerto (los grupos de proceso cubren el caso normal; Job Objects fuera de alcance); #19 CI en PR (el workflow es manual a propósito: no hay push); #23 fragmentos multipágina (abre la primera página).
 - Actualización 31-oct 14:30: #14 resuelto (el cierre mata los grupos iniciados aunque su líder haya muerto; test que falla con el código anterior), #23 resuelto (el visor recorre las páginas del fragmento; e2e), #19 resuelto (workflow `ci` en push/PR: check + e2e), #13 parcial (setup y start comprueban Ollama + glm-ocr y avisan "Facturas NO disponible"; instalarlo o empaquetarlo depende del runtime OCR, decisión de Miguel). En Windows, #14 sigue limitado a `taskkill /T` (sin Job Objects).
 - Fuera de alcance: no se amplía el verificador.
+
+## ADR-007 Temas CSS e AI Elements ligeros (2026-10-31)
+- Contexto: la web necesita un sistema de diseño intercambiable y una UX de chat más cercana a AI Elements, sin romper Base UI ni hinchar el bundle.
+- Decisión: temas como ficheros `apps/web/src/themes/<nombre>.css` con variables bajo `[data-theme]` (+ `.dark`); temas `industrial` (default) y `neutral`. De AI Elements se adopta el patrón `conversation` (dependencia justificada `use-stick-to-bottom` ~auto-scroll que respeta scroll del usuario) y `suggestion` (reimplementado sin deps). Se descartan `prompt-input` y `message` porque arrastran `ai`, `nanoid`/`streamdown` y menús Radix; el prompt y las acciones se reimplementan sobre Base UI manteniendo la intención (Enter/Shift+Enter, copiar, regenerar).
+- Alternativas: instalar el registro AI Elements completo; Sonner + Radix toast; un solo tema hardcodeado.
+- Consecuencias: `@axe-core/playwright` como devDependency para a11y e2e; sin dependencia de streaming LLM en la UI (el contrato sigue siendo POST `/ask`).
+- Confianza: alta.

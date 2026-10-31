@@ -1,15 +1,30 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { DM_Sans, IBM_Plex_Mono, Manrope, Space_Grotesk } from "next/font/google"
+
+import { ThemeProvider } from "@/components/theme/theme-provider"
+import { ToastProvider } from "@/components/ui/toast"
+import { DEFAULT_THEME } from "@/lib/theme"
 
 import "./globals.css"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const industrialDisplay = Space_Grotesk({
+  variable: "--font-industrial-display",
   subsets: ["latin"],
 })
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const industrialSans = Manrope({
+  variable: "--font-industrial-sans",
+  subsets: ["latin"],
+})
+
+const neutralSans = DM_Sans({
+  variable: "--font-neutral-sans",
+  subsets: ["latin"],
+})
+
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  weight: ["400", "500"],
   subsets: ["latin"],
 })
 
@@ -23,9 +38,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      data-theme={DEFAULT_THEME}
+      suppressHydrationWarning
+      className={`${industrialDisplay.variable} ${industrialSans.variable} ${neutralSans.variable} ${plexMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <ThemeProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </ThemeProvider>
+      </body>
     </html>
   )
 }

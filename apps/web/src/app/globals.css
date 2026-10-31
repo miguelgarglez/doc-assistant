@@ -1,15 +1,19 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "../themes/industrial.css";
+@import "../themes/neutral.css";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant motion-safe (@media (prefers-reduced-motion: no-preference));
+@custom-variant motion-reduce (@media (prefers-reduced-motion: reduce));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-family-sans);
+  --font-mono: var(--font-family-mono);
+  --font-heading: var(--font-family-heading);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -50,91 +54,35 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
-  /* Neutral workspace; AA body ≥ 4.5:1 on background */
-  --background: oklch(0.985 0.004 95);
-  --foreground: oklch(0.22 0.01 255);
-  --card: oklch(0.995 0.002 95);
-  --card-foreground: oklch(0.22 0.01 255);
-  --popover: oklch(0.995 0.002 95);
-  --popover-foreground: oklch(0.22 0.01 255);
-  --primary: oklch(0.32 0.04 250);
-  --primary-foreground: oklch(0.98 0.005 95);
-  --secondary: oklch(0.94 0.008 250);
-  --secondary-foreground: oklch(0.28 0.02 250);
-  --muted: oklch(0.94 0.006 95);
-  --muted-foreground: oklch(0.42 0.015 255);
-  --accent: oklch(0.94 0.01 250);
-  --accent-foreground: oklch(0.28 0.02 250);
-  --destructive: oklch(0.5 0.18 25);
-  --border: oklch(0.88 0.008 255);
-  --input: oklch(0.88 0.008 255);
-  --ring: oklch(0.55 0.04 250);
-  --highlight: oklch(0.92 0.08 95);
-  --highlight-foreground: oklch(0.28 0.04 80);
-  --chart-1: oklch(0.55 0.08 250);
-  --chart-2: oklch(0.5 0.06 200);
-  --chart-3: oklch(0.45 0.04 255);
-  --chart-4: oklch(0.4 0.03 255);
-  --chart-5: oklch(0.32 0.02 255);
-  --radius: 0.5rem;
-  --sidebar: oklch(0.97 0.005 95);
-  --sidebar-foreground: oklch(0.22 0.01 255);
-  --sidebar-primary: oklch(0.32 0.04 250);
-  --sidebar-primary-foreground: oklch(0.98 0.005 95);
-  --sidebar-accent: oklch(0.94 0.01 250);
-  --sidebar-accent-foreground: oklch(0.28 0.02 250);
-  --sidebar-border: oklch(0.88 0.008 255);
-  --sidebar-ring: oklch(0.55 0.04 250);
-}
-
-.dark {
-  --background: oklch(0.18 0.01 255);
-  --foreground: oklch(0.95 0.005 95);
-  --card: oklch(0.22 0.012 255);
-  --card-foreground: oklch(0.95 0.005 95);
-  --popover: oklch(0.22 0.012 255);
-  --popover-foreground: oklch(0.95 0.005 95);
-  --primary: oklch(0.88 0.02 250);
-  --primary-foreground: oklch(0.22 0.02 250);
-  --secondary: oklch(0.28 0.015 255);
-  --secondary-foreground: oklch(0.95 0.005 95);
-  --muted: oklch(0.28 0.015 255);
-  --muted-foreground: oklch(0.78 0.015 255);
-  --accent: oklch(0.28 0.015 255);
-  --accent-foreground: oklch(0.95 0.005 95);
-  --destructive: oklch(0.7 0.16 25);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.65 0.04 250);
-  --highlight: oklch(0.4 0.06 95);
-  --highlight-foreground: oklch(0.95 0.04 95);
-  --chart-1: oklch(0.7 0.08 250);
-  --chart-2: oklch(0.65 0.06 200);
-  --chart-3: oklch(0.6 0.04 255);
-  --chart-4: oklch(0.55 0.03 255);
-  --chart-5: oklch(0.5 0.02 255);
-  --sidebar: oklch(0.22 0.012 255);
-  --sidebar-foreground: oklch(0.95 0.005 95);
-  --sidebar-primary: oklch(0.7 0.08 250);
-  --sidebar-primary-foreground: oklch(0.95 0.005 95);
-  --sidebar-accent: oklch(0.28 0.015 255);
-  --sidebar-accent-foreground: oklch(0.95 0.005 95);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.65 0.04 250);
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    background-image: var(--surface-grid);
+    background-size: var(--surface-grid-size);
   }
   html {
     @apply font-sans;
   }
+  h1,
+  h2,
+  h3,
+  .font-heading {
+    font-family: var(--font-family-heading);
+  }
   mark {
     @apply rounded-sm bg-highlight px-0.5 text-highlight-foreground;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
