@@ -46,8 +46,9 @@ El proxy actual de Next ya devuelve `upstream.body` como stream; comprobar que n
 
 5. `done` — siempre el último evento si no hubo error. Es la verdad final (igual a la respuesta de `/ask` + tiempos):
    ```json
-   {"ok":true,"answer":"...","citations":[...],"reason":"verified","suggestions":[],"timings":{"route":0.0,"retrieve":0.08,"rerank":0.4,"generate":2.1,"verify":0.01,"total":2.6}}
+   {"ok":true,"answer":"...","citations":[...],"segments":[{"text":"...","refs":[0]}],"inline":"rules","reason":"verified","suggestions":[],"timings":{"route":0.0,"retrieve":0.08,"rerank":0.4,"generate":2.1,"verify":0.01,"total":2.6}}
    ```
+   `segments` y `inline`: ver «Citas inline» más abajo.
    Recomendación: al recibir `done`, renderizar SIEMPRE desde `done.answer` / `done.citations` (descartando los tokens).
 
 6. `error` — `{"code":"adapter_error","message":"No responde el servidor en ..."}`. Si había tokens, se descartan.
@@ -65,6 +66,30 @@ Preguntas tipo "¿qué sabes hacer?", "¿qué documentos tienes?", "resúmeme lo
 se responden desde los metadatos reales del índice (sin LLM). Salen como `ok:true`, `reason:"meta:<tipo>"`
 (`meta:capabilities`, `meta:inventory`, `meta:document`), con `token`s (el texto completo en trozos) y `citations`
 apuntando a los fragmentos cuyos títulos de sección se listan (quote = título literal). En `/ask` igual (mismos campos).
+
+### Citas inline (`segments`, `inline`)
+`done` (y `/ask`) llevan `segments: {text, refs[]}[]`: la respuesta partida en trozos, donde `refs` son posiciones en `citations`.
+Los `text` concatenados reconstruyen `answer` exactamente; un trozo sin `refs` no lleva marcador. `citations` viene ordenada por primer uso
+(los marcadores se leen 1, 2, 3 a lo largo del texto) y solo contiene las citas que algún trozo usa; si ninguno tiene marcador, se
+mantienen todas y se muestran tras la respuesta. `inline` dice quién colocó los marcadores:
+- `template`: respuestas meta y de facturas, construidas por plantilla con una cita por elemento listado.
+- `rules` (por defecto): asignación determinista por frase. Una cita respalda una frase si cubre sus cifras y, al menos, la mitad de sus raíces de palabra.
+- `model`: el LLM emite los segmentos con ids de fragmento; cada segmento se valida (ids existentes, texto que reconstruye la respuesta, respaldo por frase). Si no valida, se degrada a `rules`.
+- `none`: sin segmentos; el cliente muestra las citas al final.
+Se elige con `inline_citations: rules | model | off` en la configuración. Los números de gold-v2 que justifican el valor por defecto están en ADR-011.
+Los marcadores no cambian el veredicto del verificador: se calculan después de verificar.
+
+### Resaltado en la página: `GET /sources/{id}/pages/{n}/highlight?quote=...`
+Devuelve `PageHighlight {page, found, reason, rects[]}` con rectángulos como fracciones de la página (origen arriba a la izquierda),
+calculados al vuelo con el texto del PDF (pypdfium2) y la cita literal. `reason` ∈ `ok`, `not_found` (no aparece en la capa de texto),
+`no_positions` (facturas: la imagen pasa por OCR y no se guardan posiciones), `no_file` (el PDF original ya no está). No hay migración
+de esquema: las posiciones no se guardan en el índice.
+
+### Progreso de subida: `?job=<id>` y `GET /ingest/jobs/{job_id}/events` (SSE)
+`POST /documents` y `POST /invoices/upload` aceptan `?job=<id>` (8–64 caracteres `A-Za-z0-9_-`, lo elige el cliente). Mientras procesan, publican
+etapas que se siguen con `GET /ingest/jobs/{id}/events` (`event: stage`, `IngestStageEvent {stage, label, seq, detail}`):
+`received`, `reading` (PDF), `ocr` y `extracting` (factura), `indexing`, y `done` o `error` al final. Los trabajos viven en memoria
+15 minutos: un reinicio los pierde y la respuesta de la subida sigue siendo la verdad. Un trabajo que no aparece en 30 s cierra el stream.
 
 ### Tipos nuevos
 ```ts

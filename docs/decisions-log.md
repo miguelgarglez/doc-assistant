@@ -102,3 +102,50 @@ Sustituye las partes restrictivas de ADR-007 (no instalar `ai` ni `streamdown`; 
 
 **Layout.** App shell a `100dvh` con navegación fija; el hilo del chat es el único scroll y el composer queda anclado. Comprobado por pruebas a 1440x900 y 1280x720 (el documento no desborda con respuesta y visor abiertos), también en Fuentes y Sistema. En móvil la navegación se pliega (Sheet) y el composer es usable en 390x844 (prueba de móvil); con teclado virtual real no se ha probado y queda como pendiente.
 - Confianza: alta en transporte y layout; media en las citas inline por frase, aplazadas a propósito.
+
+## ADR-011 Citas inline, visor a pantalla completa y subida con progreso real (2026-10-31)
+
+Sustituye la conclusión de ADR-010 sobre las citas inline («aplazadas a propósito») y su visor lateral. Cinco quejas sobre v0.11.0 y su causa:
+
+| Queja | Causa raíz | Decisión |
+| --- | --- | --- |
+| Markdown roto en respuestas panorámicas (viñetas vacías, párrafos pegados) | Las plantillas se montaban con f-strings sin modelo de bloques: una viñeta seguida de «N.» abría una lista ordenada anidada y los saltos simples pegaban párrafos | `answer_markup.AnswerBuilder` emite siempre Markdown válido (listas planas, una línea por elemento, párrafos separados). Los tests comprueban el HTML resultante: sin `li` vacíos ni listas anidadas, mismos bloques en inventario, capacidades, documento, factura y rechazo |
+| 32–44 fuentes para «¿qué facturas tengo?» | El inventario citaba un fragmento por cada sección de cada documento y no distinguía facturas de documentos | El alcance (documentos, facturas o ambos) se deduce de la pregunta y se cita un elemento por cada uno listado. Al terminar la respuesta solo se conservan las citas que usa algún segmento |
+| Citas solo al final | El verificador valida la respuesta entera | La respuesta lleva `segments` `{text, refs}`: los textos reconstruyen la respuesta y `refs` son posiciones de `citations`. `inline` indica el origen: `model`, `rules`, `template` o `none`. La web pinta marcadores numéricos pegados a la frase y el desplegable «N fuentes» debajo. Si los segmentos no reconstruyen el texto, vuelve a las píldoras finales |
+| Visor lateral sin resaltado | El fragmento citado solo era texto | Modal a pantalla completa con zoom y arrastre, navegación entre citas y páginas y resaltado del fragmento |
+| Subida sin visibilidad | El servicio solo respondía al terminar | Botón grande «Añadir fuentes» con modal y zona de suelta; aviso persistente (Sonner) con el estado real de cada archivo, que sobrevive al cierre del modal y a la navegación |
+
+**Citas inline: cómo se asignan.** Dos caminos y una degradación:
+- `rules` (valor por defecto, `inline_citations: rules`): el servicio parte la respuesta en frases y asigna a cada una las citas que la sostienen. Una cita sostiene una frase si todas sus cifras aparecen en el texto citado (`quantities_supported`) y el solapamiento de raíces de palabra con la cita es ≥ 0,5. Una frase sin soporte queda sin marcador; no se inventa una cita.
+- `model`: el LLM emite directamente `{text, refs}`. El verificador valida que los ids existan, que el orden sea el de la respuesta, que los textos la reconstruyan y que cada frase tenga soporte. Si algo falla, cae a `rules` y, si tampoco hay soporte, a citas al final (`inline: none`).
+- Panorámicas y facturas no pasan por el LLM: una cita por elemento listado (`inline: template`).
+- `off` conserva el comportamiento de v0.11.0.
+
+**Medidas** (31-oct, M4 16 GB, mismos modelos y configuración; 44 preguntas de gold-v2 **en borrador, no aprobado ni modificado**; 33 contestables y 11 no contestables; script y resultados locales, fuera del repo porque usan los documentos del enunciado):
+
+| | v0.11.0 | `rules` (1.ª) | `rules` (final) | `model` |
+| --- | --- | --- | --- | --- |
+| Contestables respondidas | 23/33 | 23/33 | 24/33 | 26/33 |
+| Rechazos entre contestables | 10 | 10 | 9 | 7 |
+| No contestables rechazadas bien | 11/11 | 11/11 | 11/11 | 8/11 |
+| No contestables respondidas | 0 | 0 | 0 | 3 (X02, X04, X07) |
+| Respuestas con cita | 23/23 | 23/23 | 24/24 | 29/29 |
+| Con marcador inline | no existe | 23/23 | 24/24 | 28/29 |
+| Latencia media | 8,9 s | 11,3 s | 11,6 s | 15,0 s |
+
+- El modo `model` responde más contestables, pero contesta 3 preguntas que no debía (p. ej. inventa la referencia de un kit de sellos de otro dispositivo). Pasar de 0 a 3 respuestas sin respaldo no es aceptable para un verificador cuya promesa es no inventar, y cuesta ~4 s más. Por eso queda como opción documentada, no como valor por defecto. El modelo de 4B no emite segmentos con la calidad necesaria; la asignación determinista con verificación es la mejor opción disponible.
+- `rules` no empeora respuestas ni rechazos. La pregunta contestable que pasa de 23 a 24 respondidas no es mérito de las reglas (las reglas no cambian lo que se contesta): es la variación entre ejecuciones y el índice, que en las dos últimas medidas incluía dos manuales sintéticos de prueba. No se afirma mejora.
+- La latencia de `rules` (+2,4 s frente a v0.11.0) coincidió con otras cargas de la máquina durante la medición; el trabajo añadido es CPU de milisegundos. No se ha medido sin carga y no se afirma que sea cero.
+- Citas por respuesta panorámica (mismas preguntas, antes → después): «¿qué facturas tengo?» 44 → 5; «¿qué documentos hay?» 44 → 4 (6 en la segunda medida por los manuales sintéticos); «resúmeme lo que hay» 44 → 9 (11 en la segunda).
+- Corrección derivada de la medida: la primera versión de `rules` dejaba en la lista «N fuentes» citas que ninguna frase usaba (decía «3 fuentes» con 2 marcadores). `_reorder` ahora descarta las no usadas; si ninguna frase tiene soporte, se conservan todas para la lista final.
+
+**Resaltado en el visor.** `GET /sources/{id}/pages/{n}/highlight?quote=` localiza el fragmento citado con pypdfium2 (rectángulos como fracciones de la página) al vuelo y la web los cachea. Motivos de degradación: `ok`, `not_found`, `no_positions`, `no_file`. No hay migración de esquema: guardar rectángulos en la ingesta obligaría a reindexar los documentos ya subidos y duplicaría información que se obtiene del PDF en milisegundos. Coste: una lectura del PDF por cita abierta. Las facturas son imagen con OCR y la extracción no conserva posiciones, así que el visor enseña el campo extraído y lo dice (`no_positions`); resaltar una región exigiría guardar las cajas del OCR y no se ha hecho.
+
+**Visor.** `Dialog` de Base UI a pantalla completa, solo con fundido porque ocupa la ventana. Zoom y arrastre en un módulo puro (`lib/viewer/pan-zoom.ts`, con tests). Atajos: ←/→ citas, ↑/↓ páginas, `+`/`-`/`0` zoom, Esc cierra. Base UI detiene la propagación de las flechas dentro del diálogo, así que el visor escucha en `window` en fase de captura. Zoom y navegación por teclado no se animan.
+
+**Subida.** Cada subida lleva un identificador de trabajo del cliente (`?job=` en `/documents` y `/invoices/upload`) y `GET /ingest/jobs/{id}/events` emite eventos `stage` (`received`, `reading`, `ocr`, `extracting`, `indexing`, `done`, `error`) por SSE. El estado vive en memoria con TTL de 900 s: un reinicio del servicio pierde los trabajos en curso. La web no duplica estado: `UploadStore` es la única fuente y el aviso de Sonner lee de ahí. Cancelar solo se ofrece en cola o subiendo; después el servicio termina el trabajo y la UI lo dice. Sonner (shadcn) se adapta al `ThemeProvider` propio en lugar de `next-themes`.
+
+**Consecuencias.** Una dependencia nueva en la web (`sonner`); el servicio no añade dependencias (`pypdfium2` ya se usaba en la ingesta). El contrato `done` añade `segments` e `inline`; cualquier cliente que los ignore sigue funcionando con las citas finales.
+
+**Riesgos.** (a) Las reglas de soporte son léxicas: una frase parafraseada sin cifras ni raíces comunes queda sin marcador, que es el error seguro. (b) El resaltado depende de que el texto del PDF tenga capa de texto; un PDF escaneado degrada a `not_found`. (c) El progreso de ingesta no sobrevive a un reinicio del servicio. (d) La ejecución de `model` es sensible al modelo; con uno mayor habría que repetir la medida.
+- Confianza: alta en Markdown, selección de citas y subida; media en las citas inline (medidas sobre un conjunto en borrador y una sola ejecución por modo).
