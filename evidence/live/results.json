@@ -1,5 +1,5 @@
 {
-  "fecha": "2026-10-31 13:22 CET",
+  "fecha": "2026-10-31 13:30 CET",
   "documentos": [
     {
       "fichero": "robot-demo.pdf",
@@ -16,42 +16,42 @@
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 23.3
+      "segundos": 10.6
     },
     {
       "fichero": "factura_011.png",
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 29.7
+      "segundos": 17.0
     },
     {
       "fichero": "factura_021.png",
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 32.7
+      "segundos": 18.1
     },
     {
       "fichero": "factura_031.png",
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 27.0
+      "segundos": 13.6
     },
     {
       "fichero": "factura_041.png",
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 33.2
+      "segundos": 14.3
     },
     {
       "fichero": "factura_051.png",
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 39.3
+      "segundos": 14.4
     }
   ],
   "preguntas": [
@@ -70,7 +70,7 @@
           "Alcance: 4 m."
         ]
       ],
-      "segundos": 9.4
+      "segundos": 5.5
     },
     {
       "tipo": "documento",
@@ -87,7 +87,7 @@
           "Temperatura de trabajo: 0 a 50 C."
         ]
       ],
-      "segundos": 9.3
+      "segundos": 5.2
     },
     {
       "tipo": "factura",
@@ -104,7 +104,7 @@
           "537.94"
         ]
       ],
-      "segundos": 6.1
+      "segundos": 4.8
     },
     {
       "tipo": "rechazo esperado",
@@ -113,7 +113,7 @@
       "respuesta": "No dispongo de esa información en los documentos",
       "motivo": "llm_unanswerable",
       "citas": [],
-      "segundos": 5.5
+      "segundos": 3.7
     },
     {
       "tipo": "rechazo esperado",
@@ -122,7 +122,7 @@
       "respuesta": "No dispongo de esa información en los documentos",
       "motivo": "llm_unanswerable",
       "citas": [],
-      "segundos": 5.7
+      "segundos": 3.3
     }
   ]
 }
