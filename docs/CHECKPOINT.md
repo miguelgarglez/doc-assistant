@@ -94,3 +94,13 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Decisión clave y por qué: el valor por defecto de las citas inline es la asignación por reglas, no el LLM de 4B, porque el modo `model` dejó pasar respuestas sin respaldo; el resaltado se calcula al vuelo, sin migrar el índice.
 - Pendiente: resaltar una región en facturas (exige guardar las cajas del OCR), teclado virtual real en móvil, medir la latencia de `rules` sin otras cargas, repetir la medida con el gold aprobado.
 
+## 21:00 · Facturas con plan validado y resolución en código (v0.13.0)
+- Qué cambió: ver ADR-012. El LLM solo propone la intención y las pistas. Personas, números, roles, años y campos se resuelven en código sobre tablas derivadas tipadas. La ambigüedad se resuelve preguntando.
+- Qué se probó:
+  - 155 tests (ruff y mypy limpios).
+  - Baterías con LLM real en puertos aislados: A 36/36 y B 33/33, sin respuestas falsas; v0.11 sobre las mismas: 6/36 y 7/33, con 11 falsas en total.
+  - Índice de 2.005 facturas: 10 correctas y 5 aclaraciones legítimas, con p50 1,6 s en la vía de facturas y 33 ms en la parte determinista.
+  - Migración sobre una copia del índice: 35 ms la primera vez, 5 ms después, sin tocar `facturas`.
+- Decisión clave y por qué: el año, el rol y los campos salen de la pregunta, porque el modelo de 4B inventaba años y omitía campos. Preguntar es mejor que elegir una factura al azar.
+- Pendiente: un gold aprobado, pistas en otros idiomas y triggers de cambios para índices muy grandes.
+

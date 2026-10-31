@@ -2,6 +2,20 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
+## v0.13.0 · 2026-10-31
+- Facturas en lenguaje natural rehechas (ADR-012):
+  - Plan validado por esquema (valor, lista, contar, sumar).
+  - Personas y números resueltos en código: tildes, mayúsculas, erratas, NIF con guiones, números parciales o sin ceros.
+  - Columnas tipadas e indexadas para fechas e importes, y SQL sobre una lista cerrada de campos.
+  - Aclaración «¿te refieres a…?» con candidatas. Si se pregunta un valor, se responde un valor.
+  - Citas solo de las facturas seleccionadas.
+- Integrada sobre v0.12.0: se conservan las citas inline por elemento, el Markdown de `answer_markup`, el visor y el progreso de subida (ADR-011).
+- Migración aditiva e idempotente al abrir `InvoiceDB` (`facturas_q`, `partes_fts`). No cambia `SCHEMA_VERSION` ni el contrato de v0.12.0.
+- Probado:
+  - 155 tests del servicio en la rama de facturas; 218 tests en la integración con v0.12.0.
+  - Baterías con LLM real: 36/36 (antes 6/36, 6 falsas) y 33/33 adversariales (antes 7/33, 5 falsas).
+  - Índice sintético de 2.005 facturas: 0 falsas y 33 ms de parte determinista (p50).
+
 ## v0.12.0 · 2026-10-31
 - Respuestas panorámicas con Markdown válido (listas planas, párrafos separados) generado por un único constructor (`answer_markup`) y comprobado con tests sobre el HTML resultante. Se revisaron también factura, capacidades, documento y rechazo.
 - Solo se citan las fuentes que sostienen la respuesta: «¿qué facturas tengo?» pasa de 44 citas a 5, una por factura; al terminar se descartan las citas que ninguna frase usa.

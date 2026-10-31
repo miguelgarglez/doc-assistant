@@ -538,3 +538,9 @@ Qué se probó:
 ![v0.12.0 subida-aviso-390x844-industrial-light](v0.12.0/subida-aviso-390x844-industrial-light.png)
 ![v0.12.0 subida-aviso-390x844-neutral-dark](v0.12.0/subida-aviso-390x844-neutral-dark.png)
 ![v0.12.0 subida-aviso-390x844-neutral-light](v0.12.0/subida-aviso-390x844-neutral-light.png)
+
+## v0.13.0 · integración sobre v0.12.0
+
+La versión integrada conserva las citas inline, el visor y la subida con progreso de v0.12.0 (ADR-011), y añade las consultas de facturas con plan v2, SQL generado en código y aclaraciones (ADR-012). El tag `v0.13.0-pre-merge` conserva la revisión original de facturas `9b6552a`; `v0.13.0` identifica la fusión validada.
+
+Las capturas con facturas reales de esta integración son locales y no se publican. Las galerías anteriores mantienen las capturas sintéticas de sus tags.
