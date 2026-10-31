@@ -29,6 +29,10 @@ run = "uv run --project services/ai python scripts/check.py --only gen-client"
 [tasks.package]
 description = "ZIP64 de entrega (código, docs, evidence, modelos, binarios) y prueba en limpio"
 run = "uv run --project services/ai python scripts/package.py"
+[tasks.evolution]
+description = "Regenera evidence/evolution/ (capturas de cada tag git, sin recrearlas)"
+run = "python3 scripts/evolution.py"
+
 [tasks.evidence]
 description = "Regenera evidence/ (capturas; --live añade corrida real con fixtures sintéticos)"
 run = "uv run --project services/ai python scripts/evidence.py"

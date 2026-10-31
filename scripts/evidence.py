@@ -176,7 +176,9 @@ def main() -> int:
         screenshots()
     if a.live:
         live()
-    return 0
+    import evolution  # galería por tag: se regenera siempre con el resto de evidence/
+
+    return evolution.main()
 
 
 if __name__ == "__main__":
