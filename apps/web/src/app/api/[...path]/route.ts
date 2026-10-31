@@ -12,6 +12,7 @@ const HOP_BY_HOP = new Set([
   "upgrade",
   "host",
   "content-length",
+  "expect",
 ])
 
 type RouteContext = {
@@ -41,7 +42,15 @@ async function proxyRequest(request: Request, context: RouteContext) {
     init.body = await request.arrayBuffer()
   }
 
-  const upstream = await fetch(target, init)
+  let upstream: Response
+  try {
+    upstream = await fetch(target, init)
+  } catch {
+    return Response.json(
+      { code: "upstream_unavailable", message: "El servicio de IA no responde" },
+      { status: 502 },
+    )
+  }
   const responseHeaders = new Headers()
   upstream.headers.forEach((value, key) => {
     if (!HOP_BY_HOP.has(key.toLowerCase())) {
