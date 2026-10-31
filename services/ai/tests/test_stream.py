@@ -321,3 +321,43 @@ def test_scope_sentence_is_verbatim_first_sentence() -> None:
     other = {"heading": "2. Cableado", "body": "x.", "text": "x."}
     assert _scope_sentence([other, chunk]) == (chunk, "Este documento define la instalación.")
     assert _scope_sentence([other]) is None
+
+
+def test_stream_ambiguous_invoice_is_a_clarification_not_a_refusal(
+    config_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from doc_assistant.chunking import chunk_invoice
+    from doc_assistant.invoices import InvoiceDB
+
+    cfg = load_config(config_path)
+    db = InvoiceDB(str(cfg.db))
+    store = ChunkStore(cfg.db, 8)
+    try:
+        for numero, total in (("F-1", "10.00"), ("F-2", "20.00")):
+            record = {"numero": numero, "emisor": "Emisor Uno", "importe_total": total}
+            db.upsert(record)
+            chunks = chunk_invoice({"numero": numero, "total": total})
+            store.replace_document(
+                chunks[0]["doc"], chunks, FakeEmbedder().embed([c["text"] for c in chunks]), []
+            )
+    finally:
+        db.con.close()
+        store.db.close()
+    use_fakes(monkeypatch, FakeLLM({"intent": "valor", "campos": ["importe_total"]}))
+    evs = stream(config_path, "¿cuál es el importe total de la factura?")
+    kinds = [k for k, _ in evs]
+    assert kinds[-2:] == ["clarification", "done"] and "refusal" not in kinds
+    event, done = evs[-2][1], evs[-1][1]
+    assert event["reason"] == "invoice:aclaracion"
+    assert [c["doc"] for c in event["clarification"]["candidates"]] == ["F-1", "F-2"]
+    assert event["clarification"]["candidates"][0]["question"] == (
+        "¿Cuál es el importe total de la factura F-1?"
+    )
+    assert done["ok"] is False and done["clarification"] == event["clarification"]
+    assert done["suggestions"] == []
+
+    with TestClient(create_app(config_path)) as client:
+        plain = client.post(
+            "/ask", json={"question": "¿cuál es el importe total de la factura?"}
+        ).json()
+    assert plain["clarification"] == event["clarification"] and "¿Te refieres" in plain["answer"]

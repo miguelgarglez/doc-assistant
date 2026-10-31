@@ -848,6 +848,16 @@
             },
             "type": "array",
             "title": "Suggestions"
+          },
+          "clarification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Clarification"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -931,6 +941,117 @@
           "fragment"
         ],
         "title": "Citation",
+        "type": "object"
+      },
+      "Clarification": {
+        "description": "The question is ambiguous: the user picks one of the real candidates.\n\n`question` of the chosen candidate is the original question with that invoice named.\n`total` counts every matching invoice; `candidates` holds at most the first five.",
+        "properties": {
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Detail"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/ClarificationCandidate"
+            },
+            "title": "Candidates",
+            "type": "array"
+          }
+        },
+        "required": [
+          "prompt",
+          "total",
+          "candidates"
+        ],
+        "title": "Clarification",
+        "type": "object"
+      },
+      "ClarificationCandidate": {
+        "description": "An invoice the question may refer to. Every field comes from the stored invoice.",
+        "properties": {
+          "doc": {
+            "title": "Doc",
+            "type": "string"
+          },
+          "doc_id": {
+            "title": "Doc Id",
+            "type": "string"
+          },
+          "emisor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Emisor"
+          },
+          "cliente": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cliente"
+          },
+          "fecha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Fecha"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "doc",
+          "doc_id",
+          "question"
+        ],
+        "title": "ClarificationCandidate",
         "type": "object"
       },
       "ComponentHealth": {
@@ -1885,6 +2006,29 @@
         "title": "CitationsEvent",
         "type": "object"
       },
+      "ClarificationEvent": {
+        "properties": {
+          "event": {
+            "const": "clarification",
+            "default": "clarification",
+            "title": "Event",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "clarification": {
+            "$ref": "#/components/schemas/Clarification"
+          }
+        },
+        "required": [
+          "reason",
+          "clarification"
+        ],
+        "title": "ClarificationEvent",
+        "type": "object"
+      },
       "DoneEvent": {
         "properties": {
           "ok": {
@@ -1930,6 +2074,17 @@
             },
             "title": "Suggestions",
             "type": "array"
+          },
+          "clarification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Clarification"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "event": {
             "const": "done",
@@ -2097,6 +2252,7 @@
         "discriminator": {
           "mapping": {
             "citations": "#/components/schemas/CitationsEvent",
+            "clarification": "#/components/schemas/ClarificationEvent",
             "done": "#/components/schemas/DoneEvent",
             "error": "#/components/schemas/ErrorEvent",
             "refusal": "#/components/schemas/RefusalEvent",
@@ -2117,6 +2273,9 @@
           },
           {
             "$ref": "#/components/schemas/RefusalEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ClarificationEvent"
           },
           {
             "$ref": "#/components/schemas/DoneEvent"

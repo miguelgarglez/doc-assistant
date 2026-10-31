@@ -1,6 +1,6 @@
 # API: consulta en streaming y catálogo de fuentes
 
-Contrato de `POST /ask/stream` (SSE), `GET /sources`, `DELETE /sources/{id}` y `POST /sources/{id}/reindex`. El esquema exacto está en `services/ai/openapi.json` (`StreamEvent`, `Source`, `Suggestion`).
+Contrato de `POST /ask/stream` (SSE), `GET /sources`, `DELETE /sources/{id}` y `POST /sources/{id}/reindex`. El esquema exacto está en `services/ai/openapi.json` (`StreamEvent`, `Source`, `Suggestion`, `Clarification`).
 
 Desde la web se accede por el proxy igual que hoy: `/api/ask/stream`, `/api/sources`, ...
 
@@ -43,6 +43,17 @@ El proxy actual de Next ya devuelve `upstream.body` como stream; comprobar que n
    - `retract: true` ⇒ hubo tokens provisionales y NO pasaron la verificación: **la UI debe borrar el texto
      acumulado y sustituirlo por `answer`** (rechazo). `retract: false` ⇒ no se había emitido texto.
    - `suggestions`: fuentes relacionadas reales (lo más cercano que se encontró), para mostrar "Quizá te sirva:".
+
+4b. `clarification` — la pregunta es ambigua y el servicio puede resolverla con candidatas reales. Sustituye a `refusal` en ese caso (nunca salen los dos):
+   ```json
+   {"reason":"invoice:aclaracion","clarification":{"prompt":"¿De qué factura?","detail":null,"total":2,"candidates":[{"doc":"FRA-1","doc_id":"inv-...","emisor":"...","cliente":"...","fecha":"07 marzo 2026","total":"1706.60","question":"¿Cuál es el importe total de la factura FRA-1?"}]}}
+   ```
+   - `reason` ∈ `invoice:aclaracion`, `invoice:factura_ambigua`, `invoice:parte_ambigua`. El resto de `invoice:*` (`factura_no_encontrada`, `parte_no_encontrada`, `sin_resultados`...) siguen siendo `refusal`: no hay nada entre lo que elegir.
+   - `prompt` es la pregunta corta que se muestra; `detail`, una frase de contexto cuando la hay (qué personas encajan, cuántas facturas hay).
+   - `candidates` (como mucho 5) tiene `doc` (número de factura), `doc_id` y, solo si la factura los tiene, `emisor`, `cliente`, `fecha` y `total` tal cual están guardados. Ningún campo se rellena ni se deduce.
+   - `question` es la pregunta original con la factura elegida nombrada, construida en el servicio con los campos que se pedían (`¿Cuál es el importe total de la factura X?`; si la pregunta no era de valor, `¿Qué datos tiene la factura X?`). El cliente la envía tal cual como pregunta nueva.
+   - `total` cuenta todas las facturas que encajan; si es mayor que `candidates.length`, el cliente lo dice y sugiere acotar por número o fecha.
+   - Sin tokens previos: no hay `retract`. `done` repite `clarification` y lleva `ok:false`, `reason` y `suggestions:[]`; `answer` conserva un texto plano («¿De qué factura? ¿Te refieres a alguna de estas? …») para clientes que no entienden el evento. `/ask` devuelve el mismo campo `clarification`.
 
 5. `done` — siempre el último evento si no hubo error. Es la verdad final (igual a la respuesta de `/ask` + tiempos):
    ```json
@@ -95,6 +106,9 @@ etapas que se siguen con `GET /ingest/jobs/{id}/events` (`event: stage`, `Ingest
 ```ts
 type Suggestion = { doc: string; doc_id: string; section: string; heading: string | null; pages: number[] };
 // AskResponse gana: suggestions: Suggestion[] (default [])
+type Clarification = { prompt: string; detail: string | null; total: number; candidates: ClarificationCandidate[] };
+type ClarificationCandidate = { doc: string; doc_id: string; emisor: string | null; cliente: string | null; fecha: string | null; total: string | null; question: string };
+// AskResponse (y DoneEvent) gana: clarification: Clarification | null
 ```
 
 ## 2. Fuentes

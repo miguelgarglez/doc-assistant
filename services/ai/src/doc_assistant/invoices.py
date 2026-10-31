@@ -252,10 +252,19 @@ def ask_invoices(
                 "fragment": fragment,
             }
         )
-    suggestions = [
-        {"doc": n, "doc_id": invoice_doc_id(n), "section": "factura", "heading": None, "pages": [1]}
-        for n in result.get("candidates") or []
-    ]
+    clarification = result.get("clarification")
+    if clarification:
+        clarification = {
+            **clarification,
+            "candidates": [
+                {
+                    "doc": c["numero"],
+                    "doc_id": invoice_doc_id(c["numero"]),
+                    **{k: v for k, v in c.items() if k != "numero"},
+                }
+                for c in clarification["candidates"]
+            ],
+        }
     if result.get("ok"):
         answer, citations, segments = render_plan_answer(result, citations)
         return {
@@ -276,7 +285,8 @@ def ask_invoices(
         or "No dispongo de esa información en los documentos",
         "citations": [],
         "reason": f"invoice:{reason}",
-        "suggestions": suggestions,
+        "suggestions": [],
+        "clarification": clarification,
         "latencies": {},
         "raw": {"plans": raws, "last": raw},
     }

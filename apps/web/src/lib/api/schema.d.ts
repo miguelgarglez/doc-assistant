@@ -305,6 +305,7 @@ export interface components {
             reason: string;
             /** Suggestions */
             suggestions?: components["schemas"]["Suggestion"][];
+            clarification?: components["schemas"]["Clarification"] | null;
         };
         /** Body_invoices_upload_invoices_upload_post */
         Body_invoices_upload_invoices_upload_post: {
@@ -332,6 +333,58 @@ export interface components {
             pages: number[];
             /** Fragment */
             fragment: string;
+        };
+        /**
+         * Clarification
+         * @description The question is ambiguous: the user picks one of the real candidates.
+         *
+         *     `question` of the chosen candidate is the original question with that invoice named.
+         *     `total` counts every matching invoice; `candidates` holds at most the first five.
+         */
+        Clarification: {
+            /** Prompt */
+            prompt: string;
+            /**
+             * Detail
+             * @default null
+             */
+            detail: string | null;
+            /** Total */
+            total: number;
+            /** Candidates */
+            candidates: components["schemas"]["ClarificationCandidate"][];
+        };
+        /**
+         * ClarificationCandidate
+         * @description An invoice the question may refer to. Every field comes from the stored invoice.
+         */
+        ClarificationCandidate: {
+            /** Doc */
+            doc: string;
+            /** Doc Id */
+            doc_id: string;
+            /**
+             * Emisor
+             * @default null
+             */
+            emisor: string | null;
+            /**
+             * Cliente
+             * @default null
+             */
+            cliente: string | null;
+            /**
+             * Fecha
+             * @default null
+             */
+            fecha: string | null;
+            /**
+             * Total
+             * @default null
+             */
+            total: string | null;
+            /** Question */
+            question: string;
         };
         /** ComponentHealth */
         ComponentHealth: {
@@ -629,6 +682,17 @@ export interface components {
             /** Citations */
             citations: components["schemas"]["Citation"][];
         };
+        /** ClarificationEvent */
+        ClarificationEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event: "clarification";
+            /** Reason */
+            reason: string;
+            clarification: components["schemas"]["Clarification"];
+        };
         /** DoneEvent */
         DoneEvent: {
             /** Ok */
@@ -649,6 +713,8 @@ export interface components {
             reason: string;
             /** Suggestions */
             suggestions?: components["schemas"]["Suggestion"][];
+            /** @default null */
+            clarification: components["schemas"]["Clarification"] | null;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -726,7 +792,7 @@ export interface components {
             /** Text */
             text: string;
         };
-        StreamEvent: components["schemas"]["StepEvent"] | components["schemas"]["TokenEvent"] | components["schemas"]["CitationsEvent"] | components["schemas"]["RefusalEvent"] | components["schemas"]["DoneEvent"] | components["schemas"]["ErrorEvent"];
+        StreamEvent: components["schemas"]["StepEvent"] | components["schemas"]["TokenEvent"] | components["schemas"]["CitationsEvent"] | components["schemas"]["RefusalEvent"] | components["schemas"]["ClarificationEvent"] | components["schemas"]["DoneEvent"] | components["schemas"]["ErrorEvent"];
         /**
          * IngestStageEvent
          * @description One step of an upload being processed (`event: stage`).

@@ -89,6 +89,31 @@ class Segment(BaseModel):
     refs: list[int]
 
 
+class ClarificationCandidate(BaseModel):
+    """An invoice the question may refer to. Every field comes from the stored invoice."""
+
+    doc: str
+    doc_id: str
+    emisor: str | None = None
+    cliente: str | None = None
+    fecha: str | None = None
+    total: str | None = None
+    question: str
+
+
+class Clarification(BaseModel):
+    """The question is ambiguous: the user picks one of the real candidates.
+
+    `question` of the chosen candidate is the original question with that invoice named.
+    `total` counts every matching invoice; `candidates` holds at most the first five.
+    """
+
+    prompt: str
+    detail: str | None = None
+    total: int
+    candidates: list[ClarificationCandidate]
+
+
 class AskResponse(BaseModel):
     ok: bool
     answer: str
@@ -97,6 +122,7 @@ class AskResponse(BaseModel):
     inline: Literal["model", "rules", "template", "none"] = "none"
     reason: str
     suggestions: list[Suggestion] = Field(default_factory=list)
+    clarification: Clarification | None = None
 
 
 StepId = Literal["route", "meta", "invoices", "retrieve", "rerank", "generate", "verify"]
@@ -129,6 +155,12 @@ class RefusalEvent(BaseModel):
     suggestions: list[Suggestion] = Field(default_factory=list)
 
 
+class ClarificationEvent(BaseModel):
+    event: Literal["clarification"] = "clarification"
+    reason: str
+    clarification: Clarification
+
+
 class DoneEvent(AskResponse):
     event: Literal["done"] = "done"
     timings: dict[str, float]
@@ -141,7 +173,13 @@ class ErrorEvent(BaseModel):
 
 
 StreamEvent = Annotated[
-    StepEvent | TokenEvent | CitationsEvent | RefusalEvent | DoneEvent | ErrorEvent,
+    StepEvent
+    | TokenEvent
+    | CitationsEvent
+    | RefusalEvent
+    | ClarificationEvent
+    | DoneEvent
+    | ErrorEvent,
     Field(discriminator="event"),
 ]
 
@@ -279,6 +317,12 @@ def ask_stream_events(config_path: Path, question: str) -> Iterator[str]:
                 response = AskResponse.model_validate(data)
                 if response.ok:
                     yield sse(CitationsEvent(citations=response.citations))
+                elif response.clarification:
+                    yield sse(
+                        ClarificationEvent(
+                            reason=response.reason, clarification=response.clarification
+                        )
+                    )
                 else:
                     yield sse(
                         RefusalEvent(

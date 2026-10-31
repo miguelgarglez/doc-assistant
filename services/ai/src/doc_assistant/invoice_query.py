@@ -294,18 +294,79 @@ def _looks_numberish(s: str) -> bool:
     return bool(re.search(r"\d", s))
 
 
+FIELD_PHRASE = {
+    "numero": "el número",
+    "fecha_emision": "la fecha de emisión",
+    "fecha_vencimiento": "la fecha de vencimiento",
+    "emisor": "el emisor",
+    "nif_emisor": "el NIF del emisor",
+    "cliente": "el cliente",
+    "nif_cliente": "el NIF del cliente",
+    "base_imponible_total": "la base imponible",
+    "cuota_iva_total": "la cuota de IVA",
+    "irpf_tipo": "el tipo de IRPF",
+    "irpf_importe": "la retención IRPF",
+    "recargo_total": "el recargo de equivalencia",
+    "importe_total": "el importe total",
+    "iban": "el IBAN",
+}
+MAX_CANDIDATES = 5
+CLARIFY_PROMPT = "¿De qué factura?"
+
+
+def followup_fields(plan: Plan, question: str) -> list[str]:
+    """Fields to ask again for once the invoice is chosen. Only a value question carries
+    its fields over; any other intent asks for the invoice's data."""
+    if plan.intent != "valor":
+        return []
+    asked = [c for c in (plan.campos or lexical_fields(question, None)) if c != "numero"]
+    return asked[:3]
+
+
+def followup_question(fields: list[str], numero: str) -> str:
+    """The original question with the invoice named, written from the fields asked."""
+    if not fields:
+        return f"¿Qué datos tiene la factura {numero}?"
+    nouns = [FIELD_PHRASE[c] for c in fields]
+    joined = nouns[0] if len(nouns) == 1 else ", ".join(nouns[:-1]) + " y " + nouns[-1]
+    verb = "Cuál es" if len(nouns) == 1 else "Cuáles son"
+    return f"¿{verb} {joined} de la factura {numero}?"
+
+
 def _candidates_answer(
-    con: sqlite3.Connection, numeros: list[str], text: str, why: str
+    con: sqlite3.Connection,
+    numeros: list[str],
+    text: str,
+    why: str,
+    fields: list[str],
+    detail: str | None = None,
 ) -> dict[str, Any]:
-    rows = _rows(con, numeros[:5])
+    """Ambiguity: the real candidate invoices, as structured data plus a plain-text fallback."""
+    rows = _rows(con, numeros[:MAX_CANDIDATES])
     opts = "; ".join(_describe(r) for r in rows)
-    more = f" (y {len(numeros) - 5} más)" if len(numeros) > 5 else ""
+    more = f" (y {len(numeros) - MAX_CANDIDATES} más)" if len(numeros) > MAX_CANDIDATES else ""
     return {
         "ok": False,
         "reason": why,
         "answer": f"{text} ¿Te refieres a alguna de estas? {opts}{more}",
         "citations": [],
         "candidates": [r["numero"] for r in rows],
+        "clarification": {
+            "prompt": CLARIFY_PROMPT,
+            "detail": detail,
+            "total": len(numeros),
+            "candidates": [
+                {
+                    "numero": r["numero"],
+                    "emisor": r.get("emisor"),
+                    "cliente": r.get("cliente"),
+                    "fecha": r.get("fecha_emision"),
+                    "total": r.get("importe_total"),
+                    "question": followup_question(fields, r["numero"]),
+                }
+                for r in rows
+            ],
+        },
     }
 
 
@@ -354,8 +415,9 @@ def select(con: sqlite3.Connection, plan: Plan, question: str) -> Selection:
             )
             return sel
         if len(hits) > 1:
+            text = f"Varias facturas encajan con «{numero}»."
             sel.stop = _candidates_answer(
-                con, hits, f"Varias facturas encajan con «{numero}».", "factura_ambigua"
+                con, hits, text, "factura_ambigua", followup_fields(plan, question), text
             )
             return sel
         sel.numeros, sel.label = hits, f"Factura {hits[0]}"
@@ -384,8 +446,9 @@ def select(con: sqlite3.Connection, plan: Plan, question: str) -> Selection:
     if len(parties) > 1:
         nums = sorted(set().union(*(p.numeros(cue) or p.numeros(None) for p in parties)))
         names = " o ".join(f"{p.nombre}" + (f" ({p.nif})" if p.nif else "") for p in parties[:5])
+        text = f"Hay varias personas o empresas que encajan: {names}."
         sel.stop = _candidates_answer(
-            con, nums, f"Hay varias personas o empresas que encajan: {names}.", "parte_ambigua"
+            con, nums, text, "parte_ambigua", followup_fields(plan, question), text
         )
         return sel
     p = parties[0]
@@ -550,13 +613,13 @@ def _shape(
         if not numeros:
             return _refuse("sin_resultados", "Ninguna factura cumple la condición.")
         if not has_selector and len(numeros) > 1:
-            return _candidates_answer(con, numeros, "¿De qué factura?", "aclaracion")
-        if len(numeros) > MAX_VALUES:
             return _candidates_answer(
-                con,
-                numeros,
-                f"Hay {len(numeros)} facturas{scope}; acota por número o fecha.",
-                "aclaracion",
+                con, numeros, CLARIFY_PROMPT, "aclaracion", followup_fields(plan, question)
+            )
+        if len(numeros) > MAX_VALUES:
+            text = f"Hay {len(numeros)} facturas{scope}; acota por número o fecha."
+            return _candidates_answer(
+                con, numeros, text, "aclaracion", followup_fields(plan, question), text
             )
         rows = _rows(con, numeros)
         campos = _role_fields(

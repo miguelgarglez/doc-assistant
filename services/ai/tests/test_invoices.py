@@ -448,7 +448,10 @@ def test_v2_value_escapes_data_and_retains_clarification(config_path):
     assert ambiguous is not None and not ambiguous["ok"]
     assert ambiguous["reason"] == "invoice:aclaracion"
     assert "¿Te refieres" in ambiguous["answer"]
-    assert ambiguous["citations"] == [] and len(ambiguous["suggestions"]) == 2
+    assert ambiguous["citations"] == [] and ambiguous["suggestions"] == []
+    clarification = ambiguous["clarification"]
+    assert clarification["prompt"] == "¿De qué factura?" and clarification["total"] == 2
+    assert {c["doc"] for c in clarification["candidates"]} == {"4. [F]*_1", "2026/0317"}
 
 
 def test_v2_list_keeps_truncation_visible(config_path):
@@ -482,3 +485,99 @@ def test_v2_list_with_missing_fields_still_cites_each_invoice(config_path):
     assert result is not None and result["ok"]
     assert [(c["doc"], c["section"]) for c in result["citations"]] == [("F-1", "numero")]
     assert result["segments"][-1]["refs"] == [0]
+
+
+def clarify(config_path, rows, question, plan):
+    from doc_assistant.config import load_config
+    from doc_assistant.invoices import ask_invoices
+
+    db = InvoiceDB(str(load_config(config_path).db))
+    try:
+        for row in rows:
+            db.upsert(row)
+    finally:
+        db.con.close()
+    result = ask_invoices(config_path, question, llm=FakeLLM(plan))
+    assert result is not None and not result["ok"]
+    return result
+
+
+def test_clarification_lists_real_candidates_with_a_disambiguated_question(config_path):
+    result = clarify(
+        config_path,
+        [LUCIA, TECNO],
+        "¿cuál es el importe total de la factura?",
+        {"intent": "valor", "campos": ["importe_total"]},
+    )
+    assert result["reason"] == "invoice:aclaracion" and result["suggestions"] == []
+    by_doc = {c["doc"]: c for c in result["clarification"]["candidates"]}
+    assert by_doc["FAC-2026-0042"] == {
+        "doc": "FAC-2026-0042",
+        "doc_id": by_doc["FAC-2026-0042"]["doc_id"],
+        "emisor": "Lucía Martín Ortega",
+        "cliente": "Editorial Atlántida, S.L.",
+        "fecha": "07 marzo 2026",
+        "total": "1706.60",
+        "question": "¿Cuál es el importe total de la factura FAC-2026-0042?",
+    }
+    assert by_doc["2026/0317"]["question"] == "¿Cuál es el importe total de la factura 2026/0317?"
+    assert by_doc["FAC-2026-0042"]["doc_id"].startswith("inv-")
+
+
+def test_clarification_never_shows_data_the_invoice_lacks(config_path):
+    row = {"numero": "SIN-DATOS", "emisor": "Solo Emisor"}
+    result = clarify(
+        config_path,
+        [row, TECNO],
+        "¿cuál es el total de la factura?",
+        {"intent": "valor", "campos": ["importe_total"]},
+    )
+    bare = next(c for c in result["clarification"]["candidates"] if c["doc"] == "SIN-DATOS")
+    assert bare["total"] is None and bare["fecha"] is None and bare["cliente"] is None
+
+
+def test_party_ambiguity_is_a_clarification_with_context(config_path):
+    result = clarify(
+        config_path,
+        [LUCIA, TECNO, OTRA_LUCIA],
+        "importe de las facturas de Lucía",
+        {"intent": "valor", "parte": "Lucía", "campos": ["importe_total"]},
+    )
+    clarification = result["clarification"]
+    assert result["reason"] == "invoice:parte_ambigua"
+    assert "Lucía Martín Ortega" in clarification["detail"]
+    assert {c["doc"] for c in clarification["candidates"]} == {"FAC-2026-0042", "LM-7"}
+
+
+def test_clarification_truncates_to_five_and_counts_all(config_path):
+    rows = [{**LUCIA, "numero": f"F-{i:03}"} for i in range(12)]
+    result = clarify(config_path, rows, "¿cuál es el total de la factura?", {"intent": "valor"})
+    clarification = result["clarification"]
+    assert clarification["total"] == 12 and len(clarification["candidates"]) == 5
+    assert "y 7 más" in result["answer"]
+
+
+def test_followup_question_is_built_from_the_fields_asked():
+    from doc_assistant.invoice_query import FIELD_PHRASE, FIELDS, followup_question
+
+    assert set(FIELD_PHRASE) == set(FIELDS)
+    assert (
+        followup_question(["importe_total"], "A-1")
+        == "¿Cuál es el importe total de la factura A-1?"
+    )
+    assert (
+        followup_question(["fecha_emision", "importe_total", "iban"], "A-1")
+        == "¿Cuáles son la fecha de emisión, el importe total y el IBAN de la factura A-1?"
+    )
+    assert followup_question([], "A-1") == "¿Qué datos tiene la factura A-1?"
+
+
+def test_only_ambiguity_is_a_clarification_not_absence(config_path):
+    result = clarify(
+        config_path,
+        [LUCIA],
+        "¿cuál es el total de la factura FAC-9999?",
+        {"intent": "valor", "numero": "FAC-9999", "campos": ["importe_total"]},
+    )
+    assert result["reason"] == "invoice:factura_no_encontrada"
+    assert result["clarification"] is None
