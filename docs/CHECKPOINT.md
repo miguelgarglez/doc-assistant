@@ -60,3 +60,11 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - #14, #23 y #19 resueltos con tests; #13 parcial (aviso claro), lo demás depende del runtime OCR.
 - Qué se probó: `mise run check` → OK; e2e → 12 passed; test de #14 falla con el código anterior.
 - Decisión clave y por qué: avisar en vez de instalar Ollama, porque el runtime OCR está aún por decidir.
+
+## 15:00 · OCR dentro del ZIP: GLM-OCR GGUF en llama-server (v0.8.0)
+- Descarga (14:24): `GLM-OCR-Q8_0.gguf` y `mmproj-GLM-OCR-Q8_0.gguf` de ggml-org/GLM-OCR-GGUF, fijados por commit y SHA256 en `assets.json`; `setup` los baja y `package` los mete en `models/`.
+- Medición con el LLM cargado (6 facturas sintéticas): llama.cpp 72/72 campos, 6/6 ok, ~22 s/factura, ~2,3–2,7 GB de RAM pico del servidor OCR; Ollama glm-ocr 72/72, 6/6 ok, 27–36 s/factura. Ajustes: `-c 8192 --flash-attn on --image-max-tokens 1600` (sin ellos, error de memoria de Metal junto al LLM).
+- `start` arranca el OCR en :8084; Ollama queda como alternativa (`DOC_ASSISTANT_OCR_RUNTIME=ollama`). Setup/start avisan si faltan los GGUF (#13 resuelto).
+- Arreglo del parser de importes: tipo entre paréntesis ("IVA (21%)", "IRPF (-15%)"), base sin tipo y "TOTAL FACTURA". En facturas reales fuera del repo (solo agregado) el estado ok pasó de 0/5 a 5/5.
+- Qué se probó: `mise run check` → OK (60 tests servicio + scripts); e2e → 12 passed; `mise run package --smoke real` → ZIP 5,53 GB, OCR en :8084 desde `models/` del ZIP, factura extraída (14 s), puertos 3000/8000/8081–8084 liberados.
+- Decisión clave y por qué: un solo runtime (llama.cpp) y nada que descargar al evaluar; la licencia de los GGUF no está declarada en su ficha y se cita la MIT del modelo base (duda anotada en NOTICE).
