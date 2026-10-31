@@ -45,3 +45,6 @@ LLM, embeddings, reranker y OCR son `Protocol`s; los adaptadores HTTP se eligen 
 
 ## Entrega
 `mise run package` crea un ZIP64 con código, docs, evidence, los tres GGUF (con `models/SHA256SUMS`) y los binarios llama.cpp b12020 de macOS arm64, Linux x64 y Windows x64 en `vendor/archives/`. `setup` usa lo empaquetado antes de descargar nada (SHA256). El script descomprime en limpio y hace setup + start + pregunta para probarlo.
+
+## Streaming y preguntas panorámicas
+`POST /ask/stream` emite el mismo pipeline como eventos SSE (trazas, tokens provisionales, citas o rechazo, `done`); la verificación corre tras el último token y puede retirar el texto. Las preguntas sobre capacidades, inventario o el índice de un documento se responden desde metadatos del índice, sin LLM. Detalle en `docs/streaming.md` y ADR-009.

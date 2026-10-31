@@ -15,7 +15,7 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 | R1.2 / A3 | Citar el documento y la sección o página | `Citation` en el contrato (`doc`, `section`, `pages`, `doc_id`) | Cumplido | Tests de API y e2e "respuesta con fuente"; humo real con cita de página. |
 | R1.3 | Mostrar el fragmento recuperado | `SourceViewer` (fragmento resaltado + imagen de la página) | Cumplido | e2e + capturas `ask-answer-with-source*`. |
 | R1.4 / R1.6 | No dar información ajena a los documentos | Rechazo cuando el verificador o el plan SQL no pasan | Parcial | 2 rechazos reales (fuera de dominio y dato ausente) y tests de rechazo. Sin conjunto adversarial ni métrica. |
-| R1.5 | Decir explícitamente "no dispongo" | `RefusalNotice` + `reason` | Cumplido | e2e "rechazo"; captura `ask-refusal*`; humo real. |
+| R1.5 | Decir explícitamente "no dispongo" | `RefusalNotice` + `reason`; rechazos con `suggestions` (fuentes cercanas reales) y `empty_index` (ADR-009) | Cumplido | e2e "rechazo"; captura `ask-refusal*`; humo real. |
 | R1.7 | Acreditar la ausencia de alucinaciones | `evidence/` | **No** | El gold está en borrador y no aprobado; las cifras antiguas no valen. Hoy solo hay pruebas de humo. |
 | A1 | Ingesta y troceado propios | `ingest.py`, `chunking.py` (por sección, `chunk_id` determinista) | Cumplido | Tests de chunking (secciones, pie de página fuera); ingesta real: 44 fragmentos en 1,8 s. |
 | A2 | Justificar el troceado y medirlo | `architecture.md` (solo describe) | **No** | No hay una comparación medida de estrategias de troceado en este repo. |
@@ -51,7 +51,7 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 |---|---|---|---|---|
 | E-A1 | Código de calidad, errores controlados, README | `mise run check` (ruff, mypy, 55+7 tests, contrato, eslint, tsc, build) | Cumplido | `check` OK; revisión independiente triada (ADR-006). |
 | E-A2 | Sin scripts sueltos ni notebooks | Servicio + web + tareas mise | Cumplido | Los `scripts/` son las tareas del proyecto, con sus propios tests. |
-| E-A3 / E-A4 | Interfaz cuidada: respuesta, fuentes navegables, fragmento | `apps/web` | Cumplido | 11 e2e; capturas en escritorio y móvil. No se ha probado con usuarios. |
+| E-A3 / E-A4 | Interfaz cuidada: respuesta, fuentes navegables, fragmento | `apps/web`; API de streaming con trazas y catálogo de fuentes (`docs/streaming.md`, ADR-009) | Cumplido | 11 e2e; capturas en escritorio y móvil. No se ha probado con usuarios. |
 | E-B1 | Conjunto de evaluación con respuestas esperadas y métricas | — | **No** | El gold no está aprobado. `evidence/live` solo tiene 6 facturas y 5 preguntas, sin métricas agregadas. |
 | E-B2 | Latencia, tiempo de ingesta y RAM/VRAM en el hardware real | `evidence/live/results.md` (tiempos) | Parcial | Latencias de 3–6 s por pregunta y 11–18 s por factura; ingesta de 1,8 s. **No se mide la RAM/VRAM.** |
 | E-B3 | Capturas, incluido el rechazo | `evidence/screenshots/` | Cumplido | Regeneradas por e2e; galería por versión en `evidence/evolution/`. |
