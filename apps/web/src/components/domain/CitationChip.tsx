@@ -30,7 +30,7 @@ export function CitationChip({
           aria-label={`Ver fuente: ${label}${pageLabel ?? ""}`}
         />
       }
-      className="cursor-pointer focus-visible:outline-none"
+      className="cursor-pointer font-mono text-xs focus-visible:outline-none"
     >
       {label}
       {pageLabel}
