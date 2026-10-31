@@ -1,15 +1,4 @@
-import { AnswerCard } from "@/components/domain/AnswerCard"
-import { InvoiceReviewCard } from "@/components/domain/InvoiceReviewCard"
-import { RefusalNotice } from "@/components/domain/RefusalNotice"
-import { SourceViewer } from "@/components/domain/SourceViewer"
-import { UploadDropzone } from "@/components/domain/UploadDropzone"
-import {
-  exampleAnswer,
-  exampleInvoice,
-  exampleRefusal,
-  exampleSources,
-  exampleUploads,
-} from "@/lib/domain/examples"
+import { AskWorkspace } from "@/components/domain/AskWorkspace"
 
 export default function HomePage() {
   return (
@@ -22,24 +11,12 @@ export default function HomePage() {
           Revisión fiscal con citas
         </h1>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Scaffold de UI: tokens CSS, primitivos shadcn/Base UI y componentes de
-          dominio con datos de ejemplo tipados.
+          Consulta el corpus indexado. Las respuestas citan fragmentos
+          verificados o explican el rechazo.
         </p>
       </header>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <AnswerCard answer={exampleAnswer} />
-        <SourceViewer sources={exampleSources} />
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-2">
-        <InvoiceReviewCard invoice={exampleInvoice} />
-        <UploadDropzone files={exampleUploads} />
-      </section>
-
-      <section>
-        <RefusalNotice refusal={exampleRefusal} />
-      </section>
+      <AskWorkspace />
     </main>
   )
 }

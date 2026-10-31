@@ -1,21 +1,19 @@
 import { AlertCircleIcon } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import type { Refusal } from "@/lib/domain/types"
 
 type RefusalNoticeProps = {
-  refusal: Refusal
+  reason: string
 }
 
-export function RefusalNotice({ refusal }: RefusalNoticeProps) {
+export function RefusalNotice({ reason }: RefusalNoticeProps) {
   return (
-    <Alert variant="destructive">
+    <Alert variant="destructive" data-testid="refusal-notice">
       <AlertCircleIcon />
       <AlertTitle>Consulta rechazada</AlertTitle>
       <AlertDescription>
         <span className="flex flex-col gap-1">
-          <span>{refusal.reason}</span>
-          <span>{refusal.guidance}</span>
+          <span>{reason}</span>
         </span>
       </AlertDescription>
     </Alert>
