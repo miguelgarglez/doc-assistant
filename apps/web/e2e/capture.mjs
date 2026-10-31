@@ -14,6 +14,7 @@ const only = process.env.ONLY?.split(",")
 const sizes = [["1440x900", { width: 1440, height: 900 }], ["1280x720", { width: 1280, height: 720 }], ["390x844", { width: 390, height: 844 }]]
 const themes = process.env.THEMES?.split(",") ?? ["industrial-light", "industrial-dark", "neutral-light", "neutral-dark"]
 const notes = path.join(os.tmpdir(), "notas.txt")
+const extraPdf = process.env.UPLOAD_PDF
 fs.writeFileSync(notes, "apuntes sueltos")
 
 const answerSelector =
@@ -35,6 +36,11 @@ for (const [name, vp] of sizes) {
       await page.keyboard.press("Enter")
       await page.waitForTimeout(600)
       return page.locator(answerSelector).nth(index).waitFor({ timeout: 120000 }).catch(() => {})
+    }
+    const newChat = async () => {
+      if (narrow) await page.getByRole("button", { name: "Abrir el menú" }).click()
+      await page.getByTestId("new-conversation").click()
+      await page.waitForTimeout(300)
     }
     const openAddSources = async () => {
       if (narrow) await page.getByRole("button", { name: "Abrir el menú" }).click()
@@ -73,13 +79,13 @@ for (const [name, vp] of sizes) {
     }
 
     // Respuestas de metadatos: lista de documentos con una cita por elemento.
-    await page.goto(BASE + "/")
+    await newChat()
     await ask("¿Qué documentos hay?", 0)
     await page.waitForTimeout(500)
     await shot("chat-meta")
 
     // Factura: el visor enseña el campo extraído y dice por qué no hay resaltado.
-    await page.goto(BASE + "/")
+    await newChat()
     await ask("¿Cuál es el importe total de la factura F-2026-001?", 0)
     await page.waitForTimeout(500)
     const invoiceMarker = page.getByTestId("citation-marker-1").first()
@@ -92,7 +98,7 @@ for (const [name, vp] of sizes) {
     }
 
     // Rechazo con diseño propio: pregunta sin respaldo en las fuentes (conversación nueva).
-    await page.goto(BASE + "/")
+    await newChat()
     await page.getByLabel("Pregunta", { exact: true }).fill("¿Cuál es el precio del robot TX-10?")
     await page.keyboard.press("Enter")
     await page.locator('[data-testid="assistant-message"][data-kind="refusal"]').first().waitFor({ timeout: 120000 }).catch(() => {})
@@ -100,13 +106,14 @@ for (const [name, vp] of sizes) {
     await shot("chat-rechazo")
 
     // Añadir fuentes: el diálogo y, tras elegir archivos, el aviso con cada estado real.
-    await page.goto(BASE + "/")
+    await newChat()
+    const known = new Set((await (await page.request.get(BASE + "/api/sources")).json()).map((source) => source.id))
     await openAddSources()
     await page.waitForTimeout(400)
     await shot("anadir-fuentes")
     await page.getByTestId("sources-file-input").setInputFiles([
-      path.join(FIXTURES, "invoices", "factura_001.png"),
-      path.join(FIXTURES, "docs", "sensor-demo.pdf"),
+      path.join(FIXTURES, "invoices", process.env.UPLOAD_INVOICE ?? "factura_051.png"),
+      ...(extraPdf ? [extraPdf] : []),
       notes,
     ])
     await page.getByTestId("upload-toast").waitFor()
@@ -119,6 +126,11 @@ for (const [name, vp] of sizes) {
       { timeout: 180000 }
     ).catch(() => {})
     await page.getByTestId("upload-toast-close").click().catch(() => {})
+    // Deja el índice como estaba para que la siguiente combinación vuelva a subir lo mismo.
+    const uploaded = await (await page.request.get(BASE + "/api/sources")).json()
+    for (const source of uploaded) {
+      if (!known.has(source.id)) await page.request.delete(BASE + "/api/sources/" + source.id)
+    }
 
     for (const route of (process.env.ROUTES ?? "fuentes,sistema,ajustes").split(",").filter(Boolean)) {
       await page.goto(BASE + "/" + route)

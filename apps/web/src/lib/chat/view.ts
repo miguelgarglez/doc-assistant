@@ -72,6 +72,8 @@ export function lastTrace(messages: AskMessage[]): { question: string | null; st
 }
 
 export function suggestionLabel(suggestion: Suggestion): string {
-  const heading = suggestion.heading ? ` ${suggestion.heading}` : ""
-  return `${suggestion.doc} · ${suggestion.section}${heading}`
+  const section = suggestion.section.replaceAll("_", " ")
+  const heading = suggestion.heading?.replaceAll("_", " ")
+  if (!heading || heading === section) return `${suggestion.doc} · ${section}`
+  return heading.startsWith(section) ? `${suggestion.doc} · ${heading}` : `${suggestion.doc} · ${section} ${heading}`
 }
