@@ -83,6 +83,23 @@ def _citation(chunk: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+_SCOPE = re.compile(
+    r"\b(?:alcance|objeto|objetivo|introduccion|resumen|descripcion(?: general)?|"
+    r"vision general|scope|overview|introduction|purpose)\b"
+)
+
+
+def _scope_sentence(chunks: list[dict[str, Any]]) -> tuple[dict[str, Any], str] | None:
+    """First sentence, verbatim, of a scope-like section: extractive, never paraphrased."""
+    for c in chunks:
+        if _SCOPE.search(normalize(c["heading"])):
+            body = c.get("body") or ""
+            sentence = re.split(r"(?<=[.!?])\s", body, maxsplit=1)[0].strip()
+            if sentence and sentence in c["text"]:
+                return c, sentence
+    return None
+
+
 def _section_chunks(cfg: AppConfig, doc_id: str) -> list[dict[str, Any]]:
     store = ChunkStore(cfg.db, cfg.embeddings.dim or 8)
     try:
@@ -124,6 +141,11 @@ def answer_meta(
         for s in docs:
             chunks = _section_chunks(cfg, s["id"])
             lines.append(f"**{s['name']}**" + (f" — {s['title']}" if s["title"] else ""))
+            scope = _scope_sentence(chunks)
+            if scope:
+                chunk, sentence = scope
+                lines.append(f"Según su apartado «{chunk['heading']}»: «{sentence}»")
+                citations.append({**_citation(chunk), "quote": sentence})
             lines.append(
                 f"{_pages(s['n_pages'])} y {len(chunks)} secciones indexadas. Sus apartados son:"
             )
@@ -133,8 +155,8 @@ def answer_meta(
                 citations.append(_citation(c))
             lines.append("")
         lines.append(
-            "Es un índice de apartados, no un resumen del contenido: pregúntame por "
-            "cualquiera de ellos y te respondo con la cita exacta."
+            "Solo muestro frases literales y el índice de apartados, no un resumen redactado: "
+            "pregúntame por cualquiera de ellos y te respondo con la cita exacta."
         )
         return _result("meta:document", "\n".join(lines).strip(), citations)
 

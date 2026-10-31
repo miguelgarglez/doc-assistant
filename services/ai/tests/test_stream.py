@@ -310,3 +310,13 @@ def test_stream_end_to_end_over_http_adapters(
     assert kinds[0] == "step" and kinds[-2:] == ["refusal", "done"]
     assert evs[-1][1]["reason"] == "llm_unanswerable"
     assert evs[-1][1]["answer"] == ask_module.NO_INFO
+
+
+def test_scope_sentence_is_verbatim_first_sentence() -> None:
+    from doc_assistant.meta import _scope_sentence
+
+    body = "Este documento define la instalación. Incluye cableado."
+    chunk = {"heading": "1. Alcance", "body": body, "text": f"[d · t · 1. Alcance] {body}"}
+    other = {"heading": "2. Cableado", "body": "x.", "text": "x."}
+    assert _scope_sentence([other, chunk]) == (chunk, "Este documento define la instalación.")
+    assert _scope_sentence([other]) is None
