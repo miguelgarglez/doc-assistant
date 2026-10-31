@@ -10,7 +10,7 @@ embeddings:
   endpoint: /v1/embeddings
   model: emb-local
   timeout_s: 90
-  dim: 8
+  dim: 1024
 reranker:
   base_url: http://127.0.0.1:8083
   endpoint: /v1/rerank

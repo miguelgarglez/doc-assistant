@@ -1,0 +1,28 @@
+# Herramientas fijadas y tareas mínimas: cada tarea es UN comando sin sintaxis
+# de shell (funciona igual en cmd, PowerShell, bash). La lógica vive en scripts/*.py.
+min_version = "2026.10.21"
+
+[tools]
+node = "24.22.2"
+pnpm = "10.21.0"
+python = "3.12.16"
+uv = "0.11.17"
+
+[tasks.setup]
+description = "Dependencias, llama-server fijado y modelos (con SHA256)"
+run = "uv run --project services/ai python scripts/setup.py"
+[tasks.start]
+description = "Arranca todo (llama-server x3 + IA + web) en 127.0.0.1"
+run = "uv run --project services/ai python scripts/dev.py"
+[tasks.dev]
+description = "Igual que start, con next dev"
+run = "uv run --project services/ai python scripts/dev.py --dev"
+[tasks.check]
+description = "Lint, tipos, tests, drift del contrato y build"
+run = "uv run --project services/ai python scripts/check.py"
+[tasks.test]
+run = "uv run --project services/ai python scripts/check.py --only test"
+[tasks.build]
+run = "uv run --project services/ai python scripts/check.py --only build"
+[tasks.gen-client]
+run = "uv run --project services/ai python scripts/check.py --only gen-client"

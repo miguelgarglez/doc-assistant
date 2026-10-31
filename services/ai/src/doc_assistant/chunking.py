@@ -111,8 +111,15 @@ def _make_chunk(
     }
 
 
-HEADER_KEYS = ("numero", "fecha_emision", "emisor", "nif_emisor", "cliente",
-               "nif_cliente", "importe_total")
+HEADER_KEYS = (
+    "numero",
+    "fecha_emision",
+    "emisor",
+    "nif_emisor",
+    "cliente",
+    "nif_cliente",
+    "importe_total",
+)
 
 
 def chunk_invoice(data: dict[str, Any]) -> list[dict[str, Any]]:

@@ -1,0 +1,25 @@
+{
+  "llama_cpp": {
+    "tag": "b12020",
+    "url": "https://github.com/ggml-org/llama.cpp/releases/download/{tag}/llama-{tag}-bin-{plat}.{ext}",
+    "sha256": {
+      "macos-arm64": "b630ebd5da34b02e86f7294dd5743aba842a0a02cb023130debd64599721c541",
+      "macos-x64": "774fba46a668cf6c94eb8d515b2dfb5897878ab6da08943585f487a1dd1aa6a0",
+      "ubuntu-x64": "1b69032f9ab60dc6aa909689fda941fa1b9162f6ab46b863582d5649d96ac6be",
+      "ubuntu-arm64": "6cc95b52eb408b881df43242854a39a97f73cbaeb23337fef6cebe7a679b8125",
+      "win-cpu-x64": "07e81782f5a16c7ffef42403183808e02f271c9ece3aa2d64040b2620ae8d519",
+      "win-cpu-arm64": "50a1cd7272b6042664def2583d1ac20ed2c4502e6fd618b92c21baed902b6f8f"
+    }
+  },
+  "models": [
+    {"role": "llm", "file": "Qwen3.5-4B-Q4_K_M.gguf", "size": 2740937888,
+     "url": "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_K_M.gguf",
+     "sha256": "00fe7986ff5f6b463e62455821146049db6f9313603938a70800d1fb69ef11a4"},
+    {"role": "embeddings", "file": "bge-m3-Q8_0.gguf", "size": 634553760,
+     "url": "https://huggingface.co/gpustack/bge-m3-GGUF/resolve/main/bge-m3-Q8_0.gguf",
+     "sha256": "950f4a8e5e19477a6d3c26d2f162233c20002c601f75e4b002e3239997821167"},
+    {"role": "reranker", "file": "bge-reranker-v2-m3-Q8_0.gguf", "size": 635676416,
+     "url": "https://huggingface.co/gpustack/bge-reranker-v2-m3-GGUF/resolve/main/bge-reranker-v2-m3-Q8_0.gguf",
+     "sha256": "a43c7c9b11a4c1517e5bf95151960e1621d1b72f7a493364b01e386cf1aaa1d3"}
+  ]
+}

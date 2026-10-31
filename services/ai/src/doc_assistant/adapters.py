@@ -134,7 +134,10 @@ class HttpReranker:
             json={"query": query, "documents": documents, "model": self.model},
         )
         try:
-            return sorted(((x["index"], float(x["relevance_score"])) for x in data["results"]), key=lambda t: -t[1])  # revisión: llama-server no ordena
+            return sorted(
+                ((x["index"], float(x["relevance_score"])) for x in data["results"]),
+                key=lambda t: -t[1],
+            )  # revisión: llama-server no ordena
         except (KeyError, TypeError, ValueError) as e:
             raise AdapterError(f"Formato inesperado de rerank en {self.url}") from e
 
@@ -173,9 +176,7 @@ class HttpLLM:
             raise AdapterError(f"Contenido LLM no es JSON válido desde {self.url}") from e
 
 
-def build_adapters(
-    cfg: AppConfig, *, fake: bool = False
-) -> tuple[Embedder, Reranker, LLM]:
+def build_adapters(cfg: AppConfig, *, fake: bool = False) -> tuple[Embedder, Reranker, LLM]:
     if fake:
         dim = cfg.embeddings.dim or 8
         return FakeEmbedder(dim=dim), FakeReranker(), FakeLLM()

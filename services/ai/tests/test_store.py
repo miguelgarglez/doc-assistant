@@ -10,7 +10,9 @@ from doc_assistant.ingest import ingest_pdfs
 from doc_assistant.store import ChunkStore
 
 
-def test_upsert_and_search(tmp_path: Path, synthetic_pdf: Path, fake_embedder: FakeEmbedder) -> None:
+def test_upsert_and_search(
+    tmp_path: Path, synthetic_pdf: Path, fake_embedder: FakeEmbedder
+) -> None:
     db = tmp_path / "a.db"
     store = ChunkStore(db, dim=fake_embedder.dim)
     chunks = chunk_pdf(synthetic_pdf, doc="manual")

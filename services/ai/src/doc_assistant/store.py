@@ -13,7 +13,40 @@ import sqlite_vec
 from doc_assistant.adapters import serialize_f32
 from doc_assistant.config import load_config
 
-_STOP = {"el", "la", "los", "las", "de", "del", "a", "en", "y", "o", "que", "qué", "cuál", "cuáles", "es", "son", "se", "un", "una", "por", "para", "con", "al", "su", "sus", "cada", "como", "cuánto", "cuántos", "cuánta", "hay", "debe"}
+_STOP = {
+    "el",
+    "la",
+    "los",
+    "las",
+    "de",
+    "del",
+    "a",
+    "en",
+    "y",
+    "o",
+    "que",
+    "qué",
+    "cuál",
+    "cuáles",
+    "es",
+    "son",
+    "se",
+    "un",
+    "una",
+    "por",
+    "para",
+    "con",
+    "al",
+    "su",
+    "sus",
+    "cada",
+    "como",
+    "cuánto",
+    "cuántos",
+    "cuánta",
+    "hay",
+    "debe",
+}
 
 
 def fts_query(q: str) -> str:
@@ -54,7 +87,9 @@ class ChunkStore:
             )
             """
         )
-        self.db.execute("CREATE TABLE IF NOT EXISTS source_pages (doc TEXT, page INTEGER, png BLOB NOT NULL, PRIMARY KEY(doc, page))")
+        self.db.execute(
+            "CREATE TABLE IF NOT EXISTS source_pages (doc TEXT, page INTEGER, png BLOB NOT NULL, PRIMARY KEY(doc, page))"
+        )
         # FTS5 and vec0 cannot easily ALTER; create if missing.
         row = self.db.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='fts'"
@@ -106,7 +141,9 @@ class ChunkStore:
             )
             # FTS5 / vec0: delete + insert for idempotent replace
             self.db.execute("DELETE FROM fts WHERE chunk_id = ?", (c["chunk_id"],))
-            self.db.execute("INSERT INTO fts(chunk_id, text) VALUES(?, ?)", (c["chunk_id"], c["text"]))
+            self.db.execute(
+                "INSERT INTO fts(chunk_id, text) VALUES(?, ?)", (c["chunk_id"], c["text"])
+            )
             self.db.execute("DELETE FROM vec WHERE chunk_id = ?", (c["chunk_id"],))
             self.db.execute(
                 "INSERT INTO vec(chunk_id, emb) VALUES(?, ?)",
@@ -114,29 +151,39 @@ class ChunkStore:
             )
         self.db.commit()
 
-    def replace_document(self, doc: str, chunks: list[dict[str, Any]],
-                         embeddings: list[list[float]], pages: list[bytes]) -> None:
+    def replace_document(
+        self,
+        doc: str,
+        chunks: list[dict[str, Any]],
+        embeddings: list[list[float]],
+        pages: list[bytes],
+    ) -> None:
         """Replace all derived state for a document in one transaction."""
         if len(chunks) != len(embeddings):
             raise ValueError("chunks and embeddings must have the same length")
         try:
-            ids = [row[0] for row in self.db.execute(
-                "SELECT chunk_id FROM chunks WHERE doc = ?", (doc,))]
+            ids = [
+                row[0]
+                for row in self.db.execute("SELECT chunk_id FROM chunks WHERE doc = ?", (doc,))
+            ]
             for cid in ids:
                 self.db.execute("DELETE FROM fts WHERE chunk_id = ?", (cid,))
                 self.db.execute("DELETE FROM vec WHERE chunk_id = ?", (cid,))
             self.db.execute("DELETE FROM chunks WHERE doc = ?", (doc,))
             self.db.execute("DELETE FROM source_pages WHERE doc = ?", (doc,))
-            self.db.executemany("INSERT INTO source_pages VALUES (?, ?, ?)",
-                                [(doc, i, data) for i, data in enumerate(pages, 1)])
+            self.db.executemany(
+                "INSERT INTO source_pages VALUES (?, ?, ?)",
+                [(doc, i, data) for i, data in enumerate(pages, 1)],
+            )
             self.upsert(chunks, embeddings)
         except Exception:
             self.db.rollback()
             raise
 
     def page(self, doc: str, n: int) -> bytes | None:
-        row = self.db.execute("SELECT png FROM source_pages WHERE doc = ? AND page = ?",
-                              (doc, n)).fetchone()
+        row = self.db.execute(
+            "SELECT png FROM source_pages WHERE doc = ? AND page = ?", (doc, n)
+        ).fetchone()
         return bytes(row[0]) if row else None
 
     def count(self) -> int:

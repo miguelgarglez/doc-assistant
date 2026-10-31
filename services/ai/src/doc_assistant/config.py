@@ -1,4 +1,5 @@
 """Validated configuration loaded at the application boundary."""
+
 from pathlib import Path
 from typing import Literal
 

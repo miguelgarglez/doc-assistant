@@ -63,9 +63,7 @@ def test_ask_llm_rejects(
     cfg["db"] = str(store.path)
     config_path.write_text(yaml.dump(cfg), encoding="utf-8")
 
-    llm = FakeLLM(
-        response={"answerable": False, "answer": None, "citations": []}
-    )
+    llm = FakeLLM(response={"answerable": False, "answer": None, "citations": []})
     result = ask(
         config_path,
         "¿Color favorito del robot?",
@@ -110,7 +108,9 @@ def test_ask_false_citation_rejected(
     assert result["reason"].startswith("verify") or "quote" in result["reason"]
 
 
-def test_answerable_without_answer_is_refused(config_path: Path, fake_embedder: FakeEmbedder) -> None:
+def test_answerable_without_answer_is_refused(
+    config_path: Path, fake_embedder: FakeEmbedder
+) -> None:
     result = ask(
         config_path,
         "¿Qué dice el documento?",

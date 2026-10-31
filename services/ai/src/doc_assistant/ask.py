@@ -61,9 +61,7 @@ NO_INFO = "No dispongo de esa información en los documentos"
 MAX_QUESTION_CHARS = 1000
 
 
-def _union_candidates(
-    vec: list[tuple[str, float]], bm: list[tuple[str, float]]
-) -> list[str]:
+def _union_candidates(vec: list[tuple[str, float]], bm: list[tuple[str, float]]) -> list[str]:
     seen: list[str] = []
     for cid, _ in vec + bm:
         if cid not in seen:
@@ -82,8 +80,19 @@ def ask(
     q = (question or "").strip()
     if not q or len(q) > MAX_QUESTION_CHARS:
         why = "pregunta_vacia" if not q else "pregunta_demasiado_larga"
-        msg = "Escribe una pregunta." if not q else f"La pregunta es demasiado larga (máx. {MAX_QUESTION_CHARS} caracteres)."
-        return {"ok": False, "answer": msg, "citations": [], "reason": why, "latencies": {}, "raw": None}
+        msg = (
+            "Escribe una pregunta."
+            if not q
+            else f"La pregunta es demasiado larga (máx. {MAX_QUESTION_CHARS} caracteres)."
+        )
+        return {
+            "ok": False,
+            "answer": msg,
+            "citations": [],
+            "reason": why,
+            "latencies": {},
+            "raw": None,
+        }
     question = q
     cfg = load_config(config_path)
     if embedder is None or reranker is None or llm is None:
@@ -128,21 +137,31 @@ def ask(
             f"chunk_id={c['chunk_id']} doc={c['doc']} section={c['section']} "
             f"pages={pages}\n{c['text']}"
         )
-    user_msg = (
-        f"Pregunta: {question}\n\nFragmentos:\n"
-        + ("\n---\n".join(context_blocks) if context_blocks else "(ninguno)")
+    user_msg = f"Pregunta: {question}\n\nFragmentos:\n" + (
+        "\n---\n".join(context_blocks) if context_blocks else "(ninguno)"
     )
 
     t3 = time.perf_counter()
     raw = llm.chat(
-        [{"role": "system", "content": EVIDENCE_FIRST_PROMPT if cfg.answer_mode == "evidence_first" else SYSTEM_PROMPT},
-         {"role": "user", "content": user_msg}],
+        [
+            {
+                "role": "system",
+                "content": EVIDENCE_FIRST_PROMPT
+                if cfg.answer_mode == "evidence_first"
+                else SYSTEM_PROMPT,
+            },
+            {"role": "user", "content": user_msg},
+        ],
         schema=EVIDENCE_FIRST_SCHEMA if cfg.answer_mode == "evidence_first" else ANSWER_SCHEMA,
     )
     latencies["llm"] = round(time.perf_counter() - t3, 4)
 
     t4 = time.perf_counter()
-    if not raw.get("answerable") or not isinstance(raw.get("answer"), str) or not raw["answer"].strip():
+    if (
+        not raw.get("answerable")
+        or not isinstance(raw.get("answer"), str)
+        or not raw["answer"].strip()
+    ):
         latencies["verify"] = round(time.perf_counter() - t4, 4)
         return {
             "ok": False,
@@ -201,10 +220,7 @@ def format_ask_text(result: dict[str, Any]) -> str:
         for c in result["citations"]:
             pages = c.get("pages") or []
             page_s = ",".join(str(p) for p in pages)
-            lines.append(
-                f"- [{c.get('doc')} §{c.get('section')} p.{page_s}] "
-                f"{c.get('quote')!r}"
-            )
+            lines.append(f"- [{c.get('doc')} §{c.get('section')} p.{page_s}] {c.get('quote')!r}")
             if c.get("fragment"):
                 lines.append(f"  fragmento: {c['fragment'][:200]}")
     lat = result.get("latencies") or {}

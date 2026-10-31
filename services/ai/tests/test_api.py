@@ -10,7 +10,9 @@ from doc_assistant.ingest import ingest_pdfs
 from doc_assistant.store import ChunkStore
 
 
-def test_ingest_replaces_old_chunks_and_renders_pages(config_path: Path, synthetic_pdf: Path) -> None:
+def test_ingest_replaces_old_chunks_and_renders_pages(
+    config_path: Path, synthetic_pdf: Path
+) -> None:
     first = ingest_pdfs(config_path, synthetic_pdf.parent, embedder=FakeEmbedder())
     again = ingest_pdfs(config_path, synthetic_pdf.parent, embedder=FakeEmbedder())
     assert first["chunk_ids"] == again["chunk_ids"]
@@ -19,6 +21,7 @@ def test_ingest_replaces_old_chunks_and_renders_pages(config_path: Path, synthet
     assert store.count() == first["n_chunks"]
     assert store.page("manual", 1).startswith(b"\x89PNG")
     from reportlab.pdfgen.canvas import Canvas
+
     canvas = Canvas(str(synthetic_pdf))
     canvas.drawString(50, 800, "Manual nuevo")
     canvas.drawString(50, 780, "1. Seguridad")
@@ -33,7 +36,10 @@ def test_ingest_replaces_old_chunks_and_renders_pages(config_path: Path, synthet
         assert client.get("/sources/manual/pages/1").headers["content-type"] == "image/png"
         assert client.get("/sources/manual/pages/2").status_code == 404
         assert client.get("/health").json() == {"status": "ok"}
-        assert client.post("/invoices", json={"numero": "SYN-1", "importe_total": "12"}).status_code == 200
+        assert (
+            client.post("/invoices", json={"numero": "SYN-1", "importe_total": "12"}).status_code
+            == 200
+        )
         assert client.get("/invoices").json()[0]["numero"] == "SYN-1"
 
 

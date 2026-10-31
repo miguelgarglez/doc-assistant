@@ -9,3 +9,5 @@ kit/
 *.db
 .env*
 !.env.example
+vendor/
+models/

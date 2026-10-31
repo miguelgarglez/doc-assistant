@@ -40,7 +40,11 @@ def ingest_pdfs(
     warnings: list[str] = []
     if pdf_dir.is_dir():
         for other in sorted(pdf_dir.iterdir()):
-            if other.is_file() and other.suffix.lower() != ".pdf" and not other.name.startswith("."):
+            if (
+                other.is_file()
+                and other.suffix.lower() != ".pdf"
+                and not other.name.startswith(".")
+            ):
                 warnings.append(f"ignorado (tipo no soportado): {other.name}")
     seen_hashes: dict[str, str] = {}
     documents: list[tuple[str, list[dict[str, Any]], list[bytes]]] = []
@@ -74,7 +78,13 @@ def ingest_pdfs(
         all_chunks.extend(chunks)
     extract_s = time.perf_counter() - t_extract
 
-    paths = invoice_path if isinstance(invoice_path, (list, tuple)) else [invoice_path] if invoice_path else []
+    paths = (
+        invoice_path
+        if isinstance(invoice_path, (list, tuple))
+        else [invoice_path]
+        if invoice_path
+        else []
+    )
     for one in paths:
         data = json.loads(Path(one).read_text(encoding="utf-8"))
         all_chunks.extend(chunk_invoice(data))
@@ -85,7 +95,12 @@ def ingest_pdfs(
             "n_chunks": 0,
             "chunk_ids": [],
             "warnings": warnings,
-            "timings": {"extract_s": extract_s, "embed_s": 0.0, "store_s": 0.0, "total_s": time.perf_counter() - t0},
+            "timings": {
+                "extract_s": extract_s,
+                "embed_s": 0.0,
+                "store_s": 0.0,
+                "total_s": time.perf_counter() - t0,
+            },
         }
 
     t_emb = time.perf_counter()
@@ -96,7 +111,7 @@ def ingest_pdfs(
     t_store = time.perf_counter()
     offset = 0
     for doc, chunks, pages in documents:
-        store.replace_document(doc, chunks, embeddings[offset:offset + len(chunks)], pages)
+        store.replace_document(doc, chunks, embeddings[offset : offset + len(chunks)], pages)
         offset += len(chunks)
     if offset < len(all_chunks):
         store.upsert(all_chunks[offset:], embeddings[offset:])

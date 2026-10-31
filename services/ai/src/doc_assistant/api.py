@@ -1,4 +1,5 @@
 """HTTP interface to the document and invoice workflows."""
+
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -82,23 +83,37 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
 
     @app.exception_handler(AdapterError)
     async def adapter_error(request: Request, exc: AdapterError) -> JSONResponse:
-        return JSONResponse(status_code=502, content=ErrorBody(code="adapter_error", message=str(exc)).model_dump())
+        return JSONResponse(
+            status_code=502, content=ErrorBody(code="adapter_error", message=str(exc)).model_dump()
+        )
 
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    @app.post("/ingest", response_model=IngestResponse, responses={404: {"model": ErrorBody}, 502: {"model": ErrorBody}})
+    @app.post(
+        "/ingest",
+        response_model=IngestResponse,
+        responses={404: {"model": ErrorBody}, 502: {"model": ErrorBody}},
+    )
     def ingest(payload: IngestRequest) -> Any:
         if not payload.directory.is_dir():
-            return JSONResponse(status_code=404, content=ErrorBody(code="directory_not_found", message="Directory does not exist").model_dump())
+            return JSONResponse(
+                status_code=404,
+                content=ErrorBody(
+                    code="directory_not_found", message="Directory does not exist"
+                ).model_dump(),
+            )
         return ingest_pdfs(config_path, payload.directory)
 
     @app.post("/ask", response_model=AskResponse, responses={502: {"model": ErrorBody}})
     def query(payload: AskRequest) -> Any:
         return ask(config_path, payload.question)
 
-    @app.get("/sources/{doc_id}/pages/{n}", responses={200: {"content": {"image/png": {}}}, 404: {"model": ErrorBody}})
+    @app.get(
+        "/sources/{doc_id}/pages/{n}",
+        responses={200: {"content": {"image/png": {}}}, 404: {"model": ErrorBody}},
+    )
     def source_page(doc_id: str, n: int, request: Request) -> Response:
         cfg = request.app.state.config
         store = ChunkStore(cfg.db, cfg.embeddings.dim)
@@ -107,7 +122,12 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         finally:
             store.db.close()
         if png is None:
-            return JSONResponse(status_code=404, content=ErrorBody(code="page_not_found", message="Page does not exist").model_dump())
+            return JSONResponse(
+                status_code=404,
+                content=ErrorBody(
+                    code="page_not_found", message="Page does not exist"
+                ).model_dump(),
+            )
         return Response(content=png, media_type="image/png")
 
     @app.get("/invoices", response_model=list[Invoice])

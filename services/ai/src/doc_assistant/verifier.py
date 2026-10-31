@@ -20,12 +20,14 @@ class Result:
     details: dict[str, Any] = field(default_factory=dict)
 
 
-_TYPOGRAPHY = str.maketrans({
-    **dict.fromkeys("“”„‟«»", '"'),
-    **dict.fromkeys("‘’‚‛", "'"),
-    **dict.fromkeys("‐‑‒–—―−", "-"),
-    "º": "°",
-})
+_TYPOGRAPHY = str.maketrans(
+    {
+        **dict.fromkeys("“”„‟«»", '"'),
+        **dict.fromkeys("‘’‚‛", "'"),
+        **dict.fromkeys("‐‑‒–—―−", "-"),
+        "º": "°",
+    }
+)
 _STOPWORDS = frozenset({"y", "con", "de", "el", "la"})
 _TOKEN = re.compile(r"\w+|[^\w\s]", re.UNICODE)
 _NEGATION = re.compile(r"\b(?:no|nunca|jamás|jamas|sin|tampoco|ni|not|never)\b")
@@ -56,11 +58,35 @@ _QUANTITY = re.compile(
 )
 # Words that begin prose after a number are not units. Other alphabetic labels
 # are kept conservatively as units, including units outside the SI vocabulary.
-_PROSE = frozenset({
-    "a", "al", "and", "con", "de", "del", "el", "en", "es", "hasta",
-    "la", "las", "los", "o", "of", "para", "por", "que", "se", "sin",
-    "the", "to", "un", "una", "y",
-})
+_PROSE = frozenset(
+    {
+        "a",
+        "al",
+        "and",
+        "con",
+        "de",
+        "del",
+        "el",
+        "en",
+        "es",
+        "hasta",
+        "la",
+        "las",
+        "los",
+        "o",
+        "of",
+        "para",
+        "por",
+        "que",
+        "se",
+        "sin",
+        "the",
+        "to",
+        "un",
+        "una",
+        "y",
+    }
+)
 
 
 def _normalize(text: str, *, lowercase: bool = True) -> str:
@@ -120,8 +146,12 @@ def _quantities(text: str) -> set[tuple[Decimal, str]]:
 
 def _bounded(text: str, start: int, end: int) -> bool:
     return not (
-        start > 0 and text[start - 1].isalnum() and text[start].isalnum()
-        or end < len(text) and text[end - 1].isalnum() and text[end].isalnum()
+        start > 0
+        and text[start - 1].isalnum()
+        and text[start].isalnum()
+        or end < len(text)
+        and text[end - 1].isalnum()
+        and text[end].isalnum()
     )
 
 
@@ -146,16 +176,23 @@ def _citation_mode(text: str, quote: str, almost_literal: bool) -> str | None:
     wanted = _TOKEN.findall(quote)
     width = len(wanted)
     for offset in range(len(tokens) - width + 1):
-        window = tokens[offset:offset + width]
+        window = tokens[offset : offset + width]
         actual = [token.group() for token in window]
-        edits = [op for op in SequenceMatcher(None, actual, wanted, autojunk=False)
-                 .get_opcodes() if op[0] != "equal"]
+        edits = [
+            op
+            for op in SequenceMatcher(None, actual, wanted, autojunk=False).get_opcodes()
+            if op[0] != "equal"
+        ]
         if len(edits) != 1:
             continue
         tag, i, j, k, l = edits[0]
-        if (tag == "replace" and j - i == l - k == 1
-                and actual[i] in _STOPWORDS and wanted[k] in _STOPWORDS
-                and not _negation_omitted(text, window[0].start())):
+        if (
+            tag == "replace"
+            and j - i == l - k == 1
+            and actual[i] in _STOPWORDS
+            and wanted[k] in _STOPWORDS
+            and not _negation_omitted(text, window[0].start())
+        ):
             return "almost_literal"
     return None
 
@@ -167,8 +204,13 @@ def _safe_support(text: str) -> str:
     return " ".join(sentence for sentence in sentences if not _INJECTION.search(sentence))
 
 
-def verify(answer: str | None, citations: list[Any], retrieved: dict[Any, Any], *,
-           almost_literal: bool = False) -> Result:
+def verify(
+    answer: str | None,
+    citations: list[Any],
+    retrieved: dict[Any, Any],
+    *,
+    almost_literal: bool = False,
+) -> Result:
     """Validate citations and numeric support in their complete retrieved chunks.
 
     A successful result checks form, numeric membership and limited guards.
