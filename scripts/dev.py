@@ -51,7 +51,7 @@ def llama(name: str, port: int, model: str, *extra: str) -> Proc:
     )
     if not exe:
         raise SystemExit("[dev] no encuentro llama-server. Ejecuta 'mise run setup'.")
-    path = models_dir() / model
+    path = models_dir(os.environ.get("_DOC_ASSISTANT_CLI_MODELS_DIR"))[0] / model
     if not path.exists():
         raise SystemExit(
             f"[dev] falta el modelo {path}. Ejecuta 'mise run setup' o define DOC_ASSISTANT_MODELS_DIR."
@@ -206,7 +206,15 @@ def main() -> int:
     ap.add_argument("--no-llm", action="store_true", help="sin llama-server (solo UI/contrato)")
     ap.add_argument("--ai-port", type=int, default=int(os.environ.get("DOC_ASSISTANT_AI_PORT", "8000")))
     ap.add_argument("--web-port", type=int, default=int(os.environ.get("DOC_ASSISTANT_WEB_PORT", "3000")))
+    ap.add_argument(
+        "--models-dir", help="carpeta con los GGUF (si no: DOC_ASSISTANT_MODELS_DIR, .env.local, ./models)"
+    )
     a = ap.parse_args()
+    if a.models_dir:
+        os.environ["_DOC_ASSISTANT_CLI_MODELS_DIR"] = a.models_dir
+    if not a.no_llm and os.environ.get("DOC_ASSISTANT_FAKE_LLAMA") != "1":
+        d, origin = models_dir(a.models_dir)
+        print(f"[dev] modelos: {d}  (origen: {origin})", flush=True)
 
     # Explícito: aunque SIGINT llegue ignorado (proceso en segundo plano) o llegue SIGTERM/SIGBREAK.
     signal.signal(signal.SIGINT, _interrupt)

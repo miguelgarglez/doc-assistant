@@ -45,6 +45,7 @@ def python_checks() -> None:
     step("mypy", [*py, "mypy", "src"], AI)
     step("mypy scripts", [*py, "mypy", "--strict", "."], ROOT / "scripts")
     step("pytest", [*py, "pytest", "-q"], AI)
+    step("pytest scripts", [*py, "pytest", "-q", "tests"], ROOT / "scripts")
 
 
 def web_checks() -> None:

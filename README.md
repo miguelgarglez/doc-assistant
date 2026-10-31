@@ -11,7 +11,9 @@
 Sin mise (con uv y node ya instalados): `uv run --project services/ai python scripts/setup.py` y `uv run --project services/ai python scripts/dev.py`.
 
 Notas:
-- Si ya tienes los modelos, `DOC_ASSISTANT_MODELS_DIR=/ruta/a/models` evita redescargarlos.
+- Si ya tienes los modelos: `mise run setup --models-dir /ruta/a/models` (o `DOC_ASSISTANT_MODELS_DIR=/ruta mise run setup`). Comprueba lo que hay (tamaño; SHA256 con `--verify`), no descarga nada si está completo, solo lo que falte (con reanudación), y guarda la ruta en `.env.local` (git-ignorado) para que `mise run start` la use sin repetirla. Orden de resolución: `--models-dir` > `DOC_ASSISTANT_MODELS_DIR` > `.env.local` > `./models`.
+- Si va a descargar más de 1 GB, pide confirmación (`--yes` para CI).
+- Máquina de Miguel: una vez `DOC_ASSISTANT_MODELS_DIR=<carpeta de modelos> mise run setup`; después solo `mise run start`.
 - Windows: descomprime en una ruta corta y sin espacios (p. ej. `C:\doc-assistant`). Si `llama-server` dice que falta `VCRUNTIME140.dll`, instala https://aka.ms/vs/17/release/vc_redist.x64.exe. Defender hace la instalación más lenta, no la rompe.
 - Si `mise install` falla con 403 / rate limit de GitHub, define `GITHUB_TOKEN` o reinténtalo.
 - Plan de contingencia en Windows: WSL2 con Ubuntu y los pasos de Linux tal cual (`http://localhost:3000` funciona desde Windows).

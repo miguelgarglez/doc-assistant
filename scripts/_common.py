@@ -15,10 +15,39 @@ VENDOR = ROOT / "vendor" / "llama"
 ASSETS: dict[str, Any] = json.loads((ROOT / "scripts" / "assets.json").read_text(encoding="utf-8"))
 
 
-def models_dir() -> Path:
-    """DOC_ASSISTANT_MODELS_DIR permite reutilizar modelos ya descargados (sin redescargar)."""
-    env = os.environ.get("DOC_ASSISTANT_MODELS_DIR")
-    return Path(env).expanduser() if env else ROOT / "models"
+ENV_LOCAL = ROOT / ".env.local"
+MODELS_DIR_KEY = "DOC_ASSISTANT_MODELS_DIR"
+
+
+def read_env_local(path: Path = ENV_LOCAL) -> dict[str, str]:
+    """Lee KEY=VALUE de .env.local (git-ignorado). Ignora comentarios y líneas vacías."""
+    if not path.exists():
+        return {}
+    out: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            out[k.strip()] = v.strip().strip('"')
+    return out
+
+
+def write_env_local(key: str, value: str, path: Path = ENV_LOCAL) -> None:
+    env = read_env_local(path)
+    env[key] = value
+    path.write_text("".join(f"{k}={v}\n" for k, v in env.items()), encoding="utf-8")
+
+
+def models_dir(cli: str | None = None, env_local: Path = ENV_LOCAL) -> tuple[Path, str]:
+    """Orden: --models-dir > DOC_ASSISTANT_MODELS_DIR > .env.local > ./models. Devuelve (ruta, origen)."""
+    if cli:
+        return Path(cli).expanduser().resolve(), "--models-dir"
+    if os.environ.get(MODELS_DIR_KEY):
+        return Path(os.environ[MODELS_DIR_KEY]).expanduser().resolve(), MODELS_DIR_KEY
+    local = read_env_local(env_local).get(MODELS_DIR_KEY)
+    if local:
+        return Path(local).expanduser().resolve(), ".env.local"
+    return ROOT / "models", "./models (por defecto)"
 
 
 def llama_platform() -> tuple[str, str]:

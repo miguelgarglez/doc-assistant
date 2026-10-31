@@ -11,3 +11,4 @@ kit/
 !.env.example
 vendor/
 models/
+_agents/

@@ -17,7 +17,17 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-from _common import ASSETS, IS_WIN, ROOT, VENDOR, llama_exe, llama_platform, models_dir
+from _common import (
+    ASSETS,
+    IS_WIN,
+    MODELS_DIR_KEY,
+    ROOT,
+    VENDOR,
+    llama_exe,
+    llama_platform,
+    models_dir,
+    write_env_local,
+)
 
 VCREDIST = "https://aka.ms/vs/17/release/vc_redist.x64.exe"
 STATUS_DLL_NOT_FOUND = 0xC0000135
@@ -32,13 +42,23 @@ def sha256(path: Path) -> str:
 
 
 def download(url: str, dest: Path, expected: str) -> None:
-    print(f"[setup] descargando {url}", flush=True)
-    tmp = dest.with_suffix(dest.suffix + ".part")
-    with urllib.request.urlopen(url, timeout=60) as r, tmp.open("wb") as f:
-        shutil.copyfileobj(r, f, 1 << 20)
+    """Descarga con reanudación (.part + Range) y verificación SHA256."""
+    tmp = dest.with_name(dest.name + ".part")
+    start = tmp.stat().st_size if tmp.exists() else 0
+    req = urllib.request.Request(url, headers={"Range": f"bytes={start}-"} if start else {})
+    print(
+        f"[setup] descargando {url}" + (f" (reanudo desde {start / 1e9:.2f} GB)" if start else ""),
+        flush=True,
+    )
+    with urllib.request.urlopen(req, timeout=60) as r:
+        mode = "ab" if start and r.status == 206 else "wb"
+        with tmp.open(mode) as f:
+            shutil.copyfileobj(r, f, 1 << 20)
     got = sha256(tmp)
     if got != expected:
-        raise SystemExit(f"[setup] SHA256 no coincide para {dest.name}: {got} != {expected}")
+        raise SystemExit(
+            f"[setup] SHA256 no coincide para {dest.name}: {got} != {expected}. El .part queda para revisar."
+        )
     tmp.replace(dest)
 
 
@@ -92,24 +112,57 @@ def check_llama() -> None:
     print(f"[setup] llama-server OK: {(r.stdout or r.stderr).strip().splitlines()[-1]}")
 
 
-def install_models() -> None:
-    d = models_dir()
-    d.mkdir(parents=True, exist_ok=True)
+def plan_models(d: Path, verify: bool) -> list[dict[str, object]]:
+    """Modelos que faltan (o no cuadran). Lo existente con tamaño correcto no se descarga."""
+    missing: list[dict[str, object]] = []
     for m in ASSETS["models"]:
         path = d / m["file"]
         if path.exists() and path.stat().st_size == m["size"]:
+            if verify and sha256(path) != m["sha256"]:
+                raise SystemExit(
+                    f"[setup] {path} tiene el tamaño correcto pero el SHA256 no coincide. Revísalo."
+                )
             print(
-                f"[setup] modelo presente: {path} (tamaño correcto; el SHA256 solo se comprueba al descargar)"
+                f"[setup] OK {m['file']} ({'SHA256 verificado' if verify else 'tamaño correcto'})"
             )
-            continue
-        download(m["url"], path, m["sha256"])
+        else:
+            missing.append(m)
+    return missing
+
+
+def install_models(d: Path, verify: bool, yes: bool) -> None:
+    d.mkdir(parents=True, exist_ok=True)
+    missing = plan_models(d, verify)
+    if not missing:
+        print(f"[setup] usando modelos de {d}: no hay nada que descargar")
+        return
+    total = sum(int(str(m["size"])) for m in missing) / 1e9
+    print(
+        f"[setup] descargaré {', '.join(str(m['file']) for m in missing)} ({total:.1f} GB) en {d}"
+    )
+    if total > 1 and not yes:
+        if not sys.stdin.isatty():
+            raise SystemExit(
+                "[setup] más de 1 GB y sin terminal: repite con --yes o indica --models-dir"
+            )
+        if input("[setup] ¿Continuar? [s/N] ").strip().lower() not in {"s", "si", "sí", "y", "yes"}:
+            raise SystemExit("[setup] cancelado. Usa --models-dir <ruta> si ya tienes los modelos.")
+    for m in missing:
+        download(str(m["url"]), d / str(m["file"]), str(m["sha256"]))
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--no-model", action="store_true", help="no descargar GGUF (CI)")
     ap.add_argument("--check-llama", action="store_true", help="solo comprobar llama-server")
+    ap.add_argument("--models-dir", help="carpeta con los GGUF (se guarda en .env.local)")
+    ap.add_argument(
+        "--verify", action="store_true", help="verificar SHA256 de los modelos existentes (lento)"
+    )
+    ap.add_argument("--yes", action="store_true", help="no preguntar antes de descargar (CI)")
     a = ap.parse_args()
+    d, origin = models_dir(a.models_dir)
+    print(f"[setup] carpeta de modelos: {d}  (origen: {origin})", flush=True)
     if a.check_llama:
         check_llama()
         return 0
@@ -119,7 +172,9 @@ def main() -> int:
     install_llama()
     check_llama()
     if not a.no_model:
-        install_models()
+        install_models(d, a.verify, a.yes)
+        write_env_local(MODELS_DIR_KEY, str(d))
+        print(f"[setup] guardado {MODELS_DIR_KEY}={d} en .env.local (lo usará 'mise run start')")
     print("[setup] listo. Arranca con: mise run start")
     return 0
 
