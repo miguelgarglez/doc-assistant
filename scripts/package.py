@@ -12,7 +12,6 @@ import argparse
 import os
 import shutil
 import signal
-import socket
 import subprocess
 import sys
 import tempfile
@@ -22,7 +21,16 @@ import zipfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _common import ARCHIVES, ASSETS, ROOT, models_dir
+from _common import (
+    ARCHIVES,
+    ASSETS,
+    ROOT,
+    PortError,
+    busy_message,
+    models_dir,
+    port_busy,
+    resolve_ports,
+)
 from setup import download, sha256
 
 PLATFORMS = {"macos-arm64": "tar.gz", "ubuntu-x64": "tar.gz", "win-cpu-x64": "zip"}
@@ -112,12 +120,6 @@ def build(zip_path: Path, prefix: str, src_models: Path, with_models: bool) -> N
     )
 
 
-def port_busy(port: int) -> bool:
-    with socket.socket() as s:
-        s.settimeout(0.5)
-        return s.connect_ex(("127.0.0.1", port)) == 0
-
-
 def http_ok(url: str, data: bytes | None = None, ctype: str = "application/json") -> str:
     req = urllib.request.Request(url, data=data, headers={"content-type": ctype})
     with urllib.request.urlopen(req, timeout=120) as r:
@@ -127,11 +129,15 @@ def http_ok(url: str, data: bytes | None = None, ctype: str = "application/json"
 
 def smoke(zip_path: Path, prefix: str, fake: bool) -> None:
     """Descomprime en limpio, setup + start + pregunta. Falla si setup descarga algo."""
-    busy = [p for p in (3000, 8000, 8081, 8082, 8083, 8084) if port_busy(p)]
-    if busy:
-        raise SystemExit(
-            f"[smoke] puertos ocupados {busy}: cierra el stack antes de probar en limpio"
-        )
+    try:
+        ports = resolve_ports()
+    except PortError as e:
+        raise SystemExit(f"[smoke] {e}") from e
+    checked = [n for n in ports if not (fake and n == "ocr")]
+    problem = busy_message(ports, checked, tool="smoke")
+    if problem:
+        raise SystemExit(problem + "\n[smoke] la prueba en limpio necesita esos puertos libres.")
+    web = f"http://127.0.0.1:{ports['web']}/api"
     td = Path(tempfile.mkdtemp(prefix="doc-assistant-unpack-"))
     t0 = time.time()
     with zipfile.ZipFile(zip_path) as z:
@@ -164,7 +170,7 @@ def smoke(zip_path: Path, prefix: str, fake: bool) -> None:
         deadline = time.time() + 300
         while time.time() < deadline:
             try:
-                http_ok("http://127.0.0.1:3000/api/health")
+                http_ok(f"{web}/health")
                 break
             except OSError:
                 if p.poll() is not None:
@@ -188,18 +194,18 @@ def smoke(zip_path: Path, prefix: str, fake: bool) -> None:
         pdf = root / "evidence/fixtures/docs/sensor-demo.pdf"
         print(
             "[smoke] /documents:",
-            upload("http://127.0.0.1:3000/api/documents", pdf, "application/pdf")[:120],
+            upload(f"{web}/documents", pdf, "application/pdf")[:120],
         )
         q = '{"question":"¿Qué alcance tiene el sensor?"}'.encode()
         t1 = time.time()
-        ans = http_ok("http://127.0.0.1:3000/api/ask", q)
+        ans = http_ok(f"{web}/ask", q)
         print(f"[smoke] /ask ({time.time() - t1:.0f} s):", ans[:300])
         if not fake and '"citations":[]' in ans.replace(" ", ""):
             raise SystemExit("[smoke] /ask sin cita")
         if not fake:
             inv = root / "evidence/fixtures/invoices/factura_001.png"
             t1 = time.time()
-            r_inv = upload("http://127.0.0.1:3000/api/invoices/upload", inv, "image/png")
+            r_inv = upload(f"{web}/invoices/upload", inv, "image/png")
             print(f"[smoke] /invoices/upload ({time.time() - t1:.0f} s):", r_inv[:300])
     finally:
         if sys.platform == "win32":
@@ -211,10 +217,10 @@ def smoke(zip_path: Path, prefix: str, fake: bool) -> None:
     if "Traceback" in (td / "start.log").read_text():
         raise SystemExit(f"[smoke] hubo un Traceback en start.log ({td})")
     time.sleep(2)
-    still = [p for p in (3000, 8000, 8081, 8082, 8083, 8084) if port_busy(p)]
+    still = [ports[n] for n in checked if port_busy(ports[n])]
     if still:
         raise SystemExit(f"[smoke] puertos sin liberar tras parar: {still}")
-    print("[smoke] puertos 3000/8000/8081-8084 liberados")
+    print(f"[smoke] puertos {', '.join(str(ports[n]) for n in checked)} liberados")
     print(f"[smoke] OK en {time.time() - t0:.0f} s · logs en {td}")
 
 

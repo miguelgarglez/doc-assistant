@@ -99,9 +99,7 @@ def probe_index(cfg: AppConfig) -> ComponentHealth:
 def _ocr_probe(cfg: AppConfig) -> Callable[[], ComponentHealth]:
     runtime = os.environ.get("DOC_ASSISTANT_OCR_RUNTIME", cfg.ocr.runtime)
     if runtime == "ollama":
-        url = cfg.ocr.base_url
-        if url.rstrip("/").endswith(":8084"):
-            url = "http://127.0.0.1:11434"
+        url = cfg.ocr.ollama_url()
         return lambda: probe_llama("ocr", url, "/api/version")
     return lambda: probe_llama("ocr", cfg.ocr.base_url)
 

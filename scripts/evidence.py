@@ -18,12 +18,11 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _common import ROOT
-from package import http_ok, port_busy
+from _common import ROOT, PortError, busy_message, resolve_ports
+from package import http_ok
 
 FIX = ROOT / "evidence" / "fixtures"
 OUT = ROOT / "evidence" / "live"
-WEB = "http://127.0.0.1:3000/api"
 QUESTIONS = [
     ("documento", "¿Qué alcance tiene el sensor SX-20?"),
     ("documento", "¿Qué temperatura de trabajo admite el sensor?"),
@@ -54,9 +53,14 @@ def screenshots() -> None:
 
 
 def live() -> None:
-    busy = [p for p in (3000, 8000, 8081, 8082, 8083, 8084) if port_busy(p)]
-    if busy:
-        raise SystemExit(f"[evidence] puertos ocupados {busy}: cierra el stack")
+    try:
+        ports = resolve_ports()
+    except PortError as e:
+        raise SystemExit(f"[evidence] {e}") from e
+    problem = busy_message(ports, list(ports), tool="evidence")
+    if problem:
+        raise SystemExit(problem + "\n[evidence] la corrida real necesita esos puertos libres.")
+    WEB = f"http://127.0.0.1:{ports['web']}/api"
     OUT.mkdir(parents=True, exist_ok=True)
     log = open(OUT / "start.log", "w")  # noqa: SIM115
     kw: dict[str, Any] = (

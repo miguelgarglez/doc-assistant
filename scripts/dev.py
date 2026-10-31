@@ -4,6 +4,8 @@ Solo stdlib, sin shell ni .cmd: `sys.executable -m uvicorn` y `node .../next`.
 Puertos comprobados conectando (no reservando), health checks en orden,
 cierre en dos fases (amable, 5 s, forzado del árbol) y `atexit` como red.
 Variables: DOC_ASSISTANT_MODELS_DIR, DOC_ASSISTANT_LLAMA_SERVER, DOC_ASSISTANT_FAKE_LLAMA=1 (CI).
+Puertos (por defecto 8081-8084, 8000 y 3000): DOC_ASSISTANT_LLM_PORT, _EMBEDDINGS_PORT,
+_RERANKER_PORT, _OCR_PORT, _AI_PORT y _WEB_PORT; config/config.yaml lee las mismas.
 """
 
 from __future__ import annotations
@@ -13,7 +15,6 @@ import atexit
 import os
 import shutil
 import signal
-import socket
 import subprocess
 import sys
 import time
@@ -22,10 +23,23 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from _common import IS_WIN, OCR_FILES, ROOT, llama_exe, models_dir, ocr_problem, ocr_runtime
+from _common import (
+    IS_WIN,
+    LOOPBACK,
+    OCR_FILES,
+    PORT_ENV,
+    ROOT,
+    PortError,
+    busy_message,
+    llama_exe,
+    models_dir,
+    ocr_problem,
+    ocr_runtime,
+    port_busy,
+    resolve_ports,
+)
 
 GRACE_S = 5.0
-LOOPBACK = "127.0.0.1"
 
 
 @dataclass
@@ -65,7 +79,8 @@ def llama(name: str, port: int, model: str, *extra: str) -> Proc:
     return Proc(name, cmd, port, health, timeout_s=180)
 
 
-def plan(dev: bool, ai_port: int, web_port: int, with_llm: bool) -> list[Proc]:
+def plan(dev: bool, ports: dict[str, int], with_llm: bool) -> list[Proc]:
+    ai_port, web_port = ports["ai"], ports["web"]
     node = shutil.which("node")
     if node is None:
         raise SystemExit("[dev] no encuentro node. ¿Has ejecutado 'mise install'?")
@@ -93,7 +108,7 @@ def plan(dev: bool, ai_port: int, web_port: int, with_llm: bool) -> list[Proc]:
         [
             llama(
                 "llm",
-                8081,
+                ports["llm"],
                 os.environ.get("DOC_ASSISTANT_LLM_MODEL", "Qwen3.5-4B-Q4_K_M.gguf"),
                 "-c",
                 "8192",
@@ -104,13 +119,13 @@ def plan(dev: bool, ai_port: int, web_port: int, with_llm: bool) -> list[Proc]:
             ),
             llama(
                 "embeddings",
-                8082,
+                ports["embeddings"],
                 "bge-m3-Q8_0.gguf",
                 "--embeddings",
                 "--pooling",
                 "cls",
             ),
-            llama("reranker", 8083, "bge-reranker-v2-m3-Q8_0.gguf", "--reranking"),
+            llama("reranker", ports["reranker"], "bge-reranker-v2-m3-Q8_0.gguf", "--reranking"),
         ]
         if with_llm
         else []
@@ -136,7 +151,7 @@ def plan(dev: bool, ai_port: int, web_port: int, with_llm: bool) -> list[Proc]:
         ocr = [
             llama(
                 "ocr",
-                8084,
+                ports["ocr"],
                 OCR_FILES[0],
                 "--mmproj",
                 str(mmproj),
@@ -159,6 +174,7 @@ def plan(dev: bool, ai_port: int, web_port: int, with_llm: bool) -> list[Proc]:
             ai_port,
             f"http://{LOOPBACK}:{ai_port}/health",
             ROOT / "services" / "ai",
+            {PORT_ENV[name]: str(port) for name, port in ports.items()},
         ),
         Proc(
             "web",
@@ -169,12 +185,6 @@ def plan(dev: bool, ai_port: int, web_port: int, with_llm: bool) -> list[Proc]:
             {"AI_SERVICE_URL": f"http://{LOOPBACK}:{ai_port}"},
         ),
     ]
-
-
-def port_busy(port: int) -> bool:
-    with socket.socket() as s:
-        s.settimeout(0.5)
-        return s.connect_ex((LOOPBACK, port)) == 0
 
 
 def wait_healthy(p: Proc) -> None:
@@ -295,16 +305,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dev", action="store_true", help="next dev en vez de next start")
     ap.add_argument("--no-llm", action="store_true", help="sin llama-server (solo UI/contrato)")
-    ap.add_argument(
-        "--ai-port",
-        type=int,
-        default=int(os.environ.get("DOC_ASSISTANT_AI_PORT", "8000")),
-    )
-    ap.add_argument(
-        "--web-port",
-        type=int,
-        default=int(os.environ.get("DOC_ASSISTANT_WEB_PORT", "3000")),
-    )
+    ap.add_argument("--ai-port", type=int, help="puerto del servicio IA (DOC_ASSISTANT_AI_PORT)")
+    ap.add_argument("--web-port", type=int, help="puerto de la web (DOC_ASSISTANT_WEB_PORT)")
     ap.add_argument(
         "--models-dir",
         help="carpeta con los GGUF (si no: DOC_ASSISTANT_MODELS_DIR, .env.local, ./models)",
@@ -323,7 +325,13 @@ def main() -> int:
         signal.signal(signal.SIGBREAK, _interrupt)  # type: ignore[attr-defined]
     atexit.register(stop_all)
 
-    procs = plan(a.dev, a.ai_port, a.web_port, with_llm=not a.no_llm)
+    cli = {k: v for k, v in (("ai", a.ai_port), ("web", a.web_port)) if v is not None}
+    try:
+        ports = resolve_ports(overrides=cli)
+    except PortError as e:
+        print(f"[dev] ERROR: {e}", file=sys.stderr)
+        return 2
+    procs = plan(a.dev, ports, with_llm=not a.no_llm)
     with_ocr = not a.no_llm and os.environ.get("DOC_ASSISTANT_FAKE_LLAMA") != "1"
     reused = [p for p in procs if p.reuse_if_running and port_busy(p.port)]
     procs = [p for p in procs if p not in reused]
@@ -332,13 +340,10 @@ def main() -> int:
             f"[dev] {p.name}: ya en marcha en {p.port}, se reutiliza (no se cerrará)",
             flush=True,
         )
-    busy = [p for p in procs if port_busy(p.port)]
-    for p in busy:
-        print(
-            f"[dev] ERROR: el puerto {p.port} ({p.name}) ya está ocupado. Cierra ese proceso o cambia el puerto.",
-            file=sys.stderr,
-        )
-    if busy:
+    in_use = [name for name, port in ports.items() if any(p.port == port for p in procs)]
+    problem = busy_message(ports, in_use)
+    if problem:
+        print(problem, file=sys.stderr)
         return 2
     if not a.dev and not (ROOT / "apps" / "web" / ".next" / "BUILD_ID").exists():
         print(
@@ -356,7 +361,7 @@ def main() -> int:
             if why:
                 print(f"[dev] AVISO: Facturas NO disponible: {why}", flush=True)
         print(
-            f"[dev] Listo: http://{LOOPBACK}:{a.web_port}  (Ctrl-C para salir)",
+            f"[dev] Listo: http://{LOOPBACK}:{ports['web']}  (Ctrl-C para salir)",
             flush=True,
         )
         while not any(p.popen is not None and p.popen.poll() is not None for p in STARTED):

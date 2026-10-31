@@ -1,10 +1,46 @@
 """Validated configuration loaded at the application boundary."""
 
+import os
+import re
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
+from urllib.parse import urlparse
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+LLAMA_OCR_PORT_ENV = "DOC_ASSISTANT_OCR_PORT"
+OLLAMA_URL = "http://127.0.0.1:11434"
+_ENV_REF = re.compile(r"\$\{([A-Z][A-Z0-9_]*)(?::-([^}]*))?\}")
+
+
+def expand_env(value: Any) -> Any:
+    """Replaces ${NAME} and ${NAME:-default} in every string of the loaded YAML.
+    A name without a value and without a default is an error, not an empty string."""
+    if isinstance(value, str):
+
+        def sub(m: re.Match[str]) -> str:
+            found = os.environ.get(m.group(1))
+            if found:
+                return found
+            if m.group(2) is None:
+                raise ValueError(f"config usa ${{{m.group(1)}}} y la variable no está definida")
+            return m.group(2)
+
+        return _ENV_REF.sub(sub, value)
+    if isinstance(value, dict):
+        return {k: expand_env(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [expand_env(v) for v in value]
+    return value
+
+
+def _checked_port(base_url: str) -> str:
+    try:
+        urlparse(base_url).port  # noqa: B018 - raises ValueError on a non numeric or out of range port
+    except ValueError as e:
+        raise ValueError(f"puerto no válido en {base_url!r}: revisa las variables *_PORT") from e
+    return base_url
 
 
 class EndpointConfig(BaseModel):
@@ -14,6 +50,11 @@ class EndpointConfig(BaseModel):
     model: str = Field(min_length=1)
     timeout_s: float = Field(default=90, gt=0)
     dim: int | None = Field(default=None, gt=0)
+
+    @field_validator("base_url")
+    @classmethod
+    def _check_port(cls, value: str) -> str:
+        return _checked_port(value)
 
     @property
     def url(self) -> str:
@@ -27,6 +68,18 @@ class OcrConfig(BaseModel):
     base_url: str = Field(default="http://127.0.0.1:8084", pattern=r"^https?://")
     model: str = Field(default="glm-ocr", min_length=1)
     timeout_s: float = Field(default=300, gt=0)
+
+    @field_validator("base_url")
+    @classmethod
+    def _check_port(cls, value: str) -> str:
+        return _checked_port(value)
+
+    def ollama_url(self) -> str:
+        """Ollama runtime: base_url is the llama endpoint unless the config points elsewhere."""
+        llama_port = os.environ.get(LLAMA_OCR_PORT_ENV) or "8084"
+        if self.base_url.rstrip("/") == f"http://127.0.0.1:{llama_port}":
+            return OLLAMA_URL
+        return self.base_url
 
 
 class AppConfig(BaseModel):
@@ -51,7 +104,7 @@ class AppConfig(BaseModel):
 
 def load_config(path: str | Path) -> AppConfig:
     path = Path(path).resolve()
-    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    raw = expand_env(yaml.safe_load(path.read_text(encoding="utf-8")))
     if not isinstance(raw, dict):
         raise TypeError("Configuration must be a mapping")
     raw["path"] = path

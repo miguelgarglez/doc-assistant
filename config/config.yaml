@@ -1,19 +1,21 @@
+# Los puertos de los modelos se leen de las variables DOC_ASSISTANT_*_PORT (scripts/dev.py usa
+# las mismas); sin variable valen 8081-8084.
 db: data/doc-assistant.db
 docs: data/documents
 data_dir: data
 llm:
-  base_url: http://127.0.0.1:8081
+  base_url: http://127.0.0.1:${DOC_ASSISTANT_LLM_PORT:-8081}
   endpoint: /v1/chat/completions
   model: llm-local
   timeout_s: 90
 embeddings:
-  base_url: http://127.0.0.1:8082
+  base_url: http://127.0.0.1:${DOC_ASSISTANT_EMBEDDINGS_PORT:-8082}
   endpoint: /v1/embeddings
   model: emb-local
   timeout_s: 90
   dim: 1024
 reranker:
-  base_url: http://127.0.0.1:8083
+  base_url: http://127.0.0.1:${DOC_ASSISTANT_RERANKER_PORT:-8083}
   endpoint: /v1/rerank
   model: rerank-local
   timeout_s: 90
@@ -21,7 +23,7 @@ ocr:
   # llama: GLM-OCR GGUF en llama-server (va en el ZIP). Alternativa: runtime ollama
   # (o DOC_ASSISTANT_OCR_RUNTIME=ollama) con 'ollama pull glm-ocr' en :11434.
   runtime: llama
-  base_url: http://127.0.0.1:8084
+  base_url: http://127.0.0.1:${DOC_ASSISTANT_OCR_PORT:-8084}
   model: glm-ocr
   timeout_s: 300
 top_k: 5

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import socket
 import sys
 from pathlib import Path
 from typing import Any
@@ -108,3 +109,107 @@ def ollama_problem(ollama_path: str | None, url: str = OCR_URL, timeout: float =
     if OCR_MODEL not in names:
         return f"Ollama no tiene el modelo '{OCR_MODEL}'; ejecuta 'ollama pull {OCR_MODEL}'"
     return None
+
+
+# --- puertos -------------------------------------------------------------------------
+# Un solo sitio para los puertos del stack. config/config.yaml lee las mismas variables
+# (${DOC_ASSISTANT_LLM_PORT:-8081}), así que dev.py y el servicio no pueden discrepar.
+LOOPBACK = "127.0.0.1"
+PORT_DEFAULTS: dict[str, int] = {
+    "llm": 8081,
+    "embeddings": 8082,
+    "reranker": 8083,
+    "ocr": 8084,
+    "ai": 8000,
+    "web": 3000,
+}
+PORT_ENV: dict[str, str] = {
+    "llm": "DOC_ASSISTANT_LLM_PORT",
+    "embeddings": "DOC_ASSISTANT_EMBEDDINGS_PORT",
+    "reranker": "DOC_ASSISTANT_RERANKER_PORT",
+    "ocr": "DOC_ASSISTANT_OCR_PORT",
+    "ai": "DOC_ASSISTANT_AI_PORT",
+    "web": "DOC_ASSISTANT_WEB_PORT",
+}
+PORT_LABELS: dict[str, str] = {
+    "llm": "modelo de lenguaje",
+    "embeddings": "embeddings",
+    "reranker": "reranker",
+    "ocr": "OCR de facturas",
+    "ai": "servicio de IA",
+    "web": "web",
+}
+
+
+class PortError(ValueError):
+    """Configuración de puertos inválida; el mensaje dice qué variable cambiar."""
+
+
+def resolve_ports(
+    env: dict[str, str] | None = None, overrides: dict[str, int] | None = None
+) -> dict[str, int]:
+    """Puertos efectivos: argumento > variable de entorno > valor por defecto.
+    Falla si alguno no es un puerto o si dos piezas comparten puerto."""
+    source = os.environ if env is None else env
+    ports: dict[str, int] = {}
+    for name, default in PORT_DEFAULTS.items():
+        if overrides and name in overrides:
+            ports[name] = overrides[name]
+            continue
+        raw = source.get(PORT_ENV[name], "").strip()
+        if not raw:
+            ports[name] = default
+            continue
+        if not raw.isdigit() or not 1 <= int(raw) <= 65535:
+            raise PortError(
+                f"{PORT_ENV[name]}={raw!r} no es un puerto válido (un entero entre 1 y 65535)."
+            )
+        ports[name] = int(raw)
+    seen: dict[int, str] = {}
+    for name, port in ports.items():
+        if port in seen:
+            raise PortError(
+                f"{PORT_ENV[name]} y {PORT_ENV[seen[port]]} apuntan al mismo puerto ({port}). "
+                "Cada pieza necesita el suyo."
+            )
+        seen[port] = name
+    return ports
+
+
+def port_busy(port: int, host: str = LOOPBACK) -> bool:
+    """Ocupado = alguien acepta conexiones (no se reserva el puerto, solo se mira)."""
+    with socket.socket() as s:
+        s.settimeout(0.5)
+        return s.connect_ex((host, port)) == 0
+
+
+def free_port_near(port: int, taken: set[int], span: int = 200) -> int | None:
+    """Primer puerto libre a partir de port+100, para sugerirlo en el mensaje de error."""
+    for candidate in range(port + 100, min(port + 100 + span, 65536)):
+        if candidate not in taken and not port_busy(candidate):
+            return candidate
+    return None
+
+
+def who_uses(port: int) -> str:
+    return f"netstat -ano | findstr :{port}" if IS_WIN else f"lsof -nP -iTCP:{port} -sTCP:LISTEN"
+
+
+def busy_message(ports: dict[str, int], names: list[str], tool: str = "dev") -> str | None:
+    """Mensaje accionable para los puertos ocupados: quién los usa y qué variable cambiar,
+    con un puerto libre sugerido para cada uno. None si todos están libres."""
+    busy = [n for n in names if port_busy(ports[n])]
+    if not busy:
+        return None
+    taken = set(ports.values())
+    lines = [f"[{tool}] ERROR: hay puertos ocupados, no arranco nada:"]
+    for n in busy:
+        lines.append(f"  - {ports[n]} ({PORT_LABELS[n]}). Quién lo usa: {who_uses(ports[n])}")
+    lines.append("Opciones: cierra ese proceso (si es otro stack tuyo) o usa otros puertos con:")
+    for n in busy:
+        free = free_port_near(ports[n], taken)
+        if free is not None:
+            taken.add(free)
+        lines.append(f"  {PORT_ENV[n]}={free if free is not None else '<puerto libre>'}")
+    lines.append("Se pasan como variables de entorno (en PowerShell: $env:NOMBRE=valor).")
+    return "\n".join(lines)

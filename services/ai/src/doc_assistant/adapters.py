@@ -343,10 +343,7 @@ def build_ocr(cfg: AppConfig, *, fake: bool = False, text: str = "") -> OcrPort:
         return FakeOCR(text=text)
     runtime = os.environ.get("DOC_ASSISTANT_OCR_RUNTIME", cfg.ocr.runtime)
     if runtime == "ollama":
-        url = cfg.ocr.base_url
-        if url.rstrip("/").endswith(":8084"):  # puerto del runtime llama → el de Ollama
-            url = "http://127.0.0.1:11434"
-        return OllamaOCR(url, cfg.ocr.model, cfg.ocr.timeout_s)
+        return OllamaOCR(cfg.ocr.ollama_url(), cfg.ocr.model, cfg.ocr.timeout_s)
     return LlamaOCR(cfg.ocr.base_url, cfg.ocr.model, cfg.ocr.timeout_s)
 
 
