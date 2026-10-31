@@ -83,6 +83,7 @@ test("swap de tema industrial ↔ neutral", async ({ page }) => {
 })
 
 test.describe("axe a11y", () => {
+  test.use({ reducedMotion: "reduce" })
   for (const theme of ["industrial", "neutral"] as const) {
     for (const dark of [false, true]) {
       const label = `${theme}-${dark ? "dark" : "light"}`
@@ -94,6 +95,7 @@ test.describe("axe a11y", () => {
         await page.getByRole("button", { name: "Consultar" }).click()
         await expect(page.getByTestId("answer-card")).toBeVisible()
 
+        await page.mouse.move(0, 0)
         const results = await new AxeBuilder({ page })
           .withTags(["wcag2a", "wcag2aa"])
           .analyze()
@@ -106,6 +108,7 @@ test.describe("axe a11y", () => {
       test(`/design sin violaciones serias (${label})`, async ({ page }) => {
         await gotoThemed(page, "/design", theme, dark)
         await expect(page.getByTestId("design-page")).toBeVisible()
+        await page.mouse.move(0, 0)
         const results = await new AxeBuilder({ page })
           .withTags(["wcag2a", "wcag2aa"])
           .analyze()
