@@ -22,3 +22,14 @@ uv run uvicorn doc_assistant.api:app
 ```
 
 Última comprobación: 42 tests pasan, Ruff y mypy strict sin errores; OpenAPI generado en `openapi.json`. Starlette emite un aviso de deprecación del transporte httpx de TestClient. Las pruebas emplean PDFs y facturas sintéticos y adaptadores falsos; no prueban servidores de modelos reales. Limitación: las reglas de importes asumen etiquetas regulares (techo optimista PD-8); maquetas nuevas o etiquetas raras pueden ir a `revisar`.
+
+
+## Revisión parcial del 31 de octubre de 2026
+
+Las subidas tienen límites configurables `upload_pdf_max_bytes` (25 MiB), `upload_image_max_bytes` (10 MiB) y `upload_pdf_max_pages` (200). Devuelven 413 con `code` y `message`, leen por bloques y usan handlers síncronos. Se comprueba que los directorios de subida y sus entradas existentes se resuelvan dentro de `data_dir`; esta comprobación no evita carreras de sustitución de symlinks.
+
+Los campos de texto sin evidencia OCR se anulan y se marcan `sin_evidencia`. Las comparaciones monetarias utilizan el mismo parser Decimal que la extracción, las sumas rechazan datos ausentes o inválidos, y la igualdad textual compara valores completos. El plan de consulta prioriza el número exacto y rechaza varias coincidencias normalizadas. Los adaptadores HTTP validan índices y dimensiones. Los embeddings de factura se calculan antes de escribir.
+
+**Trabajo pendiente:** la persistencia de factura todavía no es atómica entre archivo, fila y fragmentos; `InvoiceDB.get` todavía necesita la misma regla de ambigüedad que `run_plan`. Faltan identificadores opacos separados del nombre visible, estado y motivo en GET y en los planes, resolver POST /invoices, y los cambios de `scripts/setup.py` para descargas y publicación de llama. Añadir pruebas completas de symlinks en ambas rutas y de carreras, dimensiones/cardinalidad/índices, y casos de fallo transaccional. No se ha modificado el verificador de citas.
+
+Verificación parcial: 51 pruebas de servicio y 5 de scripts pasan; Ruff, formato y mypy pasan. Se reutilizó el entorno instalado del repositorio principal con `PYTHONPATH=src` y `UV_NO_SYNC=1`; no se instalaron dependencias. OpenAPI se regeneró desde este worktree.

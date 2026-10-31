@@ -164,8 +164,24 @@ class HttpEmbedder:
             json={"input": texts, "model": self.model},
         )
         try:
-            return [row["embedding"] for row in data["data"]]
-        except (KeyError, TypeError) as e:
+            rows = data["data"]
+            if len(rows) != len(texts):
+                raise ValueError("incorrect cardinality")
+            indices = [row["index"] for row in rows]
+            if any(type(i) is not int for i in indices) or sorted(indices) != list(
+                range(len(texts))
+            ):
+                raise ValueError("invalid indices")
+            vectors = [row["embedding"] for row in sorted(rows, key=lambda row: row["index"])]
+            if any(
+                not isinstance(v, list)
+                or (self.dim is not None and len(v) != self.dim)
+                or any(not isinstance(x, (int, float)) or not math.isfinite(x) for x in v)
+                for v in vectors
+            ):
+                raise ValueError("invalid embedding")
+            return vectors
+        except (KeyError, TypeError, ValueError) as e:
             raise AdapterError(f"Formato inesperado de embeddings en {self.url}") from e
 
 
@@ -183,8 +199,14 @@ class HttpReranker:
             json={"query": query, "documents": documents, "model": self.model},
         )
         try:
+            results = data["results"]
+            indices = [x["index"] for x in results]
+            if any(type(i) is not int or i < 0 or i >= len(documents) for i in indices) or len(
+                set(indices)
+            ) != len(indices):
+                raise ValueError("invalid rerank indices")
             return sorted(
-                ((x["index"], float(x["relevance_score"])) for x in data["results"]),
+                ((x["index"], float(x["relevance_score"])) for x in results),
                 key=lambda t: -t[1],
             )  # revisión: llama-server no ordena
         except (KeyError, TypeError, ValueError) as e:

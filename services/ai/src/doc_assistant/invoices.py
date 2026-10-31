@@ -7,14 +7,14 @@ from __future__ import annotations
 
 import re
 import sqlite3
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 from doc_assistant.adapters import LLM, Embedder, OcrPort, build_adapters, build_ocr
 from doc_assistant.chunking import chunk_invoice
 from doc_assistant.config import load_config
-from doc_assistant.invoice_extract import extract_invoice
+from doc_assistant.invoice_extract import extract_invoice, parse_es_decimal
 from doc_assistant.store import ChunkStore
 
 FIELDS = {
@@ -91,16 +91,7 @@ class InvoiceDB:
         return None
 
 
-def _dec(v: Any) -> Decimal | None:
-    import re
-
-    m = re.search(r"-?\d+(?:[.,]\d+)?", str(v).replace(" ", "")) if v is not None else None
-    if not m:
-        return None
-    try:
-        return Decimal(m.group(0).replace(",", "."))
-    except (InvalidOperation, TypeError):
-        return None
+_dec = parse_es_decimal
 
 
 def _norm_num(s: str | None) -> str:
@@ -117,7 +108,10 @@ def run_plan(db: InvoiceDB, plan: dict[str, Any]) -> dict[str, Any]:
 
     if kind == "campos":
         want = _norm_num(plan.get("numero"))
-        hit = [r for r in rows if want and _norm_num(r["numero"]) == want]
+        exact = [r for r in rows if r["numero"] == plan.get("numero")]
+        hit = exact or [r for r in rows if want and _norm_num(r["numero"]) == want]
+        if len(hit) > 1:
+            return refuse("factura_ambigua")
         if not hit:
             return refuse("factura_no_encontrada")
         r = hit[0]
@@ -159,7 +153,7 @@ def run_plan(db: InvoiceDB, plan: dict[str, Any]) -> dict[str, Any]:
                     if a is None or b is None:
                         return False
                     return a > b if op == ">" else a < b if op == "<" else a == b
-                return op == "=" and (val or "").lower() in x.lower()
+                return op == "=" and (val or "").strip().casefold() == x.strip().casefold()
 
             sel = [r for r in rows if keep(r)]
 
@@ -177,7 +171,9 @@ def run_plan(db: InvoiceDB, plan: dict[str, Any]) -> dict[str, Any]:
             c = (plan.get("campos") or ["importe_total"])[0]
             if c not in NUMERIC:
                 return refuse("campo_no_numerico")
-            vals = [(r, _dec(r.get(c))) for r in sel if r.get(c) is not None]
+            vals = [(r, _dec(r.get(c))) for r in sel]
+            if any(v is None for _, v in vals):
+                return refuse("suma_datos_incompletos")
             total = sum((v for _, v in vals if v is not None), Decimal(0))
             return {
                 "ok": True,
@@ -256,6 +252,9 @@ def upload_invoice(
             "flags": extracted["flags"],
         }
 
+    chunks = chunk_invoice(record)
+    embeddings = embedder.embed([c["text"] for c in chunks]) if chunks else []
+
     invoices_dir = cfg.data_dir / "invoices"
     invoices_dir.mkdir(parents=True, exist_ok=True)
     path = invoices_dir / sanitize_image_filename(filename, numero)
@@ -275,8 +274,6 @@ def upload_invoice(
     dim = getattr(embedder, "dim", None) or cfg.embeddings.dim or 8
     store = ChunkStore(cfg.db, dim=dim)
     try:
-        chunks = chunk_invoice(record)
-        embeddings = embedder.embed([c["text"] for c in chunks]) if chunks else []
         store.replace_document(numero, chunks, embeddings, [image])
     finally:
         store.db.close()
