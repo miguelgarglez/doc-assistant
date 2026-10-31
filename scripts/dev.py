@@ -167,6 +167,10 @@ def _alive() -> list[subprocess.Popen[bytes]]:
 
 
 def stop_all() -> None:
+    # uv/mise reenvían la señal y el terminal la manda al grupo: ignorar las repetidas
+    # mientras cerramos evita un KeyboardInterrupt a mitad de la parada.
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, signal.SIG_IGN)
     if not _alive():
         return
     for pp in _alive():  # fase 1: amable

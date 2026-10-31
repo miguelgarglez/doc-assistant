@@ -37,7 +37,9 @@ class Handler(BaseHTTPRequestHandler):
                 }
             )
         else:
-            self._send({"choices": [{"message": {"role": "assistant", "content": "NO_SE"}}]})
+            # JSON válido para el json_schema de /ask: rechazo explícito, recorre todo el pipeline.
+            refusal = json.dumps({"answerable": False, "answer": None, "citations": []})
+            self._send({"choices": [{"message": {"role": "assistant", "content": refusal}}]})
 
     def log_message(self, *_: object) -> None:
         pass
