@@ -24,3 +24,11 @@
 ## ADR-005 Arreglos sobre la salida de los ayudantes (2026-10-31)
 - El scaffold web importaba `cn` del paquete npm `cn` (dependencia ajena e innecesaria): sustituido por `clsx + tailwind-merge` local, como en shadcn. `typecheck` ahora hace `next typegen` (LayoutProps). Lockfile único en la raíz (pnpm workspace). `embeddings.dim` corregido a 1024 (bge-m3).
 - El servicio IA migrado tiene 29 tests frente a 81 del slice: falta auditar qué tests no se migraron (eval excluida a propósito).
+
+## ADR-006 Revisión independiente (Codex gpt-6.1-sol) y triaje (2026-10-31)
+- 25 hallazgos (1 P0, 18 P1, 6 P2) en `docs/reviews/2026-10-31-sol.md`. Autor del código: Codex terra y cursor-agent; revisor: otro modelo, en solo lectura.
+- Aplicados por el integrador: #1 SSRF del proxy (segmentos recodificados, origen comprobado, cabeceras en lista blanca; probado con `/api/http%3A%2F%2Fexample.com%2Fx` → 404 del servicio local), #16 (middleware onError + timeout de 180 s en openapi-fetch → ErrorBody; test e2e de fallo de red), #24 (el rechazo muestra `answer`; `reason` queda como diagnóstico), #25 (sin robo de foco; región aria-live).
+- Encargados a 09-py-review-fixes (Codex terra, rama fix/py-review), cada uno con su test: #2 #3 #4 #5 #6 #7 #8 #9 #10 #11 #12 #15 #17 #20 #21 #22.
+- #18 queda resuelto por 08-web-invoices (subida de facturas y PDF conectada).
+- No se aplican ahora (limitaciones documentadas): #13 Ollama/glm-ocr no lo instala setup (decisión de Miguel pendiente: runtime OCR del ZIP); #14 descendientes de un padre ya muerto (los grupos de proceso cubren el caso normal; Job Objects fuera de alcance); #19 CI en PR (el workflow es manual a propósito: no hay push); #23 fragmentos multipágina (abre la primera página).
+- Fuera de alcance: no se amplía el verificador.
