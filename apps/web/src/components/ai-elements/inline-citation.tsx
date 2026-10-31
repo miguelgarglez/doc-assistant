@@ -2,6 +2,7 @@
 
 import type { ComponentProps } from "react"
 
+import { useConversationScrollArea } from "@/components/ai-elements/conversation"
 import {
   HoverCard,
   HoverCardContent,
@@ -45,19 +46,24 @@ export const InlineCitationCardTrigger = ({
   </HoverCardTrigger>
 )
 
+/** Centered on its marker. Inside a conversation the thread is the collision boundary, so the card flips or shrinks before it reaches the composer. */
 export const InlineCitationCardBody = ({
   className,
   ...props
-}: ComponentProps<typeof HoverCardContent>) => (
-  <HoverCardContent
-    align="center"
-    alignOffset={0}
-    className={cn("w-80 gap-2 p-3", className)}
-    collisionPadding={12}
-    sideOffset={6}
-    {...props}
-  />
-)
+}: ComponentProps<typeof HoverCardContent>) => {
+  const scrollArea = useConversationScrollArea()
+  return (
+    <HoverCardContent
+      align="center"
+      alignOffset={0}
+      className={cn("max-h-(--available-height) w-80 gap-2 overflow-y-auto p-3", className)}
+      collisionBoundary={scrollArea ?? undefined}
+      collisionPadding={12}
+      sideOffset={6}
+      {...props}
+    />
+  )
+}
 
 export const InlineCitationSource = ({
   title,

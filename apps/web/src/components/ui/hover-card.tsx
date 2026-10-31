@@ -19,18 +19,20 @@ function HoverCardContent({
   sideOffset = 4,
   align = "center",
   alignOffset = 4,
+  collisionBoundary,
   collisionPadding,
   ...props
 }: PreviewCardPrimitive.Popup.Props &
   Pick<
     PreviewCardPrimitive.Positioner.Props,
-    "align" | "alignOffset" | "collisionPadding" | "side" | "sideOffset"
+    "align" | "alignOffset" | "collisionBoundary" | "collisionPadding" | "side" | "sideOffset"
   >) {
   return (
     <PreviewCardPrimitive.Portal data-slot="hover-card-portal">
       <PreviewCardPrimitive.Positioner
         align={align}
         alignOffset={alignOffset}
+        collisionBoundary={collisionBoundary}
         collisionPadding={collisionPadding}
         side={side}
         sideOffset={sideOffset}

@@ -1,7 +1,7 @@
 "use client"
 
 import { ArrowDownIcon } from "lucide-react"
-import type { ComponentProps } from "react"
+import { createContext, useContext, useEffect, useState, type ComponentProps, type ReactNode } from "react"
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom"
 
 import { Button } from "@/components/ui/button"
@@ -9,8 +9,20 @@ import { cn } from "@/lib/utils"
 
 export type ConversationProps = ComponentProps<typeof StickToBottom>
 
+const ScrollAreaContext = createContext<HTMLElement | null>(null)
+
+/** The thread's scroll element, or `null` outside a conversation. Popups portaled out of the thread use it as collision boundary so they never cover what sits below it, like the composer. */
+export const useConversationScrollArea = () => useContext(ScrollAreaContext)
+
+function ScrollAreaProvider({ children }: { children: ReactNode }) {
+  const { scrollRef } = useStickToBottomContext()
+  const [area, setArea] = useState<HTMLElement | null>(null)
+  useEffect(() => setArea(scrollRef.current), [scrollRef])
+  return <ScrollAreaContext.Provider value={area}>{children}</ScrollAreaContext.Provider>
+}
+
 /** The only main scroll area of the chat. `use-stick-to-bottom` keeps the tail in view until the user scrolls up. */
-export const Conversation = ({ className, ...props }: ConversationProps) => (
+export const Conversation = ({ className, children, ...props }: ConversationProps) => (
   <StickToBottom
     className={cn("relative min-h-0 flex-1 overflow-y-hidden", className)}
     initial="instant"
@@ -18,7 +30,9 @@ export const Conversation = ({ className, ...props }: ConversationProps) => (
     role="log"
     aria-label="Conversación"
     {...props}
-  />
+  >
+    {(context) => <ScrollAreaProvider>{typeof children === "function" ? children(context) : children}</ScrollAreaProvider>}
+  </StickToBottom>
 )
 
 export const ConversationContent = ({
