@@ -85,6 +85,8 @@ def plan(dev: bool, ai_port: int, web_port: int, with_llm: bool) -> list[Proc]:
                 "8192",
                 "-np",
                 "2",
+                "--reasoning-budget",  # sin "pensar": respuesta directa (como en el slice)
+                "0",
             ),
             llama("embeddings", 8082, "bge-m3-Q8_0.gguf", "--embeddings", "--pooling", "cls"),
             llama("reranker", 8083, "bge-reranker-v2-m3-Q8_0.gguf", "--reranking"),
