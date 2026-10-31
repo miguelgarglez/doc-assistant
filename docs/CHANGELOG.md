@@ -2,6 +2,19 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
+## v0.13.0 · 2026-10-31
+- Facturas en lenguaje natural rehechas (ADR-011):
+  - Plan validado por esquema (valor, lista, contar, sumar).
+  - Personas y números resueltos en código: tildes, mayúsculas, erratas, NIF con guiones, números parciales o sin ceros.
+  - Columnas tipadas e indexadas para fechas e importes, y SQL sobre una lista cerrada de campos.
+  - Aclaración «¿te refieres a…?» con candidatas. Si se pregunta un valor, se responde un valor.
+  - Citas solo de las facturas seleccionadas.
+- Migración aditiva e idempotente al abrir la base (`facturas_q`, `partes_fts`). No cambia `SCHEMA_VERSION` ni el contrato.
+- Probado:
+  - 155 tests del servicio.
+  - Baterías con LLM real: 36/36 (antes 6/36, 6 falsas) y 33/33 adversariales (antes 7/33, 5 falsas).
+  - Índice sintético de 2.005 facturas: 0 falsas y 33 ms de parte determinista (p50).
+
 ## v0.11.0 · 2026-10-31
 - Chat reconstruido sobre AI SDK (`useChat` con un `ChatTransport` propio para `/ask/stream`) y AI Elements adaptados a Base UI: Prompt Input con adjuntos (pegar o arrastrar PDF o imagen), mensajes con Markdown (Streamdown), traza de pasos plegable, píldoras de cita y fuentes plegables que abren el fragmento, Shimmer, sugerencias, copiar y regenerar. Decisión por componente en ADR-010.
 - Layout de aplicación a 100dvh: navegación fija, el hilo es el único scroll, composer anclado; visor de citas lateral (hoja inferior en móvil).

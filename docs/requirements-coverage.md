@@ -26,9 +26,9 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 |---|---|---|---|---|
 | B1 | Subir la imagen de una factura | `POST /invoices/upload`; cola de subida de Fuentes y del chat (`UploadStore`) | Cumplido | Tests de API (incluido el 413); e2e de subida con estados, fallo y reintento (respuestas simuladas); humo real previo (6 subidas). |
 | B2 | Extracción estructurada fiable | `invoice_extract.py`: OCR → reglas Decimal → LLM solo para texto | Parcial | 6/6 facturas **sintéticas** sin discrepancias frente a su JSON. Las facturas reales aún no se han evaluado (lo decide Miguel). |
-| B3 | Incorporar las facturas al mismo índice y consultarlas en lenguaje natural | `chunk_invoice` en el mismo índice + tabla SQL; plan en `/ask` | Cumplido | Humo real: "importe total de F-2026-001" → 537.94 con cita. Los agregados ("suma del IVA de todas") se rechazan. |
+| B3 | Incorporar las facturas al mismo índice y consultarlas en lenguaje natural | `chunk_invoice` en el mismo índice + `facturas_q` tipada; plan validado y resolución en código (ADR-011) | Cumplido | Baterías propias con LLM real: 36/36 y 33/33 adversariales, 0 falsas (antes 6/36 y 7/33). Contar y sumar en SQL. 2.005 facturas sintéticas: 33 ms de parte determinista. |
 | B4 | Diseñar los campos y no inventar ninguno | Campos sin evidencia → `null`; puertas de suma e IVA → "revisar" | Cumplido | `test_review_regressions` (texto sin evidencia → null) y e2e del detalle de factura (campos, motivo e imagen). |
-| B5 | No responder nada que no figure en las facturas | Plan SQL ejecutado por código; un campo nulo o una factura inexistente → rechazo | Parcial | Tests de `run_plan`; aviso cuando la factura está en revisión. Sin evaluación adversarial. |
+| B5 | No responder nada que no figure en las facturas | Valores y citas solo de facturas seleccionadas por código; ambigüedad → «¿te refieres a…?»; sin caída al RAG | Parcial | 0 respuestas falsas en 84 preguntas (A, B y C, 33 adversariales) y tests de cada regla. Las baterías son propias y no están aprobadas como gold. |
 
 ## Restricciones
 
@@ -62,5 +62,10 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 | N2 | Documentar las elecciones | `decisions-log.md` | Cumplido | — |
 | N3 | Huecos del enunciado decididos | `docs/open-gaps.md` | Cumplido | — |
 | N5 | ZIP con código, README y arquitectura | `mise run package` | Parcial | Solo se ha probado el smoke falso, sin modelos. El paquete completo con smoke real está pendiente. |
+
+**v0.13.0 (facturas, ADR-011).**
+- Mejoran: B3 (consulta en lenguaje natural, con agregados) y B5 (evaluación adversarial, 0 falsas).
+- Pendientes: B5 sigue parcial hasta tener un gold aprobado; E-B1 sigue en "no".
+- Recuento: sin cambios, 17 cumplidas, 10 parciales y 4 no.
 
 **Resumen (31 filas; algunas agrupan varios requisitos): 17 cumplidas, 10 parciales, 4 no (R1.7, A2, C4/C5/E-C1, E-B1).** Los cuatro "no" son de acreditación y justificación, no de funcionalidad. Se cierran con el conjunto de evaluación aprobado, una medida del troceado y la justificación de los modelos frente al hardware.

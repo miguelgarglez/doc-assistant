@@ -102,3 +102,67 @@ Sustituye las partes restrictivas de ADR-007 (no instalar `ai` ni `streamdown`; 
 
 **Layout.** App shell a `100dvh` con navegación fija; el hilo del chat es el único scroll y el composer queda anclado. Comprobado por pruebas a 1440x900 y 1280x720 (el documento no desborda con respuesta y visor abiertos), también en Fuentes y Sistema. En móvil la navegación se pliega (Sheet) y el composer es usable en 390x844 (prueba de móvil); con teclado virtual real no se ha probado y queda como pendiente.
 - Confianza: alta en transporte y layout; media en las citas inline por frase, aplazadas a propósito.
+
+
+## ADR-011 Consultas de facturas: plan validado, resolución en código y aclaración (2026-10-31)
+
+Sustituye el plan SQL de ADR-002/ADR-006 para facturas. Un diagnóstico con 36 preguntas reales sobre el índice de trabajo dio 6/36 correctas y 6 respuestas falsas. Las causas fueron cuatro: el modelo copiaba nombres y números tal cual, de modo que una tilde o un cero bastaban para que no los encontrara; el SQL comparaba texto libre; una pregunta de valor devolvía una lista; y había citas de facturas que no se habían seleccionado.
+
+**Diseño.**
+- *Plan* (`invoice_query.py`): el LLM solo propone un JSON validado por esquema. Únicamente `intent` es obligatorio (valor, lista, contar, sumar, documentos); también puede llevar `numero`, `parte`, `campos`, `filtros`, `fecha_desde/hasta` y `tiene`. Las claves son opcionales para generar menos tokens: la latencia mediana bajó de 5,8 s a 3,5 s. Si el plan no valida, hay un reintento con la lista de errores. Si vuelve a fallar, se pide una aclaración. Nunca se cae al RAG general.
+- *Resolución en código* (`invoice_index.py`):
+  - Personas: comparación sin tildes, mayúsculas ni signos, con candidatas por trigramas FTS5 y puntuación por palabra (erratas incluidas). Se ordenan por nombre completo, luego por coincidencias exactas y luego por distancia. El NIF se normaliza (guiones y espacios fuera).
+  - Números: exacto, normalizado, sufijo de al menos 4 caracteres y grupos de dígitos sin ceros a la izquierda.
+  - Rol (emisor o cliente): sale de pistas léxicas de la pregunta, no del modelo; si dos pistas se solapan, gana la más larga.
+  - Años: solo los que aparecen en la pregunta. Un mes sin año vale para cualquier año.
+  - Campos: si el plan no los trae, se deducen de las palabras de la pregunta.
+- *Datos tipados*: la tabla derivada `facturas_q` guarda fechas ISO, importes en céntimos, claves normalizadas e índices; `partes_fts` es FTS5 con trigramas. El SQL se genera por código sobre una lista cerrada de columnas y con parámetros.
+- *Forma*:
+  - Si se pregunta un valor, se responde un valor por factura (hasta 10), nunca una lista. Una lista se da solo si se pide (20 y «y N más»). `contar` y `sumar` se calculan en SQL.
+  - Varias personas o facturas candidatas → «¿te refieres a…?» con las candidatas como sugerencias. Si el resto de filtros deja una sola, se elige esa (p. ej. «la de Lucía del 7 de marzo»).
+  - Solo se citan facturas seleccionadas y campos con valor (`check_grounding`).
+
+**Migración.** Es aditiva e idempotente. `facturas` no cambia y `SCHEMA_VERSION` sigue en 2, así que `ensure_schema` no aparta la base. Las tablas derivadas se crean con `IF NOT EXISTS`. `sync_derived` compara un hash por fila, reconstruye las filas que han cambiado y borra las huérfanas. Se ejecuta al abrir `InvoiceDB` y después de cada alta.
+
+Se probó sobre una copia del índice de trabajo:
+- Primera apertura: 35 ms (crea 7 tablas e índices y deriva 2 facturas).
+- Segunda apertura: 5 ms, sin cambios.
+- Hash de `facturas` idéntico antes y después.
+
+Volver a v0.12 es inocuo, porque el código anterior ignora las tablas nuevas.
+
+**Contrato.** No cambia (OpenAPI sin deriva). Una aclaración viaja como rechazo (`ok=false`) con un `reason` específico:
+- `invoice:aclaracion`
+- `invoice:parte_ambigua`
+- `invoice:factura_ambigua`
+- `invoice:parte_rol_distinto`
+- `invoice:parte_no_encontrada`
+- `invoice:factura_no_encontrada`
+- `invoice:sin_resultados`
+- `invoice:plan_invalido`
+
+El texto de la pregunta de aclaración va en `answer` y las facturas candidatas en `suggestions` (`doc` = número, `section` = "factura").
+
+**Evaluación** (LLM real de 4B, puertos aislados; las preguntas y las facturas no se publican):
+
+| Batería | Antes (v0.11) | Después |
+| --- | --- | --- |
+| A: 36 preguntas reales de diagnóstico | 6 correctas, 6 falsas | 36/36, 0 falsas |
+| B: 33 adversariales (nombres parecidos, dos personas con el mismo nombre, NIF con guiones o espacios, importes con coma y punto, erratas, roles, fechas sin año) | 7 correctas, 5 falsas | 33/33, 0 falsas |
+| C: índice sintético de 2.005 facturas, 15 preguntas | — | 10 correctas, 5 aclaraciones legítimas (había otra persona con los mismos apellidos), 0 falsas |
+
+En el enrutado, ninguna de 58 preguntas de documentos acaba en una respuesta de facturas: una entra en el plan por la palabra «emisor», y el plan la devuelve a documentos.
+
+Latencias:
+- Pregunta completa: p50 3,5 s, p95 6,5–8,1 s (antes, p50 4–6 s).
+- Vía de facturas sobre 2.005 facturas: p50 1,6 s, casi todo generación del plan.
+- Parte determinista (abrir y sincronizar, enrutar, resolver, SQL, dar forma) sobre 2.005 facturas: p50 33 ms y p95 43 ms en 240 ejecuciones.
+- Sincronización inicial de 2.000 filas: 0,28 s.
+
+**Riesgos.**
+- Las baterías A y B se usaron también para depurar, así que hay sobreajuste posible. C y el enrutado no se usaron.
+- Las pistas de rol y de campos están en español.
+- La sincronización recorre la tabla en cada apertura: unos 27 ms con 2.000 facturas, lineal. A partir de unas 50.000 convendría marcar las filas cambiadas con triggers.
+- Una fecha que ninguna regla reconoce queda fuera de los filtros por fecha.
+
+- Confianza: alta en que no inventa (todas las cifras salen de filas seleccionadas por código). Media en la cobertura de formulaciones, porque solo se ha medido con baterías propias.

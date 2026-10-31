@@ -19,7 +19,7 @@ Todo escucha en `127.0.0.1`. Nada sale de la máquina.
 - **Documentos:** PDF → texto por sección (pdfplumber) → fragmentos con `chunk_id` determinista → embeddings → SQLite; cada página se renderiza a PNG (pypdfium2) para el visor. Reingesta idempotente.
 - **Pregunta:** enrutador por reglas (¿factura o documentación?).
   - Documentación: vector ∪ BM25 → reranker → top-5 → LLM con salida JSON (responde o rechaza) → verificador de citas (la cita debe estar literalmente en el fragmento). Si no pasa → rechazo explícito.
-  - Facturas: el LLM solo traduce la pregunta a un plan JSON; el código lo ejecuta sobre la tabla SQL y cita nº de factura + campo. Campo nulo o factura inexistente → rechazo.
+  - Facturas (ADR-011): el LLM solo propone un plan JSON validado por esquema (intención valor/lista/contar/sumar, número, persona, campos, filtros, fechas). El código resuelve la persona (sin tildes ni mayúsculas, trigramas FTS5, erratas, NIF normalizado) y el número (exacto, normalizado, parcial, sin ceros), genera el SQL sobre una lista cerrada de columnas tipadas (`facturas_q`: fechas ISO, importes en céntimos) y da forma a la respuesta: un valor si se pide un valor, una lista solo si se pide una lista. Varias candidatas → «¿te refieres a…?» con sugerencias; plan inválido → un reintento y después aclaración, sin caer al RAG. Solo se citan las facturas seleccionadas.
 - **Factura (imagen):** OCR → reglas deterministas para importes (Decimal) → LLM solo para campos de texto → puertas de coherencia (suma e IVA). Si no cuadra → "revisar". Campos ausentes = `null`.
 
 ## Modularidad (puertos y adaptadores)
