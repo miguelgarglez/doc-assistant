@@ -168,8 +168,19 @@ ROUTE_WORDS = (
 
 def role_cue(question: str) -> str | None:
     q = f" {fold(question)} "
-    found = [r for r, cues in ROLE_CUES.items() if any(f" {c} " in q for c in cues)]
-    return found[0] if len(found) == 1 else None
+    spans = [
+        (m.start(), m.end(), r)
+        for r, cues in ROLE_CUES.items()
+        for c in cues
+        for m in re.finditer(re.escape(f" {c} "), q)
+    ]
+    # 'han emitido a X': overlapping cues, the one that reaches further (the preposition) wins
+    kept = {
+        r
+        for a, b, r in spans
+        if not any(a2 < b and a < b2 and b2 > b and r2 != r for a2, b2, r2 in spans)
+    }
+    return kept.pop() if len(kept) == 1 else None
 
 
 def is_invoice_question(question: str, con: sqlite3.Connection) -> bool:
@@ -201,6 +212,7 @@ class Plan:
     desde: str | None = None
     hasta: str | None = None
     tiene: list[str] = field(default_factory=list)
+    sin_anio: bool = False  # dates compare on MM-DD only
 
 
 def validate_plan(raw: Any) -> tuple[Plan | None, list[str]]:
@@ -359,6 +371,16 @@ def select(con: sqlite3.Connection, plan: Plan, question: str) -> Selection:
         parties = resolve_party(con, question)
         if not parties:
             return sel  # no party at all: filters alone decide
+    if len(parties) > 1 and (plan.filtros or plan.desde or plan.hasta or plan.tiene):
+        fitting = [
+            p
+            for p in parties
+            if query_numeros(
+                con, plan, Selection(numeros=sorted(p.numeros(cue) or p.numeros(None)))
+            )
+        ]
+        if len(fitting) == 1:
+            parties = fitting  # 'Lucía del 7 de marzo': only one Lucía has that invoice
     if len(parties) > 1:
         nums = sorted(set().union(*(p.numeros(cue) or p.numeros(None) for p in parties)))
         names = " o ".join(f"{p.nombre}" + (f" ({p.nif})" if p.nif else "") for p in parties[:5])
@@ -411,12 +433,14 @@ def query_numeros(con: sqlite3.Connection, plan: Plan, sel: Selection) -> list[s
         assert col in allowed and op in OPS
         where.append(f"q.{col} {OPS[op]} ?")
         params.append(val)
+    date = "substr(q.fecha_emision_iso, 6)" if plan.sin_anio else "q.fecha_emision_iso"
+    cut = 5 if plan.sin_anio else 0
     if plan.desde:
-        where.append("q.fecha_emision_iso >= ?")
-        params.append(plan.desde)
+        where.append(f"{date} >= ?")
+        params.append(plan.desde[cut:])
     if plan.hasta:
-        where.append("q.fecha_emision_iso <= ?")
-        params.append(plan.hasta)
+        where.append(f"{date} <= ?")
+        params.append(plan.hasta[cut:])
     for c in plan.tiene:
         assert c in FIELDS
         col = f"q.{AMOUNT_COLS[c]}" if c in AMOUNT_COLS else f"f.{c}"
@@ -482,7 +506,25 @@ def _role_fields(campos: list[str], rol: str | None, question: str) -> list[str]
     return list(dict.fromkeys(swap.get(c, c) for c in campos))
 
 
+YEAR_RE = re.compile(r"\b(?:19|20)\d{2}\b")
+
+
+def fix_years(plan: Plan, question: str) -> None:
+    """The model invents years ('marzo' -> 2025-03). Years come from the question only:
+    one year in the question overrides the plan; none means any year (month/day match)."""
+    if not (plan.desde or plan.hasta):
+        return
+    years = set(YEAR_RE.findall(question))
+    if len(years) == 1:
+        y = years.pop()
+        plan.desde = plan.desde and y + plan.desde[4:]
+        plan.hasta = plan.hasta and y + plan.hasta[4:]
+    elif not years:
+        plan.sin_anio = True
+
+
 def execute(con: sqlite3.Connection, plan: Plan, question: str) -> dict[str, Any]:
+    fix_years(plan, question)
     sel = select(con, plan, question)
     if sel.stop:
         return sel.stop

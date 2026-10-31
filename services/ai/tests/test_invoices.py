@@ -3,7 +3,13 @@
 import pytest
 
 from doc_assistant.adapters import AdapterError, FakeLLM
-from doc_assistant.invoice_query import is_invoice_question, plan_and_run, run_plan, validate_plan
+from doc_assistant.invoice_query import (
+    is_invoice_question,
+    plan_and_run,
+    role_cue,
+    run_plan,
+    validate_plan,
+)
 from doc_assistant.invoices import InvoiceDB
 
 LUCIA = {
@@ -339,3 +345,36 @@ def test_missing_campos_fall_back_to_the_words_of_the_question():
     con = make(LUCIA, TECNO)
     r = run_plan(con, {"intent": "valor", "parte": "Lucía Martín"}, "NIF de Lucía Martín")
     assert r["ok"] and "12345678-K" in r["answer"] and "B96060858" not in r["answer"]
+
+
+def test_years_come_from_the_question_not_the_model():
+    con = make(LUCIA, TECNO)
+    plan = {
+        "intent": "valor",
+        "parte": "12345678 K",
+        "fecha_desde": "2025-03-01",
+        "fecha_hasta": "2025-03-31",
+        "campos": ["importe_total"],
+    }
+    r = run_plan(con, plan, "total de la factura del NIF 12345678 K de marzo")
+    assert r["ok"] and "1706.60" in r["answer"]
+    r = run_plan(con, plan, "total de la factura del NIF 12345678 K de marzo de 2025")
+    assert not r["ok"]
+
+
+def test_filters_settle_an_ambiguous_name():
+    con = make(LUCIA, OTRA_LUCIA)
+    plan = {
+        "intent": "valor",
+        "parte": "Lucía",
+        "campos": ["importe_total"],
+        "fecha_desde": "2025-03-07",
+        "fecha_hasta": "2025-03-07",
+    }
+    r = run_plan(con, plan, "total de la factura de Lucía del 7 de marzo")
+    assert r["ok"] and "1706.60" in r["answer"] and "99.00" not in r["answer"]
+
+
+def test_longer_role_cue_wins():
+    assert role_cue("¿qué facturas se han emitido a Lucía Martín?") == "cliente"
+    assert role_cue("¿qué facturas ha emitido Lucía?") == "emisor"
