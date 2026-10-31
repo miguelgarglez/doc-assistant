@@ -106,7 +106,7 @@ Sustituye las partes restrictivas de ADR-007 (no instalar `ai` ni `streamdown`; 
 
 ## ADR-011 Consultas de facturas: plan validado, resolución en código y aclaración (2026-10-31)
 
-Sustituye el plan SQL de ADR-002/ADR-006 para facturas. Un diagnóstico con 36 preguntas reales sobre el índice de trabajo dio 6/36 correctas y 6 respuestas falsas. Las causas fueron cuatro: el modelo copiaba nombres y números tal cual, de modo que una tilde o un cero bastaban para que no los encontrara; el SQL comparaba texto libre; una pregunta de valor devolvía una lista; y había citas de facturas que no se habían seleccionado.
+Sustituye el plan SQL anterior para facturas (`architecture.md`, flujo de pregunta). Un diagnóstico con 36 preguntas reales sobre el índice de trabajo dio 6/36 correctas y 6 respuestas falsas. Las causas fueron cuatro: el modelo copiaba nombres y números tal cual, de modo que una tilde o un cero bastaban para que no los encontrara; el SQL comparaba texto libre; una pregunta de valor devolvía una lista; y había citas de facturas que no se habían seleccionado.
 
 **Diseño.**
 - *Plan* (`invoice_query.py`): el LLM solo propone un JSON validado por esquema. Únicamente `intent` es obligatorio (valor, lista, contar, sumar, documentos); también puede llevar `numero`, `parte`, `campos`, `filtros`, `fecha_desde/hasta` y `tiene`. Las claves son opcionales para generar menos tokens: la latencia mediana bajó de 5,8 s a 3,5 s. Si el plan no valida, hay un reintento con la lista de errores. Si vuelve a fallar, se pide una aclaración. Nunca se cae al RAG general.
