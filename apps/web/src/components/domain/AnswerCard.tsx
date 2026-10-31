@@ -24,13 +24,17 @@ export function AnswerCard({
   onSelectCitation,
 }: AnswerCardProps) {
   return (
-    <Card>
+    <Card data-testid="answer-card">
       <CardHeader>
         <CardTitle>Respuesta</CardTitle>
-        <CardDescription>{question}</CardDescription>
+        <CardDescription className="text-sm leading-relaxed">
+          {question}
+        </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <p className="text-sm leading-relaxed text-foreground">{answer}</p>
+      <CardContent className="flex flex-col gap-5">
+        <p className="text-sm leading-relaxed text-foreground sm:text-[0.95rem]">
+          {answer}
+        </p>
         <CitationChips
           citations={citations}
           selectedChunkId={selectedChunkId}
