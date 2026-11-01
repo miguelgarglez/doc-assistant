@@ -1,5 +1,7 @@
 import json
+import os
 import sqlite3
+import stat
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
@@ -104,3 +106,25 @@ def test_wal_initialization_retries_when_database_is_locked(tmp_path, monkeypatc
     store.record("r", "c", "now", {"answer": "ok"})
     assert store.get("c", "r") == {"answer": "ok"}
     assert len(attempts) == 1
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX file permissions")
+def test_new_history_file_is_private_even_with_permissive_umask(tmp_path):
+    path = tmp_path / "history.db"
+    old_umask = os.umask(0)
+    try:
+        store = HistoryStore(path)
+        store.record("r", "c", "now", {"question": "private"})
+    finally:
+        os.umask(old_umask)
+    assert stat.S_IMODE(path.stat().st_mode) == 0o600
+    assert store.get("c", "r") == {"question": "private"}
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX file permissions")
+def test_existing_history_file_permissions_are_not_changed(tmp_path):
+    path = tmp_path / "history.db"
+    path.touch(mode=0o640)
+    path.chmod(0o640)
+    HistoryStore(path)
+    assert stat.S_IMODE(path.stat().st_mode) == 0o640

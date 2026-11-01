@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import time
 from collections.abc import Iterator
@@ -16,6 +17,12 @@ class HistoryStore:
 
     def __init__(self, path: Path) -> None:
         self.path = path
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        except FileExistsError:
+            pass
+        else:
+            os.close(fd)
         with self._connect() as db:
             deadline = time.monotonic() + 10
             while True:
