@@ -22,3 +22,16 @@ La división por función permite cambiar cada modelo sin sustituir toda la apli
 - Sustituir embeddings o reranker exige reindexar o repetir la recuperación según corresponda. Comparar recuperación y citas con un conjunto aprobado antes de cambiar esos modelos.
 
 No se conocen comparaciones documentadas que permitan presentar estas alternativas como descartadas por resultados. C4/C5/E-C1 y E-B2 siguen abiertos hasta disponer de esa evidencia.
+
+## Muestra de memoria residente (1 de noviembre)
+
+En el Mac del README se arrancaron los cuatro modelos de `scripts/dev.py` por separado en los puertos 8181–8184, con los mismos argumentos del plan y `llama-server` ya instalado, versión 0.8.0 (compilación 11960). Esta compilación no es la b12020 fijada para el paquete. Tras recibir `/health` de los cuatro, se consultó `ps -o pid,pgid,rss -p PID`; luego se hizo una petición de texto sintética al LLM y se repitió la consulta. RSS se expresa aquí en MiB a partir de KiB informados por `ps`.
+
+| Proceso | Tras cargar | Tras inferencia del LLM |
+|---|---:|---:|
+| LLM | 2.961 MiB | 3.043 MiB |
+| Embeddings | 325 MiB | 325 MiB |
+| Reranker | 620 MiB | 617 MiB |
+| OCR | 1.791 MiB | 1.791 MiB |
+
+Son dos instantáneas, no el pico de una carga completa; RSS puede incluir páginas compartidas y no permite sumar sin más ni separar memoria GPU en este Mac de memoria unificada. No hubo OCR, recuperación ni trabajo concurrente durante la consulta. La versión de llama.cpp, el contexto y la carga afectan los resultados. Por eso E-B2 sigue parcial: faltan pico de memoria y carga representativa con la compilación de entrega. Los cuatro procesos se cerraron por sus PID y sus puertos quedaron libres.
