@@ -406,6 +406,7 @@ def _ask_events(
             "citations": citations,
             "ok": checked.ok,
             "reason": checked.reason,
+            "details": checked.details,
         }
     latencies["verify"] = round(time.perf_counter() - t4, 4)
 

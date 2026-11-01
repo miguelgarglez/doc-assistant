@@ -98,6 +98,7 @@ def test_private_trace_captures_scores_without_changing_events(
     assert candidate["text_sha256"] == hashlib.sha256(chunk["text"].encode()).hexdigest()
     assert any(c["vector_score"] is not None for c in trace["candidates"])
     assert trace["verification"]["ok"] is True
+    assert trace["verification"]["details"]["citation_modes"] == ["literal"]
     assert trace["verification"]["citations"][0]["quote"] == "24 V"
     assert all("candidates" not in data for _, data in events)
     assert events[-1][1]["ok"] is True
@@ -146,13 +147,20 @@ def test_ask_false_citation_rejected(
             ],
         }
     )
-    result = ask(
-        config_path,
-        "¿Voltaje?",
-        embedder=fake_embedder,
-        reranker=FakeReranker(),
-        llm=llm,
+    trace: dict = {}
+    events = list(
+        ask_events(
+            config_path,
+            "¿Voltaje?",
+            embedder=fake_embedder,
+            reranker=FakeReranker(),
+            llm=llm,
+            trace=trace,
+        )
     )
+    result = events[-1][1]
+    assert trace["verification"]["ok"] is False
+    assert trace["verification"]["details"]["citation_modes"] == []
     assert result["ok"] is False
     assert "No dispongo" in result["answer"]
     assert result["reason"].startswith("verify") or "quote" in result["reason"]
