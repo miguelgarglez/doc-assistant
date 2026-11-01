@@ -4,7 +4,7 @@ import copy
 import json
 import time
 import uuid
-from collections.abc import AsyncIterator, Callable, Iterator
+from collections.abc import AsyncIterator, Callable, Generator, Iterator
 from contextlib import asynccontextmanager, closing
 from datetime import UTC, datetime
 from pathlib import Path
@@ -475,7 +475,7 @@ def queued_ask_stream(
     request_id: str | None = None,
     *,
     trace: dict[str, Any] | None = None,
-) -> Iterator[str]:
+) -> Generator[str, None, None]:
     started = time.monotonic()
     started_at = datetime.now(UTC).isoformat()
     request_id = request_id or str(uuid.uuid4())

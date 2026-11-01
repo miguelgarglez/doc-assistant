@@ -520,3 +520,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 ## 01-Nov 11:17 CET · Suite del servicio
 - Suite completa con el código de este worktree: 364 pruebas pasadas, 35 live omitidas y una advertencia conocida de Starlette. No sustituye `mise run check`, e2e ni auditoría de una versión nueva.
+
+## 01-Nov 11:18 CET · Registro interno del stream
+- `recorded_ask_stream` cierra el generador antes de guardar la traza final, incluso ante desconexión. La API no lo activa. Un fallo de escritura se propaga después de que pueda haberse emitido `done`; queda pendiente resolver su comunicación antes de integrar la persistencia.
+- Pasan 12 pruebas de stream y cola, Ruff y mypy. La primera pasada de Ruff detectó imports desordenados y la de mypy una anotación demasiado general; corregidas ambas.

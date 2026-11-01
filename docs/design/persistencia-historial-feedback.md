@@ -31,6 +31,8 @@ La huella `chunk_index_sha256` cubre las filas de fragmentos documentales en la 
 
 Una prueba exploratoria ejecutó el mismo recorrido y serialización de la huella sobre SQLite en memoria, con fragmentos sintéticos de texto repetido. Tras una pasada de calentamiento, diez mediciones dieron p50/p95 de 5,23/5,40 ms para 1.000 filas, 55,40/56,64 ms para 10.000 y 561,73/565,47 ms para 100.000. El coste creció aproximadamente con el número de filas en esta muestra. No incluye lectura desde disco, búsquedas, concurrencia ni una petición completa; tampoco representa la distribución de textos de un índice real. El script y las muestras están en `_agents/night2/`. Antes de activar la traza hay que medir índices representativos y decidir cómo evitar un recorrido completo por petición si el coste resulta excesivo.
 
+El adaptador interno `recorded_ask_stream` cierra el generador antes de guardar su traza, también si el consumidor se desconecta. No lo usa ningún endpoint. Un error al guardar se propaga después de que pueda haberse emitido `done`, por lo que aún falta decidir cómo comunicar un fallo de persistencia sin prometer al cliente que se guardó. Una petición cuyo generador nunca se inicia no produce registro.
+
 El almacén y el colector son piezas aisladas. Antes de activar la persistencia faltan la política de privacidad y retención, el tratamiento de errores y desconexiones de extremo a extremo, los endpoints, la interfaz y la medición del coste sobre una petición completa.
 
 La huella `config_sha256` identifica los bytes del YAML que se leyeron para esa petición, aunque el archivo cambie después. No identifica los valores de variables de entorno expandidas ni demuestra qué archivos de modelo están cargados.
