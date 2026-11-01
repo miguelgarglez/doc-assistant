@@ -57,3 +57,35 @@ test("permite reintentar el detalle y conserva el aviso si falla el guardado", a
   await expect(page.getByText("No se pudo guardar; se ha restaurado el estado anterior.")).toBeVisible()
   await expect(page.getByRole("button", { name: /Aviso de prueba/ })).toBeVisible()
 })
+
+for (const theme of ["industrial", "neutral"]) {
+  for (const mode of ["light", "dark"]) {
+    test(`contraste de revisión, Sistema e historial: ${theme} ${mode}`, async ({ page }) => {
+      await page.addInitScript(([selectedTheme, selectedMode]) => {
+        localStorage.setItem("doc-assistant.theme", selectedTheme)
+        localStorage.setItem("doc-assistant.mode", selectedMode)
+      }, [theme, mode])
+      await mockBackend(page)
+      const item = { feedback_id: "f", request_id: "r", conversation_id: "c", created_at: "2026-11-01T10:00:00Z", kind: "incorrecta", comment: "Aviso", status: "nuevo", expected_answer: null, trace: {} }
+      await page.route("**/api/history/status", (route) => route.fulfill({ json: { active: true, enabled: true, initialization_error: null, retention_days: 30, pending: 0, failures: [] } }))
+      await page.route("**/api/history/requests?**", (route) => route.fulfill({ json: [{ request_id: "r", conversation_id: "c", created_at: "2026-11-01T10:00:00Z", kind: "answer", status: "completed", elapsed_s: 1 }] }))
+      await page.route("**/api/history/conversations?**", (route) => route.fulfill({ json: [{ conversation_id: "c", question: "Consulta", updated_at: "2026-11-01T10:00:00Z", count: 1 }] }))
+      await page.route("**/api/history/feedback**", (route) => {
+        const path = new URL(route.request().url()).pathname
+        if (path.endsWith("counts")) return route.fulfill({ json: { nuevo: 1 } })
+        if (path.endsWith("original")) return route.fulfill({ json: { question: "Consulta", result: { answer: "Respuesta", citations: [] } } })
+        if (path.endsWith("/f")) return route.fulfill({ json: item })
+        return route.fulfill({ json: [item] })
+      })
+      await page.goto("/revision")
+      await expect(page.getByRole("heading", { name: "Detalle del aviso" })).toBeVisible()
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([])
+      await page.goto("/sistema")
+      await expect(page.getByRole("button", { name: "Copiar identificador r" })).toBeVisible()
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([])
+      await page.getByRole("button", { name: "Historial" }).click()
+      await expect(page.getByRole("dialog", { name: "Historial" }).getByText("Consulta", { exact: true })).toBeVisible()
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([])
+    })
+  }
+}
