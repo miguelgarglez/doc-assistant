@@ -217,9 +217,10 @@ class HistoryStore:
             rows = db.execute(
                 "SELECT feedback_id, request_id, created_at, kind, comment, trace_json, status, expected_answer "
                 "FROM feedback WHERE conversation_id = ? AND status = 'revisado' "
-                "AND expected_answer IS NOT NULL AND length(trim(expected_answer)) > 0 "
+                "AND expected_answer IS NOT NULL "
                 "ORDER BY created_at, feedback_id",
                 (conversation_id,),
             )
             for row in rows:
-                yield json.dumps(self._feedback_row(row), ensure_ascii=False) + "\n"
+                if row[7].strip():
+                    yield json.dumps(self._feedback_row(row), ensure_ascii=False) + "\n"

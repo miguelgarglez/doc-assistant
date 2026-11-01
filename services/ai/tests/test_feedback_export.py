@@ -26,3 +26,17 @@ def test_export_command_does_not_create_missing_database(tmp_path):
         main([str(path), "--conversation-id", "one"])
     assert exc.value.code == 2
     assert not path.exists()
+
+
+def test_export_omits_whitespace_only_expected_answers(tmp_path, capsys):
+    path = tmp_path / "history.db"
+    store = HistoryStore(path)
+    for index, answer in enumerate((" ", "\t\n", "\u00a0", " respuesta ")):
+        identifier = str(index)
+        store.record(identifier, "one", identifier, {"question": identifier})
+        assert store.add_feedback(identifier, "one", identifier, identifier, "otro", None)
+        assert store.set_expected_answer("one", identifier, answer)
+        assert store.set_feedback_status("one", identifier, "revisado")
+    assert main([str(path), "--conversation-id", "one"]) == 0
+    lines = capsys.readouterr().out.splitlines()
+    assert [json.loads(line)["expected_answer"] for line in lines] == [" respuesta "]

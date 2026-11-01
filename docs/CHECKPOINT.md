@@ -497,3 +497,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 11:12 CET · Exportación local de feedback
 - El módulo `doc_assistant.feedback_export` escribe JSONL en stdout para una conversación y exige una base existente. Solo incluye feedback revisado con respuesta esperada; puede contener datos confidenciales y no aprueba gold. Al abrir la base puede aplicar migraciones.
 - Pasan 15 pruebas de historial y exportación, Ruff y mypy. La persistencia sigue desconectada de la API.
+
+## 01-Nov 11:13 CET · Respuestas vacías en la exportación
+- La exportación excluye respuestas esperadas formadas solo por espacios Unicode, tabuladores o saltos de línea. SQLite `trim` no cubría todos esos caracteres. Una prueba del comando reprodujo el defecto antes de la corrección y conserva el texto válido sin modificar.
+- Pasan 16 pruebas de historial y exportación, Ruff, formato y mypy. La primera comprobación de Ruff desde la raíz aplicó otra configuración y tres comandos posteriores usaron una ruta incorrecta; repetidos desde el servicio con ruta absoluta pasaron. La persistencia sigue desconectada.
