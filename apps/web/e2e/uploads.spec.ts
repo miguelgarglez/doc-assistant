@@ -70,6 +70,37 @@ test.describe("añadir fuentes", () => {
     await expect(toast(page)).toHaveCount(0)
   })
 
+  test("el aviso y otras notificaciones caben juntos en una ventana baja", async ({ page }) => {
+    await mockBackend(page)
+    await page.route("**/api/history/status", (route) => route.fulfill({ json: {
+      active: false, enabled: true, retention_days: 30, pending: 0, initialization_error: null,
+      failures: [{ request_id: "prueba-sintetica", error: "OSError" }],
+    } }))
+    await page.goto("/")
+    await openDialog(page)
+    await page.getByTestId("sources-file-input").setInputFiles(Array.from({ length: 8 }, (_, n) => ({
+      name: `${n}.txt`, mimeType: "text/plain", buffer: Buffer.from("prueba"),
+    })))
+    await page.getByRole("link", { name: "Sistema" }).click()
+    const copyButton = page.getByRole("button", { name: "Copiar identificador prueba-sintetica" })
+    await copyButton.click()
+    const copyToast = page.getByText(/Identificador copiado|No se pudo copiar el identificador/)
+    await expect(copyToast).toHaveCount(1)
+    await copyButton.click()
+    await expect(copyToast).toHaveCount(2)
+    await page.setViewportSize({ width: 375, height: 320 })
+    await copyToast.first().hover()
+    await page.waitForTimeout(500)
+    for (const element of [toast(page), copyToast.first(), copyToast.last()]) {
+      const box = await element.boundingBox()
+      expect(box).not.toBeNull()
+      expect(box!.x).toBeGreaterThanOrEqual(0)
+      expect(box!.y).toBeGreaterThanOrEqual(0)
+      expect(box!.x + box!.width).toBeLessThanOrEqual(375)
+      expect(box!.y + box!.height).toBeLessThanOrEqual(320)
+    }
+  })
+
   test("botón grande en la barra lateral y diálogo con zona de suelta", async ({ page }) => {
     await mockBackend(page)
     await page.goto("/")

@@ -119,7 +119,7 @@ export function UploadToastContent() {
           </Button>
         ) : null}
       </header>
-      <ul className="flex max-h-[min(15rem,calc(100dvh-8rem))] flex-col divide-y divide-border/60 overflow-y-auto" aria-live="polite">
+      <ul className="flex max-h-[min(15rem,calc(100dvh_-_12rem))] flex-col divide-y divide-border/60 overflow-y-auto" aria-live="polite">
         {listed.map((item) => (
           <Row item={item} key={item.id} />
         ))}

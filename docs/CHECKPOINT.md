@@ -411,3 +411,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 - La API mantiene los códigos anteriores y añade motivo y límite cuando corresponde. La interfaz diferencia PDF protegido o ilegible, límites, servicio ocupado, espera agotada y fallo interno; solo ofrece reintento para fallos transitorios. El procesamiento comunica páginas y fragmentos y solicita embeddings en lotes de 32.
 - El PDF sintético de 80 páginas volvió a subir con el modelo real y 160 fragmentos. Pasaron 13 pruebas focalizadas de subida y axe en los cuatro modos tras corregir el contraste del texto de error. Quedan la verificación completa, las capturas restantes y la auditoría final.
+
+## 01-Nov 16:20 CET · Avisos en ventana baja
+
+- La prueba con varias notificaciones detectó que la lista de subida se recortaba en una ventana de 320 píxeles de alto. Se corrigió el cálculo de altura y se comprobó tres veces con ocho errores y dos avisos simultáneos. Las pasadas completas anteriores al ajuste no cuentan para el candidato final.
