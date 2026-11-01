@@ -318,7 +318,12 @@ def test_invoice_trace_survives_planner_failure(config_path, fake_embedder, monk
     from doc_assistant.application.ports.models import AdapterBusy
 
     module = importlib.import_module("doc_assistant.ask")
-    monkeypatch.setattr(module, "list_sources", lambda cfg: [{"kind": "invoice"}])
+
+    class Sources:
+        def list_sources(self):
+            return [{"kind": "invoice"}]
+
+    monkeypatch.setattr(module.bootstrap, "source_service", lambda cfg: Sources())
     monkeypatch.setattr(module, "classify", lambda question, sources: ("rag", []))
 
     def fail(config_path, question, *, llm, trace):

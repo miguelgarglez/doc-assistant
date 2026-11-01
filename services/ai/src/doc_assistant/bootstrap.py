@@ -16,10 +16,12 @@ from doc_assistant.application.health import check_components
 from doc_assistant.application.ingest.jobs import IngestJobs
 from doc_assistant.application.ports.health import ProbeResult
 from doc_assistant.application.ports.models import LLM, Embedder, OcrPort, Reranker
+from doc_assistant.application.sources import SourceService
 from doc_assistant.config import AppConfig, load_config
 from doc_assistant.infra.health.probes import probe_index, probe_llama
 from doc_assistant.infra.models.http import HttpEmbedder, HttpLLM, HttpReranker, LlamaOCR, OllamaOCR
 from doc_assistant.infra.pdf.service import PdfService
+from doc_assistant.infra.sources.sqlite import SqliteSourceRepository
 
 
 def build_ocr(cfg: AppConfig) -> OcrPort:
@@ -51,6 +53,10 @@ def component_health(cfg: AppConfig) -> list[ProbeResult]:
             lambda: probe_index(cfg.db),
         ]
     )
+
+
+def source_service(cfg: AppConfig) -> SourceService:
+    return SourceService(SqliteSourceRepository(cfg.db, cfg.data_dir, cfg.embeddings.dim or 8))
 
 
 def lifespan_for(config_path: Path) -> Callable[[FastAPI], AbstractAsyncContextManager[None]]:

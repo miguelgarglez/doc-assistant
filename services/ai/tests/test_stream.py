@@ -29,7 +29,6 @@ from doc_assistant.domain.answers.partial_json import FieldStreamer
 from doc_assistant.infra.models.http import HttpLLM
 from doc_assistant.infra.storage.chunks import ChunkStore
 from doc_assistant.ingest import save_and_ingest_pdf
-from doc_assistant.sources import list_sources
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -218,7 +217,8 @@ def test_stream_busy_model_reports_retryable_error(
 )
 def test_classify(config_path: Path, synthetic_pdf: Path, question: str, intent: str) -> None:
     seed(config_path, synthetic_pdf)
-    assert classify(question, list_sources(load_config(config_path)))[0] == intent
+    sources = bootstrap_module.source_service(load_config(config_path)).list_sources()
+    assert classify(question, sources)[0] == intent
 
 
 @pytest.mark.parametrize(

@@ -20,12 +20,9 @@ from doc_assistant.application.ports.pdf import PdfPort
 from doc_assistant.ask import ask
 from doc_assistant.ask_schemas import AskRequest, AskResponse
 from doc_assistant.ask_stream import STREAM_SCHEMA, queued_ask_stream
-from doc_assistant.bootstrap import component_health, lifespan_for
+from doc_assistant.bootstrap import component_health, lifespan_for, source_service
 from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
 from doc_assistant.invoices import invoice_image, list_invoices, upload_invoice
-from doc_assistant.sources import find_source, list_sources, remove_source
-from doc_assistant.sources import source_chunks as fetch_source_chunks
-from doc_assistant.sources import source_page as fetch_source_page
 
 DEFAULT_CONFIG = Path(__file__).resolve().parents[4] / "config/config.yaml"
 ASK_QUEUE_TIMEOUT_S = 60.0
@@ -462,13 +459,13 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
 
     @app.get("/sources", response_model=list[Source])
     def sources(request: Request) -> Any:
-        return list_sources(request.app.state.config)
+        return source_service(request.app.state.config).list_sources()
 
     @app.get("/sources/{source_id}/chunks", response_model=list[SourceChunk])
     def source_chunks(source_id: str, request: Request) -> Any:
         return [
             SourceChunk.model_validate(row)
-            for row in fetch_source_chunks(request.app.state.config, source_id)
+            for row in source_service(request.app.state.config).chunks(source_id)
         ]
 
     @app.get(
@@ -507,7 +504,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         request: Request,
     ) -> Any:
         cfg = request.app.state.config
-        source = find_source(cfg, source_id)
+        source = source_service(cfg).find(source_id)
         if source is None:
             return upload_error("source_not_found", "Source does not exist", 404)
         if source["kind"] != "pdf":
@@ -529,10 +526,11 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
     @app.delete("/sources/{source_id}", status_code=204, responses={404: {"model": ErrorBody}})
     def delete_source(source_id: str, request: Request) -> Response:
         cfg = request.app.state.config
-        source = find_source(cfg, source_id)
+        sources_service = source_service(cfg)
+        source = sources_service.find(source_id)
         if source is None:
             return upload_error("source_not_found", "Source does not exist", 404)
-        remove_source(cfg, source)
+        sources_service.remove(source)
         return Response(status_code=204)
 
     @app.post(
@@ -542,7 +540,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
     )
     def reindex_source(source_id: str, request: Request) -> Any:
         cfg = request.app.state.config
-        source = find_source(cfg, source_id)
+        source = source_service(cfg).find(source_id)
         if source is None:
             return upload_error("source_not_found", "Source does not exist", 404)
         if source["kind"] != "pdf" or not source["file"]:
@@ -556,7 +554,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         responses={200: {"content": {"image/png": {}}}, 404: {"model": ErrorBody}},
     )
     def source_page(doc_id: str, n: int, request: Request) -> Response:
-        png = fetch_source_page(request.app.state.config, doc_id, n)
+        png = source_service(request.app.state.config).page(doc_id, n)
         if png is None:
             return JSONResponse(
                 status_code=404,

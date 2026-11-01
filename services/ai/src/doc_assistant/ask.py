@@ -31,7 +31,6 @@ from doc_assistant.domain.answers.partial_json import FieldStreamer
 from doc_assistant.domain.answers.verifier import verify
 from doc_assistant.infra.storage.chunks import ChunkStore
 from doc_assistant.invoices import ask_invoices
-from doc_assistant.sources import list_sources, meta_chunks
 
 ANSWER_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -205,7 +204,8 @@ def _ask_events(
 
     t = time.perf_counter()
     yield _step("route", "running", "Analizando la pregunta")
-    sources = list_sources(cfg)
+    sources_service = bootstrap.source_service(cfg)
+    sources = sources_service.list_sources()
     intent, matched = classify(question, sources)
     latencies["route"] = round(time.perf_counter() - t, 4)
     yield _step(
@@ -218,7 +218,7 @@ def _ask_events(
     if intent != "rag":
         t = time.perf_counter()
         yield _step("meta", "running", "Leyendo el índice de fuentes")
-        result = answer_meta(meta_chunks(cfg), intent, matched, sources, question)
+        result = answer_meta(sources_service.meta_chunks(), intent, matched, sources, question)
         latencies["meta"] = round(time.perf_counter() - t, 4)
         yield _step(
             "meta",

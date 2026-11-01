@@ -11,10 +11,10 @@ from doubles import FakeEmbedder
 from markup import SECTIONS, assert_segments_tile, assert_valid_markdown, make_pdf
 
 from doc_assistant.application.answers.meta import answer_meta, classify
+from doc_assistant.bootstrap import source_service
 from doc_assistant.config import load_config
 from doc_assistant.domain.answers.answer_markup import md_escape, section_label, split_heading
 from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
-from doc_assistant.sources import list_sources, meta_chunks
 
 
 @pytest.mark.parametrize(
@@ -51,10 +51,11 @@ def indexed(config_path: Path, tmp_path: Path, invoice_json: Path) -> Path:
 
 def meta(config_path: Path, question: str) -> dict[str, Any]:
     cfg = load_config(config_path)
-    sources = list_sources(cfg)
+    service = source_service(cfg)
+    sources = service.list_sources()
     intent, matched = classify(question, sources)
     assert intent != "rag", question
-    return answer_meta(meta_chunks(cfg), intent, matched, sources, question)
+    return answer_meta(service.meta_chunks(), intent, matched, sources, question)
 
 
 QUESTIONS = [
