@@ -22,3 +22,10 @@ Estas decisiones requieren la aprobación de Miguel. Las pruebas sintéticas no 
 - **Opciones:** despliegue local de un usuario; SSO con permisos por documento; separación adicional por instalación o inquilino.
 - **Recomendación:** para varios usuarios, SSO y control de acceso en el servicio y en la recuperación de documentos. Elegir el aislamiento físico o lógico tras definir los límites de confianza.
 - **Impacto:** determina el modelo de datos, la operación y las pruebas de aislamiento. El servicio actual no autentica usuarios.
+
+## Binarios para verificar el ZIP de entrega
+
+- **Decidir:** autorizar la descarga y el uso de los archivos fijados de llama.cpp para el recorrido del ZIP, o facilitar los tres archivos `b12020` ya descargados.
+- **Opciones:** permitir al empaquetador descargar los archivos y verificarlos por SHA256; colocar los archivos correspondientes en `vendor/archives/`; aplazar la prueba completa.
+- **Recomendación:** usar los archivos fijados y verificar su SHA256 antes de ejecutar el recorrido en puertos propios.
+- **Impacto:** la autorización nocturna limita las instalaciones a dependencias de lockfiles. El empaquetador descarga automáticamente binarios ausentes y el setup los instala; por eso no se ha ejecutado el ZIP completo. El `llama-server` disponible en el equipo es de otra compilación y no demuestra el contenido del ZIP.
