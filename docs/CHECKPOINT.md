@@ -356,3 +356,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - El panel permite buscar, abrir y borrar conversaciones; Sistema muestra la cola de guardado y la revisión humana. El feedback solo incluye contexto si se solicita. La cola de escrituras es volátil ante reinicios.
 - El check completo reutilizó las dependencias existentes: 392 pruebas del servicio y 26 de scripts pasaron, con 35 live omitidas; lint, tipos, contrato y build correctos. El build utilizó temporalmente una raíz de Turbopack ampliada.
 - El humo con modelos locales usó fuentes sintéticas y produjo una respuesta documental y otra de factura con citas, una aclaración y un rechazo. Las cuatro consultas quedaron guardadas. Una repetición completa en una sola ejecución verificó las cuatro consultas guardadas y un aviso revisado y exportado. La prueba no acredita precisión general.
+
+## 01-Nov 14:15 CET · Recuperación y revisión de interfaz
+
+- Si SQLite no abre al arrancar, la cola conserva las consultas y reintenta; Sistema distingue ese fallo de una desactivación. Una prueba integrada verifica la recuperación, el `request_id` y el stream intacto. La cola sigue siendo volátil ante reinicios.
+- Paginación probada con 101 conversaciones y 101 avisos. Un fixture derivado del humo sintético restaura dos respuestas con citas, una aclaración y un rechazo. Los formularios usan componentes shadcn sobre Base UI y las vistas focalizadas pasan axe.
