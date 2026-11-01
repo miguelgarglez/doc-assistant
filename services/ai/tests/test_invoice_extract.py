@@ -12,6 +12,23 @@ from doc_assistant.adapters import FakeEmbedder, FakeLLM, FakeOCR
 from doc_assistant.api import create_app
 from doc_assistant.ask import ask
 from doc_assistant.invoice_extract import check_gates, extract_amounts, extract_invoice
+
+
+def test_amount_labels_with_colons_keep_values_and_evidence():
+    ocr = "Base imponible: 100,00 EUR\nIVA 21%: 21,00 EUR\nTOTAL: 121,00 EUR"
+    amounts, evidence, _ = extract_amounts(ocr)
+    assert (amounts["subtotal"], amounts["vat_total"], amounts["total"]) == (
+        "100.00",
+        "21.00",
+        "121.00",
+    )
+    assert all(
+        evidence[field] in ocr
+        for field in ("base_imponible_total", "cuota_iva_total", "importe_total")
+    )
+    assert check_gates(amounts) == ("ok", None)
+
+
 from doc_assistant.invoices import InvoiceDB, upload_invoice
 from doc_assistant.store import ChunkStore
 

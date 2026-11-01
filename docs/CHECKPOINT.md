@@ -299,3 +299,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Copiado el borrador privado sin aprobar y añadidos 11 casos sintéticos a una copia ampliada. El caso de aclaración queda aparte porque el esquema binario no representa esa salida.
 - Una ejecución con modelos locales sobre dos PDF y tres imágenes sintéticas obtuvo 7 coincidencias de 12 con un oráculo limitado. Las tres facturas quedaron en revisión por importes incompletos y cinco preguntas no cumplieron la expectativa. El informe de `evidence/evaluacion-sintetica/` conserva los límites y resultados; no se evaluaron facturas reales.
 
+## 01-Nov 03:27 CET · Etiquetas de importes con dos puntos
+- El OCR de una imagen sintética conservó las etiquetas y cantidades; el extractor no aceptaba dos puntos tras las etiquetas de base, IVA y total. La corrección reconoce ese separador y conserva la evidencia literal.
+- Una regresión fallaba con el patrón anterior; tras el cambio pasaron 120 pruebas focalizadas y se omitieron 35 live. Falta repetir la batería sintética completa y los checks de entrega.
+
