@@ -15,11 +15,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("database", type=Path, help="existing history database")
     parser.add_argument("--conversation-id", required=True)
     parser.add_argument("--feedback-id", required=True)
+    parser.add_argument("--confirmed-error", action="store_true", help="confirm the reported error")
+    parser.add_argument(
+        "--confirmed-no-sensitive-data",
+        action="store_true",
+        help="confirm that the comment and expected answer contain no sensitive data",
+    )
     args = parser.parse_args(argv)
     if not args.database.is_file():
         parser.error("history database does not exist or is not a file")
     if not args.conversation_id.strip() or not args.feedback_id.strip():
         parser.error("conversation and feedback IDs must not be empty")
+    if not args.confirmed_error or not args.confirmed_no_sensitive_data:
+        parser.error("error and privacy confirmations are required")
     answer = sys.stdin.read()
     if not answer.strip():
         parser.error("expected answer on stdin must not be empty")
