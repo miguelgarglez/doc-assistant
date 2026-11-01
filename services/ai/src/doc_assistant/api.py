@@ -404,6 +404,8 @@ def ask_stream_events(
 ) -> Iterator[str]:
     """Translate pipeline events into the SSE contract (see docs/streaming.md)."""
     request_id = request_id or str(uuid.uuid4())
+    if trace is not None:
+        trace["request_id"] = request_id
     try:
         with closing(ask_events(config_path, question, stream=True, trace=trace)) as events:
             yield from _translate_ask_events(events, request_id)
@@ -456,10 +458,12 @@ def queued_ask_stream(
     trace: dict[str, Any] | None = None,
 ) -> Iterator[str]:
     started = time.monotonic()
+    request_id = request_id or str(uuid.uuid4())
     if trace is not None:
         trace.update(
             {
                 "trace_schema_version": 1,
+                "request_id": request_id,
                 "question": question,
                 "steps": [],
                 "started_at": datetime.now(UTC).isoformat(),
