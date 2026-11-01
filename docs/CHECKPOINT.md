@@ -303,7 +303,12 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - El OCR de una imagen sintética conservó las etiquetas y cantidades; el extractor no aceptaba dos puntos tras las etiquetas de base, IVA y total. La corrección reconoce ese separador y conserva la evidencia literal.
 - Una regresión fallaba con el patrón anterior; tras el cambio pasaron 120 pruebas focalizadas y se omitieron 35 live. Falta repetir la batería sintética completa y los checks de entrega.
 
-## 01-Nov 03:29 CET · Repetición sintética
+## 01-Nov 03:28 CET · Repetición sintética
 - Tras corregir el separador, las tres facturas sintéticas quedaron con estado `ok` y sus totales esperados. El mismo oráculo pasó de 7 a 11 coincidencias de 12. En el caso restante se esperaba aclaración y el sistema listó ambas facturas con sus importes y citas; no se presenta como una cifra falsa.
 - Se cerraron por PID los procesos propios. Los resultados completos y las fuentes sintéticas permanecen fuera del repositorio; el borrador sigue sin aprobar.
+
+## 01-Nov 03:30 CET · Verificaciones v0.15.2
+- `mise run check` pasó tras la corrección con 323 pruebas del servicio, 35 live omitidas y 26 de scripts, lint, tipos, contrato y build. Se usaron dependencias existentes y raíz temporal ampliada para Turbopack; la adaptación se retiró.
+- Tres pasadas de navegador con axe dieron 182 aprobadas y cuatro live omitidas cada una. Usaron respuestas simuladas; se ejecutaron antes del cambio del extractor, que no modifica la interfaz. El servidor propio se cerró por PID y los temporales se movieron a `_trash/`.
+- Mejoran extracción de importes con dos puntos y evaluación sintética. Pendientes gold aprobado, evaluación representativa y percentiles. Recuento: 18 cumplidas, 10 parciales y 3 no.
 

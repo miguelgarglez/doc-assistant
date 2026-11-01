@@ -2,6 +2,11 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
+## v0.15.2 · 2026-11-01
+
+- Una evaluación con dos manuales y tres facturas sintéticas detectó que las etiquetas con dos puntos impedían extraer importes. El extractor admite ese separador y conserva la evidencia literal. La batería pasó de 7 a 11 coincidencias de 12 con un oráculo limitado; en el caso restante el sistema enumeró ambas facturas cuando se esperaba aclaración. [Método y límites](../evidence/evaluacion-sintetica/README.md).
+- El borrador privado se amplió sin aprobar ni ejecutar sobre facturas reales. `mise run check` pasó con 323 pruebas del servicio, 35 live omitidas y 26 de scripts, con raíz temporal ampliada para resolver dependencias existentes. Tres pasadas de navegador con axe dieron 182 aprobadas y cuatro live omitidas cada una; usaron respuestas simuladas y la interfaz no cambió con la corrección posterior del extractor.
+
 ## v0.15.1 · 2026-11-01
 
 - La consulta libera SQLite antes de emitir eventos. PDFium se utiliza bajo un bloqueo compartido para que las ingestas y el visor no lo ejecuten a la vez en distintos hilos.
