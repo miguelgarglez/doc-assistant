@@ -12,9 +12,12 @@ from typing import Any
 from fastapi import FastAPI
 
 from doc_assistant.application.ask.capacity import AskCapacity
+from doc_assistant.application.health import check_components
 from doc_assistant.application.ingest.jobs import IngestJobs
+from doc_assistant.application.ports.health import ProbeResult
 from doc_assistant.application.ports.models import LLM, Embedder, OcrPort, Reranker
 from doc_assistant.config import AppConfig, load_config
+from doc_assistant.infra.health.probes import probe_index, probe_llama
 from doc_assistant.infra.models.http import HttpEmbedder, HttpLLM, HttpReranker, LlamaOCR, OllamaOCR
 from doc_assistant.infra.pdf.service import PdfService
 
@@ -33,6 +36,21 @@ def build_adapters(cfg: AppConfig) -> tuple[Embedder, Reranker, LLM]:
     reranker = HttpReranker(cfg.reranker.url, cfg.reranker.model, cfg.reranker.timeout_s)
     llm = HttpLLM(cfg.llm.url, cfg.llm.model, cfg.llm.timeout_s)
     return embedder, reranker, llm
+
+
+def component_health(cfg: AppConfig) -> list[ProbeResult]:
+    runtime = os.environ.get("DOC_ASSISTANT_OCR_RUNTIME", cfg.ocr.runtime)
+    ocr_url = cfg.ocr.ollama_url() if runtime == "ollama" else cfg.ocr.base_url
+    ocr_path = "/api/version" if runtime == "ollama" else "/health"
+    return check_components(
+        [
+            lambda: probe_llama("llm", cfg.llm.base_url),
+            lambda: probe_llama("embeddings", cfg.embeddings.base_url),
+            lambda: probe_llama("reranker", cfg.reranker.base_url),
+            lambda: probe_llama("ocr", ocr_url, ocr_path),
+            lambda: probe_index(cfg.db),
+        ]
+    )
 
 
 def lifespan_for(config_path: Path) -> Callable[[FastAPI], AbstractAsyncContextManager[None]]:

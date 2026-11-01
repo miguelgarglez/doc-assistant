@@ -5,6 +5,7 @@ import json
 import logging
 import uuid
 from collections.abc import Callable, Iterator
+from dataclasses import asdict
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -19,8 +20,7 @@ from doc_assistant.application.ports.pdf import PdfPort
 from doc_assistant.ask import ask
 from doc_assistant.ask_schemas import AskRequest, AskResponse
 from doc_assistant.ask_stream import STREAM_SCHEMA, queued_ask_stream
-from doc_assistant.bootstrap import lifespan_for
-from doc_assistant.health import ComponentsHealth, check_components
+from doc_assistant.bootstrap import component_health, lifespan_for
 from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
 from doc_assistant.invoices import invoice_image, list_invoices, upload_invoice
 from doc_assistant.sources import find_source, list_sources, remove_source
@@ -41,6 +41,17 @@ class ErrorBody(BaseModel):
     limit: int | None = Field(
         default=None, description="Upload limit in bytes or pages, according to reason."
     )
+
+
+class ComponentHealth(BaseModel):
+    id: Literal["ai", "llm", "embeddings", "reranker", "ocr", "sqlite"]
+    status: Literal["ok", "degraded", "unavailable"]
+    latency_ms: float | None = None
+    detail: str | None = None
+
+
+class ComponentsHealth(BaseModel):
+    components: list[ComponentHealth]
 
 
 class IngestRequest(BaseModel):
@@ -275,7 +286,12 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
 
     @app.get("/health/components", response_model=ComponentsHealth)
     def health_components(request: Request) -> ComponentsHealth:
-        return check_components(request.app.state.config)
+        return ComponentsHealth(
+            components=[
+                ComponentHealth.model_validate(asdict(result))
+                for result in component_health(request.app.state.config)
+            ]
+        )
 
     @app.post(
         "/ingest",
