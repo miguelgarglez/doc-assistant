@@ -406,12 +406,19 @@ def ask_stream_events(
     request_id = request_id or str(uuid.uuid4())
     if trace is not None:
         trace["request_id"] = request_id
+        trace["transport_status"] = "interrupted"
     try:
         with closing(ask_events(config_path, question, stream=True, trace=trace)) as events:
             yield from _translate_ask_events(events, request_id)
+        if trace is not None:
+            trace["transport_status"] = "completed"
     except AdapterError as exc:
+        if trace is not None:
+            trace["transport_status"] = "error"
         yield sse(ErrorEvent(code=exc.code, message=exc.public_message))
     except Exception:  # noqa: BLE001 - the stream must always end with done or error
+        if trace is not None:
+            trace["transport_status"] = "error"
         yield sse(ErrorEvent(code="internal_error", message="Error interno al responder"))
 
 
@@ -483,6 +490,7 @@ def queued_ask_stream(
                 }
             )
             trace["kind"] = "error"
+            trace["transport_status"] = status
             if code is not None:
                 trace["error_code"] = code
 

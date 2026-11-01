@@ -505,4 +505,14 @@ def test_stream_close_finalizes_optional_trace(config_path: Path) -> None:
     next(iterator)
     iterator.close()
     assert trace["status"] == "interrupted"
+    assert trace["transport_status"] == "interrupted"
     assert trace["finished_at"] >= trace["started_at"]
+
+
+def test_stream_can_interrupt_after_pipeline_result(config_path: Path) -> None:
+    trace: dict = {}
+    iterator = ask_stream_events(config_path, "", trace=trace)
+    assert events(next(iterator))[0][0] == "refusal"
+    iterator.close()
+    assert trace["status"] == "completed"
+    assert trace["transport_status"] == "interrupted"

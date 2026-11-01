@@ -2,6 +2,7 @@
 (Horas reales de los commits, Europe/Madrid, tomadas de `git log`.)
 
 ## Hitos
+- **01-nov 07:20 · Estado del transporte.** La traza opcional distingue el estado del pipeline del estado del stream. Una prueba cubre la desconexión después del resultado interno y antes de `done`. Cuarenta y una pruebas focalizadas, Ruff y mypy pasan.
 - **01-nov 07:19 · Duración de la petición.** La traza opcional del stream mide desde la admisión hasta el cierre y conserva la duración del pipeline por separado. Quince pruebas focalizadas, Ruff y mypy pasan.
 - **01-nov 07:19 · Pasos de espera en traza.** El colector conserva por separado los eventos de cola tal como los recibe el cliente, incluso si después termina el pipeline o se interrumpe la espera. Quince pruebas focalizadas, Ruff y mypy pasan.
 - **01-nov 07:18 · Tipo de resultado en traza.** El colector distingue respuesta, rechazo, aclaración y error, incluida la interrupción. Catorce pruebas focalizadas, Ruff y mypy pasan; el dato sigue en memoria.

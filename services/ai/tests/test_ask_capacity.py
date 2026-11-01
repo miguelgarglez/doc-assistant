@@ -32,6 +32,7 @@ def test_queue_waits_rejects_overflow_and_releases_on_disconnect(monkeypatch):
     )
     assert event(overflow[0])[1]["code"] == "queue_full"
     assert overflow_trace["request_id"]
+    assert overflow_trace["transport_status"] == "error"
     assert overflow_trace["status"] == "error"
     assert overflow_trace["error_code"] == "queue_full"
     waiting.close()
@@ -86,6 +87,7 @@ def test_admitted_request_preserves_pipeline_trace(config_path):
     assert event(frames[-1])[0] == "done"
     assert trace["request_id"] == event(frames[-1])[1]["request_id"] == "request-123"
     assert trace["status"] == "completed"
+    assert trace["transport_status"] == "completed"
     assert trace["result"]["reason"] == "pregunta_vacia"
     assert trace["queue_wait_s"] >= 0
 
