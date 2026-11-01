@@ -670,7 +670,11 @@ def _shape(
             plan.campos or lexical_fields(question, sel.rol), question, party_role=sel.rol
         )
         general_data = (
-            "datos" in fold(question).split()
+            re.search(
+                r"\bdatos(?: clave)? (?:tiene (?:la )?factura|de (?:la )?factura)\b",
+                fold(question),
+            )
+            is not None
             and not {"numero", "numeros"} & set(fold(question).split())
             and not any(asks_for(c, question, party_role=sel.rol) for c in FIELDS)
         )

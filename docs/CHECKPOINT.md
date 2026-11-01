@@ -153,3 +153,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 ## 01-Nov 01:43 CET · Ficha general estable y oráculo de batería
 - La presentación de datos generales se limita determinísticamente a emisor, cliente, número, fecha y total incluso si el plan propone todos los campos. Reproducido con fixture sintética y plan sobrecargado; sin cambiar parser de extracción ni prompts. La batería comprueba ahora todas las celdas y valores esperados también con modelo real. La formulación ambigua total de las facturas admite suma o desglose, conservando los dos importes esperados. Primera pasada final e2e: 180/180, 4 live omitidas.
+
+## 01-Nov 01:48 CET · Tests finales y revisión independiente cerrados
+- Corregidos los dos casos de borde de la última revisión: datos bancarios conserva solo IBAN; la prueba de falsa suma rechaza un total alterado aunque los operandos sean correctos. Revisión independiente reabierta y favorable tras ambas correcciones.
+- `mise run check` final OK: 313 tests del servicio, 35 live omitidos en esa ejecución, 26 tests de scripts; ruff, mypy, eslint, tipos, contrato sin deriva y build. Batería separada con modelo real: 84/84, incluidos 35 live, 0 respuestas falsas bajo sus oráculos y aritmética Decimal. Playwright: 180/180 ×3, 4 pruebas de fixtures live omitidas por pasada; axe sin violaciones serias ni críticas en las rutas y variantes probadas.

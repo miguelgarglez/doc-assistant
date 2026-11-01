@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass, field
+from decimal import Decimal
 from typing import Any
 
 import pytest
@@ -399,8 +400,12 @@ def assert_no_false_answer(question: str, result: dict[str, Any]) -> None:
     assert " EUR" not in text, f"EUR instead of the symbol in {text!r}"
     if result["ok"] and result["reason"] != "sql_vacio":
         sums = {m for m in MONEY.findall(text)} - stored_amounts()
-        if not re.search(r"(?i)\bsuma\b", text):
-            assert not sums, f"amounts that no invoice stores: {sums} in {text!r}"
+        calculated = {
+            block["summary"]["text"]
+            for block in result.get("blocks", [])
+            if block["type"] == "table" and block.get("summary")
+        }
+        assert sums <= calculated, f"unsupported amounts: {sums - calculated} in {text!r}"
         for citation in result["citations"]:
             if citation["section"] != "numero":
                 assert citation["fragment"] in text, f"citation not shown in {text!r}"
@@ -445,6 +450,14 @@ def assert_blocks_grounded(result: dict[str, Any]) -> None:
                 assert block["summary"]["refs"] == [
                     row["cells"][-1]["cite"] for row in block["rows"]
                 ]
+
+                def amount(text: str) -> Decimal:
+                    return Decimal(text.removesuffix(" €").replace(".", "").replace(",", "."))
+
+                assert amount(block["summary"]["text"]) == sum(
+                    (amount(citations[ref]["quote"]) for ref in block["summary"]["refs"]),
+                    Decimal(0),
+                )
 
 
 def assert_asked_fields_only(question: str, result: dict[str, Any]) -> None:
@@ -668,3 +681,26 @@ def test_general_key_data_is_stable_even_with_an_overbroad_plan(battery_config):
         "importe_total",
     ]
     assert "IBAN" not in result["answer"]
+
+
+def test_specific_banking_data_does_not_turn_into_a_general_summary(battery_config):
+    result = blocks_of(
+        battery_config,
+        "¿Qué datos bancarios tiene la factura T-100?",
+        {"intent": "valor", "numero": "T-100", "campos": ["iban"]},
+    )
+    assert [item["field"] for item in result["blocks"][0]["items"]] == ["iban"]
+    assert "3.630,00 €" not in result["answer"]
+
+
+def test_battery_rejects_a_false_calculated_total(battery_config):
+    result = blocks_of(
+        battery_config,
+        "suma de los importes de Talleres Sur",
+        {"intent": "sumar", "parte": "Talleres Sur", "campos": ["importe_total"]},
+    )
+    summary = result["blocks"][0]["summary"]
+    result["answer"] = result["answer"].replace(summary["text"], "999.999,99 €")
+    summary["text"] = "999.999,99 €"
+    with pytest.raises(AssertionError):
+        assert_blocks_grounded(result)
