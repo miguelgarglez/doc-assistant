@@ -516,3 +516,20 @@ def test_stream_can_interrupt_after_pipeline_result(config_path: Path) -> None:
     iterator.close()
     assert trace["status"] == "completed"
     assert trace["transport_status"] == "interrupted"
+
+
+def test_stream_trace_records_translation_failure_without_exception_details(
+    config_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from doc_assistant import api
+
+    def invalid_events(*args, **kwargs):
+        yield "step", {"private": "secret"}
+
+    monkeypatch.setattr(api, "ask_events", invalid_events)
+    trace: dict = {}
+    frames = list(ask_stream_events(config_path, "pregunta", trace=trace))
+    assert events("".join(frames))[-1][1]["code"] == "internal_error"
+    assert trace["transport_status"] == "error"
+    assert trace["transport_error_code"] == "internal_error"
+    assert "secret" not in str(trace)

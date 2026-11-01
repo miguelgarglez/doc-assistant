@@ -415,10 +415,12 @@ def ask_stream_events(
     except AdapterError as exc:
         if trace is not None:
             trace["transport_status"] = "error"
+            trace["transport_error_code"] = exc.code
         yield sse(ErrorEvent(code=exc.code, message=exc.public_message))
     except Exception:  # noqa: BLE001 - the stream must always end with done or error
         if trace is not None:
             trace["transport_status"] = "error"
+            trace["transport_error_code"] = "internal_error"
         yield sse(ErrorEvent(code="internal_error", message="Error interno al responder"))
 
 

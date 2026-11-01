@@ -385,3 +385,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:21 CET · Coste exploratorio de la huella
 - Recorrido de fragmentos sintéticos en SQLite en memoria, diez muestras tras calentamiento: p50/p95 5,23/5,40 ms para 1.000 filas, 55,40/56,64 ms para 10.000 y 561,73/565,47 ms para 100.000. Script y muestras en `_agents/night2/`.
 - No incluye disco, concurrencia ni petición completa. El coste creció aproximadamente con el tamaño en esta muestra; la persistencia sigue sin activarse y falta medir índices representativos.
+
+## 01-Nov 07:21 CET · Código de error del transporte en la traza
+- La traza opcional conserva el código público de un error de transporte en `transport_error_code`, separado del estado del pipeline. Una regresión fuerza un fallo al traducir un evento y comprueba que no se copia el contenido privado de la excepción.
+- Pasan 42 pruebas de streaming y cola y Ruff. La traza sigue sin persistirse ni exponerse por los endpoints.
