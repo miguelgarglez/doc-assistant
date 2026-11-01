@@ -4,6 +4,7 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+
 from doc_assistant.ask_capacity import AskCapacity
 from doc_assistant.history import HistoryStore
 from doc_assistant.history_stream import recorded_ask_stream
