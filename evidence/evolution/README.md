@@ -613,7 +613,7 @@ Qué se probó
 ![v0.13.1 cita-vista-previa-390x844-neutral-dark](v0.13.1/cita-vista-previa-390x844-neutral-dark.png)
 ![v0.13.1 cita-vista-previa-390x844-neutral-light](v0.13.1/cita-vista-previa-390x844-neutral-light.png)
 
-## v0.13.2 · 2026-10-31 23:44 +0100 · commit `19079a2`
+## v0.13.2 · 2026-10-31 23:44 +0100 · commit `d4eca6c`
 
 **v0.13.2 — La vista previa de la cita ya no tapa el composer**
 
@@ -640,3 +640,46 @@ Antes y después con el mismo guion y backend simulado: `evidence/comparison-v0.
 ![v0.13.2 cita-final-hilo-390x844-industrial-light](v0.13.2/cita-final-hilo-390x844-industrial-light.png)
 ![v0.13.2 cita-final-hilo-390x844-neutral-dark](v0.13.2/cita-final-hilo-390x844-neutral-dark.png)
 ![v0.13.2 cita-final-hilo-390x844-neutral-light](v0.13.2/cita-final-hilo-390x844-neutral-light.png)
+
+## v0.13.3 · 2026-11-01 01:07 +0100 · commit `a28411a`
+
+**v0.13.3 — Importes es-ES, solo lo pedido, rechazo sin códigos y puertos configurables**
+
+Qué cambió:
+- Los importes de factura salen siempre como «1.706,60 €», formateados en el servicio y no por el modelo. La cita enseña lo mismo que el texto.
+- La respuesta usa el término de la pregunta («precio final», «importe total») y solo los campos pedidos: ya no añade el emisor sin que se pida. Tabla cerrada de campos en invoice_fields.py.
+- La tarjeta de rechazo titula el caso en lenguaje llano y no enseña «motivo: llm_unanswerable»; el código interno queda en Sistema.
+- Los puertos de los modelos se configuran por variable de entorno (por defecto 8081-8084) en dev.py, config.yaml, package.py y evidence.py. Un puerto ocupado o inválido corta con un mensaje que dice quién lo usa y qué variable cambiar. README, sección Puertos.
+
+Qué se probó:
+- mise run check → OK (298 tests del servicio, 26 de scripts, contrato sin deriva, lint, tipos, build).
+- Batería sintética de 35 preguntas de factura con invariantes (sin decimales crudos, importes solo de las facturas elegidas, cita visible, solo campos pedidos): 0 respuestas falsas. Con el modelo real, 35/35.
+- Playwright 148/148 en tres pasadas seguidas con axe sin violaciones serias ni críticas.
+- Capturas antes y después con backend simulado en evidence/comparison-v0.13.2-v0.13.3/.
+
+Antes y después de la tarjeta de rechazo con el mismo guion y backend simulado: `evidence/comparison-v0.13.2-v0.13.3/`. Desde esta versión `chat-rechazo-*` y `chat-factura-*` se generan con `apps/web/e2e/capture-respuestas.mjs` (backend simulado, sin modelos) y ya no con el stack real.
+
+![v0.13.3 chat-factura-1280x720-industrial-dark](v0.13.3/chat-factura-1280x720-industrial-dark.png)
+![v0.13.3 chat-factura-1280x720-industrial-light](v0.13.3/chat-factura-1280x720-industrial-light.png)
+![v0.13.3 chat-factura-1280x720-neutral-dark](v0.13.3/chat-factura-1280x720-neutral-dark.png)
+![v0.13.3 chat-factura-1280x720-neutral-light](v0.13.3/chat-factura-1280x720-neutral-light.png)
+![v0.13.3 chat-factura-1440x900-industrial-dark](v0.13.3/chat-factura-1440x900-industrial-dark.png)
+![v0.13.3 chat-factura-1440x900-industrial-light](v0.13.3/chat-factura-1440x900-industrial-light.png)
+![v0.13.3 chat-factura-1440x900-neutral-dark](v0.13.3/chat-factura-1440x900-neutral-dark.png)
+![v0.13.3 chat-factura-1440x900-neutral-light](v0.13.3/chat-factura-1440x900-neutral-light.png)
+![v0.13.3 chat-factura-390x844-industrial-dark](v0.13.3/chat-factura-390x844-industrial-dark.png)
+![v0.13.3 chat-factura-390x844-industrial-light](v0.13.3/chat-factura-390x844-industrial-light.png)
+![v0.13.3 chat-factura-390x844-neutral-dark](v0.13.3/chat-factura-390x844-neutral-dark.png)
+![v0.13.3 chat-factura-390x844-neutral-light](v0.13.3/chat-factura-390x844-neutral-light.png)
+![v0.13.3 chat-rechazo-1280x720-industrial-dark](v0.13.3/chat-rechazo-1280x720-industrial-dark.png)
+![v0.13.3 chat-rechazo-1280x720-industrial-light](v0.13.3/chat-rechazo-1280x720-industrial-light.png)
+![v0.13.3 chat-rechazo-1280x720-neutral-dark](v0.13.3/chat-rechazo-1280x720-neutral-dark.png)
+![v0.13.3 chat-rechazo-1280x720-neutral-light](v0.13.3/chat-rechazo-1280x720-neutral-light.png)
+![v0.13.3 chat-rechazo-1440x900-industrial-dark](v0.13.3/chat-rechazo-1440x900-industrial-dark.png)
+![v0.13.3 chat-rechazo-1440x900-industrial-light](v0.13.3/chat-rechazo-1440x900-industrial-light.png)
+![v0.13.3 chat-rechazo-1440x900-neutral-dark](v0.13.3/chat-rechazo-1440x900-neutral-dark.png)
+![v0.13.3 chat-rechazo-1440x900-neutral-light](v0.13.3/chat-rechazo-1440x900-neutral-light.png)
+![v0.13.3 chat-rechazo-390x844-industrial-dark](v0.13.3/chat-rechazo-390x844-industrial-dark.png)
+![v0.13.3 chat-rechazo-390x844-industrial-light](v0.13.3/chat-rechazo-390x844-industrial-light.png)
+![v0.13.3 chat-rechazo-390x844-neutral-dark](v0.13.3/chat-rechazo-390x844-neutral-dark.png)
+![v0.13.3 chat-rechazo-390x844-neutral-light](v0.13.3/chat-rechazo-390x844-neutral-light.png)
