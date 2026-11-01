@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pypdfium2 as pdfium
 
-from doc_assistant.pdf_lock import pdf_lock
+from doc_assistant.infra.pdf.lock import pdf_lock
 
 LINE_PAD = 0.0015
 

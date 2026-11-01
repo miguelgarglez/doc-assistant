@@ -6,7 +6,7 @@ from threading import Event, Lock
 
 import pypdfium2
 
-from doc_assistant.highlight import locate
+from doc_assistant.infra.pdf.highlight import locate
 from doc_assistant.ingest import ingest_pdfs
 from doc_assistant.model_fakes import FakeEmbedder
 

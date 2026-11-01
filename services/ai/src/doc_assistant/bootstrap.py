@@ -14,6 +14,7 @@ from fastapi import FastAPI
 from doc_assistant.application.ask.capacity import AskCapacity
 from doc_assistant.application.ingest.jobs import IngestJobs
 from doc_assistant.config import load_config
+from doc_assistant.infra.pdf.service import PdfService
 
 
 def lifespan_for(config_path: Path) -> Callable[[FastAPI], AbstractAsyncContextManager[None]]:
@@ -21,6 +22,7 @@ def lifespan_for(config_path: Path) -> Callable[[FastAPI], AbstractAsyncContextM
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.config = load_config(config_path)
         app.state.jobs = IngestJobs()
+        app.state.pdf = PdfService()
         app.state.ask_capacity = AskCapacity()
         app.state.config.db.parent.mkdir(parents=True, exist_ok=True)
         app.state.history_token = os.environ.get(

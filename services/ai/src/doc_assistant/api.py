@@ -8,7 +8,6 @@ from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
-import pypdfium2 as pdfium
 from fastapi import FastAPI, File, Query, Request, UploadFile
 from fastapi import Path as PathParam
 from fastapi.responses import JSONResponse, Response, StreamingResponse
@@ -16,15 +15,14 @@ from pydantic import BaseModel, Field
 
 from doc_assistant.application.ingest.jobs import IngestJobs, Progress, Stage
 from doc_assistant.application.ports.models import AdapterError
+from doc_assistant.application.ports.pdf import PdfPort
 from doc_assistant.ask import ask
 from doc_assistant.ask_schemas import AskRequest, AskResponse
 from doc_assistant.ask_stream import STREAM_SCHEMA, queued_ask_stream
 from doc_assistant.bootstrap import lifespan_for
 from doc_assistant.health import ComponentsHealth, check_components
-from doc_assistant.highlight import locate
 from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
 from doc_assistant.invoices import invoice_image, list_invoices, upload_invoice
-from doc_assistant.pdf_lock import pdf_lock
 from doc_assistant.sources import find_source, list_sources, remove_source
 from doc_assistant.sources import source_chunks as fetch_source_chunks
 from doc_assistant.sources import source_page as fetch_source_page
@@ -354,21 +352,9 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
                         code="invalid_file", message="File is not a PDF"
                     ).model_dump(),
                 )
-            try:
-                with pdf_lock:
-                    pdf = pdfium.PdfDocument(data)
-                    try:
-                        pages = len(pdf)
-                    finally:
-                        pdf.close()
-            except pdfium.PdfiumError as exc:
-                import pypdfium2.raw as pdfium_raw  # type: ignore[import-untyped]
-
-                reason = (
-                    "pdf_protected"
-                    if exc.err_code == pdfium_raw.FPDF_ERR_PASSWORD
-                    else "pdf_unreadable"
-                )
+            pdf: PdfPort = request.app.state.pdf
+            pages, reason = pdf.page_count(data)
+            if pages is None:
                 return upload_error("invalid_file", "Invalid PDF", 400, reason=reason)
             if pages > cfg.upload_pdf_max_pages:
                 return upload_error(
@@ -513,7 +499,8 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         path = cfg.data_dir / source["file"] if source["file"] else None
         if path is None or not path.is_file():
             return PageHighlight(page=n, found=False, reason="no_file")
-        rects = locate(path, n, quote)
+        pdf: PdfPort = request.app.state.pdf
+        rects = pdf.locate(path, n, quote)
         if rects is None:
             return PageHighlight(page=n, found=False, reason="not_found")
         return PageHighlight(
