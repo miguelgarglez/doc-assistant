@@ -6,6 +6,7 @@ import hashlib
 import json
 import time
 from collections.abc import Generator
+from copy import deepcopy
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -511,9 +512,9 @@ def ask_events(
     try:
         for kind, data in events:
             if kind == "step":
-                trace["steps"].append(data.copy())
+                trace["steps"].append(deepcopy(data))
             elif kind == "result":
-                trace["result"] = data.copy()
+                trace["result"] = deepcopy(data)
                 trace["kind"] = (
                     "answer"
                     if data.get("ok")

@@ -405,3 +405,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:24 CET · Selección de facturas en la traza
 - La traza opcional recoge la selección y las candidatas ofrecidas tanto si la aclaración surge al resolver como al formar la respuesta. No enlaza todavía una elección posterior ni activa persistencia.
 - 59 pruebas de facturas, Ruff y mypy pasan.
+
+## 01-Nov 07:24 CET · Aislamiento de eventos en la traza
+- Las copias de pasos y resultado de la traza son profundas. Una regresión modifica una cita del evento consumido y comprueba que la traza conserva la cita original.
+- Nueve pruebas de consulta y Ruff pasan. La traza sigue en memoria y no está conectada al almacén.
