@@ -1,16 +1,10 @@
 """HTTP interface to the document and invoice workflows."""
 
-import asyncio
 import copy
 import json
 import logging
-import os
-import secrets
-import threading
 import uuid
-from collections.abc import AsyncIterator, Callable, Iterator
-from contextlib import asynccontextmanager
-from datetime import UTC, datetime, timedelta
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -20,14 +14,13 @@ from fastapi import Path as PathParam
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
-from doc_assistant.application.ask.capacity import AskCapacity
 from doc_assistant.application.ingest.jobs import IngestJobs, Progress, Stage
 from doc_assistant.application.ports.models import AdapterError
 from doc_assistant.ask import ask
 from doc_assistant.ask_schemas import AskRequest, AskResponse
 from doc_assistant.ask_stream import STREAM_SCHEMA, queued_ask_stream
+from doc_assistant.bootstrap import lifespan_for
 from doc_assistant.chunking import invoice_doc_id, pdf_doc_id
-from doc_assistant.config import load_config
 from doc_assistant.health import ComponentsHealth, check_components
 from doc_assistant.highlight import locate
 from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
@@ -246,91 +239,7 @@ def ingest_event_stream(jobs: IngestJobs, job_id: str) -> Iterator[str]:
 
 
 def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
-    @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        app.state.config = load_config(config_path)
-        app.state.jobs = IngestJobs()
-        app.state.ask_capacity = AskCapacity()
-        app.state.config.db.parent.mkdir(parents=True, exist_ok=True)
-        app.state.history_token = os.environ.get(
-            "DOC_ASSISTANT_HISTORY_TOKEN"
-        ) or secrets.token_urlsafe(32)
-        app.state.history_retention_days = max(
-            1, int(os.environ.get("DOC_ASSISTANT_HISTORY_RETENTION_DAYS", "30"))
-        )
-        app.state.history_store = None
-        app.state.history_outbox = None
-        app.state.history_initialization_error = None
-        purge_task = None
-        if os.environ.get("DOC_ASSISTANT_HISTORY_ENABLED", "1") != "0":
-            from doc_assistant.application.history.outbox import HistoryOutbox
-            from doc_assistant.history import HistoryStore
-            from doc_assistant.history_contract import HistoryRepository
-
-            store_lock = threading.Lock()
-
-            def open_history() -> HistoryRepository:
-                with store_lock:
-                    store: HistoryRepository | None = app.state.history_store
-                    if store is not None:
-                        return store
-                    try:
-                        store = HistoryStore(app.state.config.db.parent / "history.db")
-                        cutoff = (
-                            datetime.now(UTC) - timedelta(days=app.state.history_retention_days)
-                        ).isoformat()
-                        store.purge_before(cutoff)
-                    except Exception as exc:
-                        app.state.history_initialization_error = type(exc).__name__
-                        raise
-                    app.state.history_store = store
-                    app.state.history_initialization_error = None
-                    return store
-
-            class RecoveringWriter:
-                def record(
-                    self,
-                    request_id: str,
-                    conversation_id: str,
-                    created_at: str,
-                    trace: dict[str, Any],
-                ) -> None:
-                    open_history().record(request_id, conversation_id, created_at, trace)
-
-            app.state.history_outbox = HistoryOutbox(RecoveringWriter())
-            try:
-                await asyncio.to_thread(open_history)
-            except Exception:
-                logging.getLogger(__name__).exception("History initialization failed")
-
-            async def purge() -> None:
-                while True:
-                    try:
-                        store = await asyncio.to_thread(open_history)
-                        cutoff = (
-                            datetime.now(UTC) - timedelta(days=app.state.history_retention_days)
-                        ).isoformat()
-                        await asyncio.to_thread(store.purge_before, cutoff)
-                    except Exception:
-                        logging.getLogger(__name__).exception("History retention failed")
-                        await asyncio.sleep(5)
-                    else:
-                        await asyncio.sleep(3600)
-
-            purge_task = asyncio.create_task(purge())
-        try:
-            yield
-        finally:
-            if purge_task is not None:
-                purge_task.cancel()
-                try:
-                    await purge_task
-                except asyncio.CancelledError:
-                    pass
-            if app.state.history_outbox is not None:
-                app.state.history_outbox.close()
-
-    app = FastAPI(title="Doc Assistant AI", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Doc Assistant AI", version="0.1.0", lifespan=lifespan_for(config_path))
     from doc_assistant.history_api import router as history_router
 
     app.include_router(history_router)
