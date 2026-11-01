@@ -1,6 +1,7 @@
 """Exercise admission, waiting and release without timing model inference."""
 
 import json
+from functools import partial
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -8,6 +9,9 @@ from fastapi.testclient import TestClient
 from doc_assistant import api
 from doc_assistant import ask_stream as stream_module
 from doc_assistant.application.ask.capacity import AskCapacity
+from doc_assistant.bootstrap import ask_events
+
+queued_ask_stream = partial(stream_module.queued_ask_stream, ask_events_fn=ask_events)
 
 
 def event(frame: str) -> tuple[str, dict]:
@@ -20,7 +24,7 @@ def test_queue_waits_rejects_overflow_and_releases_on_disconnect(monkeypatch):
     capacity.admitted.acquire()
     capacity.running.acquire()
     interrupted_trace: dict = {}
-    waiting = api.queued_ask_stream(capacity, Path("unused"), "question", trace=interrupted_trace)
+    waiting = queued_ask_stream(capacity, Path("unused"), "question", trace=interrupted_trace)
     name, data = event(next(waiting))
     assert (name, data["status"], data["label"]) == (
         "step",
@@ -28,9 +32,7 @@ def test_queue_waits_rejects_overflow_and_releases_on_disconnect(monkeypatch):
         "Esperando turno para responder",
     )
     overflow_trace: dict = {}
-    overflow = list(
-        api.queued_ask_stream(capacity, Path("unused"), "question", trace=overflow_trace)
-    )
+    overflow = list(queued_ask_stream(capacity, Path("unused"), "question", trace=overflow_trace))
     assert event(overflow[0])[1]["code"] == "queue_full"
     assert overflow_trace["request_id"]
     assert overflow_trace["transport_status"] == "error"
@@ -46,15 +48,19 @@ def test_queue_waits_rejects_overflow_and_releases_on_disconnect(monkeypatch):
     capacity.running.release()
     capacity.admitted.release()
 
-    monkeypatch.setattr(stream_module, "ask_stream_events", lambda *_: iter(["finished"]))
-    assert list(api.queued_ask_stream(capacity, Path("unused"), "question")) == ["finished"]
+    monkeypatch.setattr(
+        stream_module, "ask_stream_events", lambda *_, **_kwargs: iter(["finished"])
+    )
+    assert list(queued_ask_stream(capacity, Path("unused"), "question")) == ["finished"]
 
 
 def test_queued_request_continues_when_slot_frees(monkeypatch):
     capacity = AskCapacity(running=1, waiting=1)
     capacity.running.acquire()
-    monkeypatch.setattr(stream_module, "ask_stream_events", lambda *_: iter(["finished"]))
-    stream = api.queued_ask_stream(capacity, Path("unused"), "question")
+    monkeypatch.setattr(
+        stream_module, "ask_stream_events", lambda *_, **_kwargs: iter(["finished"])
+    )
+    stream = queued_ask_stream(capacity, Path("unused"), "question")
     assert event(next(stream))[1]["status"] == "running"
     capacity.running.release()
     assert event(next(stream))[1]["status"] == "done"
@@ -69,7 +75,7 @@ def test_wait_timeout_is_recoverable_and_releases_admission(monkeypatch):
     capacity.running.acquire()
     monkeypatch.setattr(stream_module, "ASK_QUEUE_TIMEOUT_S", 0.01)
     trace: dict = {}
-    stream = api.queued_ask_stream(capacity, Path("unused"), "question", trace=trace)
+    stream = queued_ask_stream(capacity, Path("unused"), "question", trace=trace)
     assert event(next(stream))[1]["status"] == "running"
     assert event(next(stream))[1]["code"] == "queue_timeout"
     assert trace["status"] == "error"
@@ -86,7 +92,7 @@ def test_wait_timeout_is_recoverable_and_releases_admission(monkeypatch):
 def test_admitted_request_preserves_pipeline_trace(config_path):
     capacity = AskCapacity(running=1, waiting=1)
     trace: dict = {}
-    frames = list(api.queued_ask_stream(capacity, config_path, "", "request-123", trace=trace))
+    frames = list(queued_ask_stream(capacity, config_path, "", "request-123", trace=trace))
     assert event(frames[-1])[0] == "done"
     assert trace["request_id"] == event(frames[-1])[1]["request_id"] == "request-123"
     assert trace["status"] == "completed"
@@ -98,7 +104,7 @@ def test_admitted_request_preserves_pipeline_trace(config_path):
 def test_close_after_done_releases_capacity_and_keeps_completion(config_path):
     capacity = AskCapacity(running=1, waiting=0)
     trace: dict = {}
-    stream = api.queued_ask_stream(capacity, config_path, "", trace=trace)
+    stream = queued_ask_stream(capacity, config_path, "", trace=trace)
     assert event(next(stream))[0] == "refusal"
     assert event(next(stream))[0] == "done"
     stream.close()
@@ -115,7 +121,7 @@ def test_waiting_steps_survive_completed_pipeline(config_path):
     capacity = AskCapacity(running=1, waiting=1)
     capacity.running.acquire()
     trace: dict = {}
-    stream = api.queued_ask_stream(capacity, config_path, "", trace=trace)
+    stream = queued_ask_stream(capacity, config_path, "", trace=trace)
     first = event(next(stream))[1]
     capacity.running.release()
     second = event(next(stream))[1]

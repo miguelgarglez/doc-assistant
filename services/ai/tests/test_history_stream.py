@@ -1,13 +1,19 @@
 """Check recording across terminal events and client disconnects."""
 
 import sqlite3
+from functools import partial
 from pathlib import Path
 
 import pytest
 
 from doc_assistant.application.ask.capacity import AskCapacity
-from doc_assistant.history_stream import recorded_ask_stream
+from doc_assistant.bootstrap import ask_events
+from doc_assistant.history_stream import outbox_ask_stream as _outbox_ask_stream
+from doc_assistant.history_stream import recorded_ask_stream as _recorded_ask_stream
 from doc_assistant.infra.history.sqlite import HistoryStore
+
+recorded_ask_stream = partial(_recorded_ask_stream, ask_events_fn=ask_events)
+outbox_ask_stream = partial(_outbox_ask_stream, ask_events_fn=ask_events)
 
 
 def test_records_finished_stream(config_path, tmp_path):
@@ -62,7 +68,6 @@ def test_close_after_done_records_completion(config_path, tmp_path):
 
 
 def test_outbox_failure_does_not_change_done_stream(config_path):
-    from doc_assistant.history_stream import outbox_ask_stream
 
     class BrokenOutbox:
         def submit(self, *args, **kwargs):
@@ -75,7 +80,6 @@ def test_outbox_failure_does_not_change_done_stream(config_path):
 
 def test_enqueue_failure_is_visible_in_outbox_without_changing_done(config_path, monkeypatch):
     from doc_assistant.application.history.outbox import HistoryOutbox
-    from doc_assistant.history_stream import outbox_ask_stream
 
     class Store:
         def record(self, *args):

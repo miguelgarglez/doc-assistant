@@ -1,7 +1,7 @@
 """Record an explicitly enabled stream after its generator has closed."""
 
 import logging
-from collections.abc import Iterator
+from collections.abc import Callable, Generator, Iterator
 from contextlib import closing
 from pathlib import Path
 from typing import Any
@@ -19,10 +19,14 @@ def recorded_ask_stream(
     request_id: str,
     conversation_id: str,
     store: HistoryWriter,
+    *,
+    ask_events_fn: Callable[..., Generator[tuple[str, dict[str, Any]], None, None]],
 ) -> Iterator[str]:
     """Persist the final trace on completion or disconnect; propagate storage failures."""
     trace: dict[str, Any] = {"conversation_id": conversation_id}
-    stream = queued_ask_stream(capacity, config_path, question, request_id, trace=trace)
+    stream = queued_ask_stream(
+        capacity, config_path, question, request_id, trace=trace, ask_events_fn=ask_events_fn
+    )
     try:
         with closing(stream):
             yield from stream
@@ -40,10 +44,13 @@ def outbox_ask_stream(
     outbox: HistoryOutbox,
     *,
     ticket: tuple[int, int] | None = None,
+    ask_events_fn: Callable[..., Generator[tuple[str, dict[str, Any]], None, None]],
 ) -> Iterator[str]:
     """Enqueue a trace after the stream closes, without exposing storage errors."""
     trace: dict[str, Any] = {"conversation_id": conversation_id}
-    stream = queued_ask_stream(capacity, config_path, question, request_id, trace=trace)
+    stream = queued_ask_stream(
+        capacity, config_path, question, request_id, trace=trace, ask_events_fn=ask_events_fn
+    )
     try:
         with closing(stream):
             yield from stream

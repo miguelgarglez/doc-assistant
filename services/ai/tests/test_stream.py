@@ -9,6 +9,7 @@ import sys
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -17,18 +18,19 @@ import yaml
 from doubles import FakeEmbedder, FakeLLM, FakeReranker
 from fastapi.testclient import TestClient
 
-from doc_assistant import ask_stream as stream_module
 from doc_assistant import bootstrap as bootstrap_module
 from doc_assistant.api import create_app
 from doc_assistant.application.answers.meta import classify
 from doc_assistant.application.ask import pipeline as ask_module
 from doc_assistant.application.ports.models import AdapterBusy, AdapterError
-from doc_assistant.ask_stream import ask_stream_events
-from doc_assistant.bootstrap import save_and_ingest_pdf
+from doc_assistant.ask_stream import ask_stream_events as _ask_stream_events
+from doc_assistant.bootstrap import ask_events, save_and_ingest_pdf
 from doc_assistant.config import load_config
 from doc_assistant.domain.answers.partial_json import FieldStreamer
 from doc_assistant.infra.models.http import HttpLLM
 from doc_assistant.infra.storage.chunks import ChunkStore
+
+ask_stream_events = partial(_ask_stream_events, ask_events_fn=ask_events)
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -532,9 +534,10 @@ def test_stream_trace_records_translation_failure_without_exception_details(
     def invalid_events(*args, **kwargs):
         yield "step", {"private": "secret"}
 
-    monkeypatch.setattr(stream_module, "ask_events", invalid_events)
     trace: dict = {}
-    frames = list(ask_stream_events(config_path, "pregunta", trace=trace))
+    frames = list(
+        ask_stream_events(config_path, "pregunta", trace=trace, ask_events_fn=invalid_events)
+    )
     assert events("".join(frames))[-1][1]["code"] == "internal_error"
     assert trace["transport_status"] == "error"
     assert trace["transport_error_code"] == "internal_error"
@@ -547,9 +550,10 @@ def test_stream_without_pipeline_result_ends_with_error(
     def incomplete_events(*args, **kwargs):
         yield "token", {"text": "Respuesta incompleta"}
 
-    monkeypatch.setattr(stream_module, "ask_events", incomplete_events)
     trace: dict = {}
-    frames = list(ask_stream_events(config_path, "pregunta", trace=trace))
+    frames = list(
+        ask_stream_events(config_path, "pregunta", trace=trace, ask_events_fn=incomplete_events)
+    )
     parsed = events("".join(frames))
     assert [event[0] for event in parsed] == ["token", "error"]
     assert parsed[-1][1]["code"] == "internal_error"

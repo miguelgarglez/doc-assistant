@@ -21,6 +21,7 @@ from doc_assistant.ask_schemas import AskRequest, AskResponse
 from doc_assistant.ask_stream import STREAM_SCHEMA, queued_ask_stream
 from doc_assistant.bootstrap import (
     ask,
+    ask_events,
     component_health,
     ingest_pdfs,
     invoice_image,
@@ -438,7 +439,11 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         request_id = str(uuid.uuid4())
         outbox = request.app.state.history_outbox
         stream: Iterator[str] = queued_ask_stream(
-            request.app.state.ask_capacity, config_path, payload.question, request_id
+            request.app.state.ask_capacity,
+            config_path,
+            payload.question,
+            request_id,
+            ask_events_fn=ask_events,
         )
         if outbox is not None:
             from doc_assistant.history_stream import outbox_ask_stream
@@ -453,6 +458,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
                 conversation_id,
                 outbox,
                 ticket=ticket,
+                ask_events_fn=ask_events,
             )
         return StreamingResponse(
             stream,
