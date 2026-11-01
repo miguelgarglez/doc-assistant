@@ -460,3 +460,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 11:04 CET · Paginación interna de feedback
 - El almacén lista copias de feedback por conversación, con cursor estable por fecha e identificador y límite de 100. Conserva las copias cuando desaparece la petición; un índice facilita la consulta. No hay endpoint ni autenticación.
 - Nueve pruebas de historial, Ruff y mypy pasan. Una primera ejecución de Ruff desde la raíz usó una configuración de imports distinta; la repetición desde el servicio pasó.
+
+## 01-Nov 11:05 CET · Identidad de la traza guardada
+- El almacén rechaza una traza cuyo `request_id` presente difiere del identificador de la petición. La comprobación impide guardar y asociar feedback a esa combinación; las trazas sin identificador siguen admitidas por ahora.
+- Diez pruebas de historial, Ruff y mypy pasan. El almacén continúa aislado de la API y no autentica usuarios.

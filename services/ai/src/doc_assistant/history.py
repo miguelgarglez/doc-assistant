@@ -75,6 +75,8 @@ class HistoryStore:
     def record(
         self, request_id: str, conversation_id: str, created_at: str, trace: dict[str, Any]
     ) -> None:
+        if "request_id" in trace and trace["request_id"] != request_id:
+            raise ValueError("trace request_id does not match the request")
         with self._connect() as db:
             db.execute(
                 "INSERT INTO requests VALUES (?, ?, ?, ?)",

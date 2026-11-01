@@ -161,3 +161,13 @@ def test_feedback_pages_survive_request_removal_and_isolate_conversations(tmp_pa
     for invalid_limit in (0, -1, 101):
         with pytest.raises(ValueError):
             store.list_feedback_page("c", limit=invalid_limit)
+
+
+def test_history_rejects_trace_for_a_different_request(tmp_path):
+    store = HistoryStore(tmp_path / "history.db")
+    with pytest.raises(ValueError, match="request_id"):
+        store.record("r1", "c", "now", {"request_id": "r2", "question": "private"})
+    assert store.get("c", "r1") is None
+    assert not store.add_feedback("f", "c", "r1", "now", "otro", None)
+    store.record("r1", "c", "now", {"request_id": "r1"})
+    assert store.get("c", "r1") == {"request_id": "r1"}
