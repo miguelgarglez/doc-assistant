@@ -425,3 +425,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:27 CET · Aislamiento de la selección de facturas
 - La selección y las candidatas de aclaración de la traza son copias independientes del resultado interno. Una regresión reproduce la mutación compartida antes de la corrección.
 - Pasan 60 pruebas de facturas, Ruff y la comprobación de formato. La traza sigue sin persistir ni estar conectada a endpoints.
+
+## 01-Nov 07:28 CET · Conversación conservada en feedback
+- El almacén aislado copia la conversación al crear feedback, incluso si luego se elimina la petición. Migra bases anteriores sin perder registros; los feedback huérfanos antiguos quedan con conversación desconocida. La migración se serializa entre inicializaciones.
+- Cinco pruebas de historial, Ruff y mypy pasan. El identificador no autentica y el almacén sigue sin conexión a endpoints.

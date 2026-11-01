@@ -21,9 +21,12 @@ def test_history_is_separate_and_feedback_copies_server_trace(tmp_path):
     assert store.add_feedback("f1", "c1", "r1", "now", "incorrecta", "revisar")
     with sqlite3.connect(path) as db:
         db.execute("DELETE FROM requests WHERE request_id = 'r1'")
-        saved = db.execute("SELECT trace_json FROM feedback WHERE feedback_id = 'f1'").fetchone()
+        saved = db.execute(
+            "SELECT trace_json, conversation_id FROM feedback WHERE feedback_id = 'f1'"
+        ).fetchone()
     assert saved is not None
     assert json.loads(saved[0]) == trace
+    assert saved[1] == "c1"
 
 
 def test_duplicate_request_is_not_overwritten(tmp_path):
@@ -59,3 +62,22 @@ def test_pages_are_stable_when_timestamps_tie_and_new_requests_arrive(tmp_path):
     for invalid_limit in (0, -1, 101):
         with pytest.raises(ValueError):
             store.list_page("c", limit=invalid_limit)
+
+
+def test_existing_feedback_gains_conversation_without_losing_orphans(tmp_path):
+    path = tmp_path / "history.db"
+    with sqlite3.connect(path) as db:
+        db.executescript("""
+            CREATE TABLE requests (request_id TEXT PRIMARY KEY, conversation_id TEXT NOT NULL,
+                created_at TEXT NOT NULL, trace_json TEXT NOT NULL);
+            CREATE TABLE feedback (feedback_id TEXT PRIMARY KEY, request_id TEXT NOT NULL,
+                created_at TEXT NOT NULL, kind TEXT NOT NULL, comment TEXT, trace_json TEXT NOT NULL);
+            INSERT INTO requests VALUES ('r', 'c', 'now', '{}');
+            INSERT INTO feedback VALUES ('f', 'r', 'now', 'otro', NULL, '{}');
+            INSERT INTO feedback VALUES ('orphan', 'deleted', 'now', 'otro', NULL, '{}');
+        """)
+    HistoryStore(path)
+    HistoryStore(path)
+    with sqlite3.connect(path) as db:
+        rows = dict(db.execute("SELECT feedback_id, conversation_id FROM feedback"))
+    assert rows == {"f": "c", "orphan": None}

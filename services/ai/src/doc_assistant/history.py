@@ -30,6 +30,7 @@ class HistoryStore:
                 CREATE TABLE IF NOT EXISTS feedback (
                     feedback_id TEXT PRIMARY KEY,
                     request_id TEXT NOT NULL,
+                    conversation_id TEXT,
                     created_at TEXT NOT NULL,
                     kind TEXT NOT NULL,
                     comment TEXT,
@@ -37,6 +38,14 @@ class HistoryStore:
                 );
                 """
             )
+            db.execute("BEGIN IMMEDIATE")
+            columns = {row[1] for row in db.execute("PRAGMA table_info(feedback)")}
+            if "conversation_id" not in columns:
+                db.execute("ALTER TABLE feedback ADD COLUMN conversation_id TEXT")
+                db.execute(
+                    "UPDATE feedback SET conversation_id = "
+                    "(SELECT conversation_id FROM requests WHERE requests.request_id = feedback.request_id)"
+                )
 
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
@@ -94,7 +103,8 @@ class HistoryStore:
     ) -> bool:
         with self._connect() as db:
             cursor = db.execute(
-                "INSERT INTO feedback SELECT ?, request_id, ?, ?, ?, trace_json "
+                "INSERT INTO feedback (feedback_id, request_id, conversation_id, created_at, kind, comment, trace_json) "
+                "SELECT ?, request_id, conversation_id, ?, ?, ?, trace_json "
                 "FROM requests WHERE conversation_id = ? AND request_id = ?",
                 (feedback_id, created_at, kind, comment, conversation_id, request_id),
             )
