@@ -2,6 +2,7 @@
 (Horas reales de los commits, Europe/Madrid, tomadas de `git log`.)
 
 ## Hitos
+- **01-Nov 02:51 · Suite del servicio.** 314 pruebas pasan y 35 live se omiten con el entorno Python existente. La regresión se ha ajustado a Ruff. No sustituye `mise run check` ni las tres pasadas e2e.
 - **01-Nov 02:50 · Carga sintética concurrente.** Con modelos locales, cuatro consultas SSE y dos ingestas PDF simultáneas terminaron correctamente. El modelo tenía dos slots; esta muestra no demuestra el comportamiento bajo saturación prolongada.
 - **01-Nov 02:49 · Conexión SQLite en SSE.** Una prueba alterna dos hilos y reproducía `internal_error`. La búsqueda cierra su conexión antes del siguiente evento y reutiliza los fragmentos para las citas. 35 pruebas de streaming y consulta pasan; falta carga real concurrente y cierre de versión.
 - **01-nov 02:40 · Recorrido del ZIP.** macOS ARM64, b12020 y cinco modelos con SHA256 correcto. Cuatro PDF (44 fragmentos) y cinco facturas procesados. La consulta documental con cita y visor, la factura, la aclaración y el rechazo funcionaron en serie. Una consulta documental concurrente mostró antes un error interno de causa no determinada. Las capturas y datos reales permanecen fuera del repo. Tres pasadas anteriores de Playwright con axe y `mise run check` pasaron; cuatro pruebas live se omitieron por pasada.

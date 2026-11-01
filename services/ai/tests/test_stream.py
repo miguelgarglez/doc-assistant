@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import json
-from concurrent.futures import ThreadPoolExecutor
 import socket
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -435,10 +435,16 @@ def test_stream_survives_worker_thread_changes(
 ) -> None:
     seed(config_path, synthetic_pdf)
     chunk = chunk_for(config_path, "1")
-    use_fakes(monkeypatch, FakeLLM({
-        "answerable": True, "answer": "El robot opera a 24 V.",
-        "citations": [{"chunk_id": chunk["chunk_id"], "quote": "24 V"}],
-    }))
+    use_fakes(
+        monkeypatch,
+        FakeLLM(
+            {
+                "answerable": True,
+                "answer": "El robot opera a 24 V.",
+                "citations": [{"chunk_id": chunk["chunk_id"], "quote": "24 V"}],
+            }
+        ),
+    )
     iterator = ask_stream_events(config_path, "¿A qué voltaje opera el robot?")
     frames = []
     with ThreadPoolExecutor(max_workers=1) as a, ThreadPoolExecutor(max_workers=1) as b:
