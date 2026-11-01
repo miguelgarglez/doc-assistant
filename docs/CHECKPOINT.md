@@ -350,3 +350,9 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Conectados el stream, la cola de reintentos y las rutas locales de historial y revisión. El arranque comparte un token efímero entre la API y el proxy; la retención se ejecuta al arrancar y cada hora. El historial se puede desactivar mediante configuración del administrador.
 - Las pruebas de integración cubren purga, autorización y fallos de almacenamiento sin alterar el evento final. Pasaron 381 pruebas del servicio y se omitieron 35 live; después pasó la prueba adicional de fallo de escritura. El contrato generado conserva las propiedades anteriores. La cola pendiente está en memoria y se pierde al reiniciar.
 - Quedan pendientes la interfaz, las capturas y las verificaciones de entrega. La base actual es local y no proporciona aislamiento multiusuario.
+
+## 01-Nov 14:05 CET · Historial local y feedback
+
+- El panel permite buscar, abrir y borrar conversaciones; Sistema muestra la cola de guardado y la revisión humana. El feedback solo incluye contexto si se solicita. La cola de escrituras es volátil ante reinicios.
+- El check completo reutilizó las dependencias existentes: 392 pruebas del servicio y 26 de scripts pasaron, con 35 live omitidas; lint, tipos, contrato y build correctos. El build utilizó temporalmente una raíz de Turbopack ampliada.
+- El humo con modelos locales usó fuentes sintéticas y produjo una respuesta documental y otra de factura con citas, una aclaración y un rechazo. Las cuatro consultas quedaron guardadas. La revisión y exportación se completaron en una segunda fase sobre la misma base tras corregir el script; no acredita precisión general.
