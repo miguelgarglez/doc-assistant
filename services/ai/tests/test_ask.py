@@ -84,9 +84,9 @@ def test_private_trace_captures_scores_without_changing_events(
     )
     assert len(trace["versions"]["config_sha256"]) == 64
     assert len(trace["versions"]["answer_prompts_sha256"]) == 64
-    assert set(trace["versions"]["models_configured"]) == {
-        "llm", "embeddings", "reranker", "ocr"
-    }
+    assert len(trace["versions"]["chunk_index_sha256"]) == 64
+    assert trace["versions"]["index_schema_version"] == 2
+    assert set(trace["versions"]["models_configured"]) == {"llm", "embeddings", "reranker", "ocr"}
     selected = [c for c in trace["candidates"] if c["selected"]]
     assert selected and all(c["rerank_score"] is not None for c in selected)
     assert sorted(c["rerank_position"] for c in selected) == list(range(len(selected)))
@@ -102,6 +102,20 @@ def test_private_trace_captures_scores_without_changing_events(
     assert trace["verification"]["citations"][0]["quote"] == "24 V"
     assert all("candidates" not in data for _, data in events)
     assert events[-1][1]["ok"] is True
+    store.db.execute("UPDATE chunks SET title = ? WHERE chunk_id = ?", ("nuevo", chunk["chunk_id"]))
+    store.db.commit()
+    changed: dict = {}
+    list(
+        ask_events(
+            config_path,
+            "¿A qué voltaje opera?",
+            embedder=fake_embedder,
+            reranker=FakeReranker(),
+            llm=llm,
+            trace=changed,
+        )
+    )
+    assert changed["versions"]["chunk_index_sha256"] != trace["versions"]["chunk_index_sha256"]
 
 
 def test_ask_llm_rejects(

@@ -276,6 +276,19 @@ def _ask_events(
     t1 = time.perf_counter()
     store = ChunkStore(cfg.db, dim=dim)
     try:
+        if trace is not None:
+            store.db.execute("BEGIN")
+            digest = hashlib.sha256()
+            for row in store.db.execute(
+                "SELECT chunk_id, doc, display_doc, section, heading, title, pages, body, text "
+                "FROM chunks ORDER BY chunk_id"
+            ):
+                digest.update(json.dumps(list(row), ensure_ascii=False).encode("utf-8"))
+                digest.update(b"\n")
+            trace["versions"]["chunk_index_sha256"] = digest.hexdigest()
+            trace["versions"]["index_schema_version"] = store.db.execute(
+                "PRAGMA user_version"
+            ).fetchone()[0]
         vec = store.vector_search(q_emb, k=10)
         bm = store.bm25(question, k=10)
         cand_ids = _union_candidates(vec, bm)
