@@ -377,3 +377,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 - La API real devolvió una conversación sintética que Sistema no mostraba: la vista solo consultaba estado y avisos. Se añade una tabla paginada de peticiones, con identificador copiable y metadatos de estado; los fallos de escritura sin persistir siguen en el estado del historial.
 - Se compararon dos paneles laterales. Historial abre ahora en un panel derecho estrecho que puede ampliarse; conserva búsqueda, borrado y Alt+H. Pasaron pruebas focalizadas de navegador y comprobaciones de tipos y lint; queda pendiente la batería completa.
+
+## 01-Nov 15:12 CET · Decisiones de revisión y exportación
+
+- La migración añade causa y copia de exportación aprobada. El cambio de estado invalida esa copia; las revisiones anteriores sin una copia aprobada no se exportan hasta revisarlas de nuevo. La API anterior sigue disponible y exporta solo identificadores, comentario y respuesta confirmados, sin la traza original.
+- Pruebas focalizadas cubren migración, confirmaciones, redacción, recuento y revocación; pasan tipos y lint del servicio. Quedan pendientes la página de revisión y la verificación completa.

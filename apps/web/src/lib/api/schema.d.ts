@@ -109,6 +109,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/history/feedback/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Feedback Counts */
+        get: operations["feedback_counts_history_feedback_counts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/feedback/{feedback_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Feedback Detail */
+        get: operations["feedback_detail_history_feedback__feedback_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/feedback/{feedback_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Feedback Decision */
+        put: operations["feedback_decision_history_feedback__feedback_id__decision_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/history/feedback/{feedback_id}/review": {
         parameters: {
             query?: never;
@@ -592,6 +643,32 @@ export interface components {
             code: string;
             /** Message */
             message: string;
+        };
+        /** FeedbackDecision */
+        FeedbackDecision: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "nuevo" | "revisado" | "descartado";
+            /** Expected Answer */
+            expected_answer?: string | null;
+            /** Cause */
+            cause?: ("no_recupero" | "respuesta_incorrecta" | "rechazo_indebido" | "formato" | "otro") | null;
+            /** Redacted Comment */
+            redacted_comment?: string | null;
+            /** Redacted Context */
+            redacted_context?: string | null;
+            /**
+             * Confirmed Error
+             * @default false
+             */
+            confirmed_error: boolean;
+            /**
+             * Confirmed No Sensitive Data
+             * @default false
+             */
+            confirmed_no_sensitive_data: boolean;
         };
         /** FeedbackInput */
         FeedbackInput: {
@@ -1473,6 +1550,113 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    feedback_counts_history_feedback_counts_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-history-token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    feedback_detail_history_feedback__feedback_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-history-token"?: string | null;
+            };
+            path: {
+                feedback_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    feedback_decision_history_feedback__feedback_id__decision_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-history-token"?: string | null;
+            };
+            path: {
+                feedback_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackDecision"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
                 };
             };
             /** @description Validation Error */

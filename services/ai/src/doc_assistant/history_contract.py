@@ -36,6 +36,21 @@ class HistoryRepository(HistoryWriter, Protocol):
         self, status: str, *, limit: int = 50, offset: int = 0
     ) -> list[dict[str, Any]]: ...
 
+    def feedback_counts(self) -> dict[str, int]: ...
+
+    def feedback_detail(self, feedback_id: str) -> dict[str, Any] | None: ...
+
+    def decide_feedback(
+        self,
+        feedback_id: str,
+        status: str,
+        *,
+        answer: str | None = None,
+        cause: str | None = None,
+        redacted_comment: str | None = None,
+        redacted_context: str | None = None,
+    ) -> bool: ...
+
     def export_all_reviewed(self) -> Iterator[str]: ...
 
     def review_feedback(self, conversation_id: str, feedback_id: str, answer: str) -> bool: ...

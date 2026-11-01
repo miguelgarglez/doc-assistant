@@ -55,6 +55,18 @@ class ReviewInput(BaseModel):
     confirmed_error: Literal[True]
 
 
+class FeedbackDecision(BaseModel):
+    status: Literal["nuevo", "revisado", "descartado"]
+    expected_answer: str | None = Field(default=None, max_length=4000)
+    cause: (
+        Literal["no_recupero", "respuesta_incorrecta", "rechazo_indebido", "formato", "otro"] | None
+    ) = None
+    redacted_comment: str | None = Field(default=None, max_length=4000)
+    redacted_context: str | None = Field(default=None, max_length=40000)
+    confirmed_error: bool = False
+    confirmed_no_sensitive_data: bool = False
+
+
 @router.get("/requests")
 def requests_page(
     store: Store,
@@ -156,6 +168,41 @@ def feedback(
 @router.get("/feedback/export")
 def export_feedback(store: Store) -> StreamingResponse:
     return StreamingResponse(store.export_all_reviewed(), media_type="application/x-ndjson")
+
+
+@router.get("/feedback/counts")
+def feedback_counts(store: Store) -> dict[str, int]:
+    return store.feedback_counts()
+
+
+@router.get("/feedback/{feedback_id}")
+def feedback_detail(feedback_id: str, store: Store) -> dict[str, Any]:
+    item = store.feedback_detail(feedback_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+    return item
+
+
+@router.put("/feedback/{feedback_id}/decision")
+def feedback_decision(feedback_id: str, payload: FeedbackDecision, store: Store) -> dict[str, bool]:
+    if payload.status == "revisado" and (
+        not payload.expected_answer
+        or not payload.expected_answer.strip()
+        or not payload.cause
+        or not payload.confirmed_error
+        or not payload.confirmed_no_sensitive_data
+    ):
+        raise HTTPException(status_code=422, detail="Review and privacy confirmations required")
+    if not store.decide_feedback(
+        feedback_id,
+        payload.status,
+        answer=payload.expected_answer,
+        cause=payload.cause,
+        redacted_comment=payload.redacted_comment,
+        redacted_context=payload.redacted_context,
+    ):
+        raise HTTPException(status_code=404, detail="Feedback not found")
+    return {"saved": True}
 
 
 @router.post("/feedback/{feedback_id}/review")

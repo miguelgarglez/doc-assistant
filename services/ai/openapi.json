@@ -609,6 +609,182 @@
         }
       }
     },
+    "/history/feedback/counts": {
+      "get": {
+        "summary": "Feedback Counts",
+        "operationId": "feedback_counts_history_feedback_counts_get",
+        "parameters": [
+          {
+            "name": "x-history-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-History-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "integer"
+                  },
+                  "title": "Response Feedback Counts History Feedback Counts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/history/feedback/{feedback_id}": {
+      "get": {
+        "summary": "Feedback Detail",
+        "operationId": "feedback_detail_history_feedback__feedback_id__get",
+        "parameters": [
+          {
+            "name": "feedback_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Feedback Id"
+            }
+          },
+          {
+            "name": "x-history-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-History-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Feedback Detail History Feedback  Feedback Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/history/feedback/{feedback_id}/decision": {
+      "put": {
+        "summary": "Feedback Decision",
+        "operationId": "feedback_decision_history_feedback__feedback_id__decision_put",
+        "parameters": [
+          {
+            "name": "feedback_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Feedback Id"
+            }
+          },
+          {
+            "name": "x-history-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-History-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackDecision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Feedback Decision History Feedback  Feedback Id  Decision Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/history/feedback/{feedback_id}/review": {
       "post": {
         "summary": "Review",
@@ -1972,6 +2148,88 @@
           "message"
         ],
         "title": "ErrorBody"
+      },
+      "FeedbackDecision": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "nuevo",
+              "revisado",
+              "descartado"
+            ],
+            "title": "Status"
+          },
+          "expected_answer": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Answer"
+          },
+          "cause": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "no_recupero",
+                  "respuesta_incorrecta",
+                  "rechazo_indebido",
+                  "formato",
+                  "otro"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cause"
+          },
+          "redacted_comment": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redacted Comment"
+          },
+          "redacted_context": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redacted Context"
+          },
+          "confirmed_error": {
+            "type": "boolean",
+            "title": "Confirmed Error",
+            "default": false
+          },
+          "confirmed_no_sensitive_data": {
+            "type": "boolean",
+            "title": "Confirmed No Sensitive Data",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "FeedbackDecision"
       },
       "FeedbackInput": {
         "properties": {

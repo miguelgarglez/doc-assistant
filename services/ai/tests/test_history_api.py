@@ -100,6 +100,38 @@ def test_review_export_requires_human_confirmations_and_excludes_pending(tmp_pat
     assert len(client.get("/history/feedback", headers=headers).json()) == 1
 
 
+def test_decision_exports_only_approved_redactions_and_revokes_on_reopen(tmp_path):
+    client, store = client_for(tmp_path)
+    headers = {"x-history-token": "secret"}
+    store.record("r", "c", "now", {"question": "secret@example.com"})
+    assert store.add_private_feedback(
+        "f", "c", "r", "now", "secret@example.com", include_context=True
+    )
+    url = "/history/feedback/f/decision"
+    decision = {
+        "status": "revisado",
+        "expected_answer": "respuesta segura",
+        "cause": "otro",
+        "redacted_comment": "[email]",
+        "redacted_context": "[email]",
+    }
+    assert client.put(url, json=decision, headers=headers).status_code == 422
+    assert client.get("/history/feedback/export", headers=headers).text == ""
+    decision.update(confirmed_error=True, confirmed_no_sensitive_data=True)
+    assert client.put(url, json=decision, headers=headers).status_code == 200
+    exported = client.get("/history/feedback/export", headers=headers).text
+    assert "secret@example.com" not in exported
+    assert json.loads(exported)["redacted_context"] == "[email]"
+    assert client.get("/history/feedback/f", headers=headers).json()[
+        "export_preview"
+    ] == json.loads(exported)
+    assert client.get("/history/feedback/counts", headers=headers).json()["revisado"] == 1
+    assert client.put(url, json={"status": "descartado"}, headers=headers).status_code == 200
+    assert client.get("/history/feedback/export", headers=headers).text == ""
+    assert client.put(url, json={"status": "nuevo"}, headers=headers).status_code == 200
+    assert client.get("/history/feedback/f", headers=headers).json()["export_preview"] is None
+
+
 def test_conversation_cursor_and_deletion_cancel_old_stream(tmp_path):
     client, store = client_for(tmp_path)
     client.app.state.history_outbox = HistoryOutbox(store)

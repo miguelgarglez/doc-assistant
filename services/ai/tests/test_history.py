@@ -12,14 +12,27 @@ from doc_assistant.history import HistoryStore
 def test_recent_requests_are_paginated_without_response_contents(tmp_path):
     store = HistoryStore(tmp_path / "history.db")
     store.record("a", "c", "2026-01-01", {"question": "privada", "kind": "answer"})
-    store.record("b", "c", "2026-01-01", {
-        "kind": "error", "transport_status": "error", "elapsed_s": 1.25,
-        "result": {"answer": "privada"},
-    })
-    assert store.requests_page(limit=1) == [{
-        "request_id": "b", "conversation_id": "c", "created_at": "2026-01-01",
-        "kind": "error", "status": "error", "elapsed_s": 1.25,
-    }]
+    store.record(
+        "b",
+        "c",
+        "2026-01-01",
+        {
+            "kind": "error",
+            "transport_status": "error",
+            "elapsed_s": 1.25,
+            "result": {"answer": "privada"},
+        },
+    )
+    assert store.requests_page(limit=1) == [
+        {
+            "request_id": "b",
+            "conversation_id": "c",
+            "created_at": "2026-01-01",
+            "kind": "error",
+            "status": "error",
+            "elapsed_s": 1.25,
+        }
+    ]
     assert store.requests_page(limit=1, offset=1)[0]["request_id"] == "a"
     assert store.requests_page(limit=1, offset=2) == []
     with pytest.raises(ValueError):
@@ -224,6 +237,18 @@ def test_feedback_review_status_is_scoped_and_survives_reopening(tmp_path):
     assert not reopened.set_feedback_status("c", "missing", "descartado")
 
 
+def test_migration_does_not_export_old_reviews_without_new_privacy_check(tmp_path):
+    path = tmp_path / "history.db"
+    store = HistoryStore(path)
+    store.record("r", "c", "now", {"question": "private"})
+    assert store.add_feedback("f", "c", "r", "now", "otro", "private")
+    with sqlite3.connect(path) as db:
+        db.execute("UPDATE feedback SET status='revisado', expected_answer='answer'")
+    reopened = HistoryStore(path)
+    assert list(reopened.export_all_reviewed()) == []
+    assert reopened.feedback_detail("f")["trace"] == {"question": "private"}
+
+
 def test_expected_answer_is_scoped_and_preserves_snapshot(tmp_path):
     path = tmp_path / "history.db"
     store = HistoryStore(path)
@@ -250,8 +275,7 @@ def test_export_contains_only_reviewed_drafts_with_expected_answers(tmp_path):
             f"{conversation}-new",
         ):
             assert store.add_feedback(feedback_id, conversation, conversation, "now", "otro", None)
-        assert store.set_expected_answer(conversation, f"{conversation}-ready", "15 €")
-        assert store.set_feedback_status(conversation, f"{conversation}-ready", "revisado")
+        assert store.review_feedback(conversation, f"{conversation}-ready", "15 €")
         assert store.set_expected_answer(conversation, f"{conversation}-empty", "  ")
         assert store.set_feedback_status(conversation, f"{conversation}-empty", "revisado")
         assert store.set_expected_answer(conversation, f"{conversation}-new", "pending review")
@@ -262,7 +286,7 @@ def test_export_contains_only_reviewed_drafts_with_expected_answers(tmp_path):
     item = json.loads(lines[0])
     assert item["feedback_id"] == "c-ready"
     assert item["expected_answer"] == "15 €"
-    assert item["trace"] == {"question": "c"}
+    assert item["trace"] == {"request_id": "c", "conversation_id": "c"}
 
 
 def test_history_rejects_trace_for_a_different_conversation(tmp_path):

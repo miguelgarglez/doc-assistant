@@ -74,6 +74,10 @@ class HistoryStore:
                 db.execute("ALTER TABLE feedback ADD COLUMN status TEXT NOT NULL DEFAULT 'nuevo'")
             if "expected_answer" not in columns:
                 db.execute("ALTER TABLE feedback ADD COLUMN expected_answer TEXT")
+            if "review_cause" not in columns:
+                db.execute("ALTER TABLE feedback ADD COLUMN review_cause TEXT")
+            if "export_json" not in columns:
+                db.execute("ALTER TABLE feedback ADD COLUMN export_json TEXT")
             db.execute(
                 "CREATE INDEX IF NOT EXISTS feedback_conversation_time "
                 "ON feedback(conversation_id, created_at DESC, feedback_id DESC)"
@@ -141,14 +145,16 @@ class HistoryStore:
         result = []
         for request_id, conversation_id, created_at, raw_trace in rows:
             trace = json.loads(raw_trace)
-            result.append({
-                "request_id": request_id,
-                "conversation_id": conversation_id,
-                "created_at": created_at,
-                "kind": trace.get("kind"),
-                "status": trace.get("transport_status"),
-                "elapsed_s": trace.get("elapsed_s"),
-            })
+            result.append(
+                {
+                    "request_id": request_id,
+                    "conversation_id": conversation_id,
+                    "created_at": created_at,
+                    "kind": trace.get("kind"),
+                    "status": trace.get("transport_status"),
+                    "elapsed_s": trace.get("elapsed_s"),
+                }
+            )
         return result
 
     def delete_conversation(self, conversation_id: str, *, owner: str = "local") -> int:
@@ -320,23 +326,84 @@ class HistoryStore:
         return [dict(self._feedback_row(row), conversation_id=row[8]) for row in rows]
 
     def export_all_reviewed(self) -> Iterator[str]:
-        """Export only reviewed feedback with a nonempty expected answer."""
+        """Export only snapshots explicitly approved for export."""
         with self._connect() as db:
             rows = db.execute(
-                "SELECT feedback_id, request_id, created_at, kind, comment, trace_json, status, "
-                "expected_answer, conversation_id FROM feedback "
-                "WHERE status = 'revisado' AND expected_answer IS NOT NULL "
+                "SELECT export_json FROM feedback "
+                "WHERE status = 'revisado' AND export_json IS NOT NULL "
                 "ORDER BY created_at, feedback_id"
             )
             for row in rows:
-                if row[7].strip():
-                    yield (
-                        json.dumps(
-                            dict(self._feedback_row(row), conversation_id=row[8]),
-                            ensure_ascii=False,
-                        )
-                        + "\n"
-                    )
+                yield row[0] + "\n"
+
+    def feedback_counts(self) -> dict[str, int]:
+        with self._connect() as db:
+            rows = db.execute("SELECT status, COUNT(*) FROM feedback GROUP BY status").fetchall()
+        return {status: count for status, count in rows}
+
+    def feedback_detail(self, feedback_id: str) -> dict[str, Any] | None:
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT feedback_id, request_id, created_at, kind, comment, trace_json, status, "
+                "expected_answer, conversation_id, review_cause, export_json FROM feedback "
+                "WHERE feedback_id = ?",
+                (feedback_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return dict(
+            self._feedback_row(row),
+            conversation_id=row[8],
+            review_cause=row[9],
+            export_preview=json.loads(row[10]) if row[10] else None,
+        )
+
+    def decide_feedback(
+        self,
+        feedback_id: str,
+        status: str,
+        *,
+        answer: str | None = None,
+        cause: str | None = None,
+        redacted_comment: str | None = None,
+        redacted_context: str | None = None,
+    ) -> bool:
+        if status not in {"nuevo", "revisado", "descartado"}:
+            raise ValueError("invalid status")
+        if status == "revisado" and (not answer or not answer.strip() or not cause):
+            raise ValueError("answer and cause required")
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute(
+                "SELECT request_id, conversation_id, created_at, kind FROM feedback WHERE feedback_id = ?",
+                (feedback_id,),
+            ).fetchone()
+            if row is None:
+                return False
+            export = None
+            if status == "revisado":
+                export = json.dumps(
+                    {
+                        "feedback_id": feedback_id,
+                        "request_id": row[0],
+                        "conversation_id": row[1],
+                        "created_at": row[2],
+                        "kind": row[3],
+                        "status": status,
+                        "comment": redacted_comment,
+                        "trace": {"request_id": row[0], "conversation_id": row[1]},
+                        "expected_answer": answer,
+                        "cause": cause,
+                        "redacted_context": redacted_context,
+                    },
+                    ensure_ascii=False,
+                )
+            db.execute(
+                "UPDATE feedback SET status = ?, expected_answer = ?, review_cause = ?, export_json = ? "
+                "WHERE feedback_id = ?",
+                (status, answer, cause, export, feedback_id),
+            )
+            return True
 
     @staticmethod
     def _feedback_row(row: tuple[Any, ...]) -> dict[str, Any]:
@@ -369,7 +436,7 @@ class HistoryStore:
             raise ValueError("invalid feedback status")
         with self._connect() as db:
             cursor = db.execute(
-                "UPDATE feedback SET status = ? WHERE conversation_id = ? AND feedback_id = ?",
+                "UPDATE feedback SET status = ?, export_json = NULL WHERE conversation_id = ? AND feedback_id = ?",
                 (status, conversation_id, feedback_id),
             )
             return cursor.rowcount == 1
@@ -381,9 +448,10 @@ class HistoryStore:
         with self._connect() as db:
             cursor = db.execute(
                 "UPDATE feedback SET status = CASE WHEN expected_answer IS NOT ? "
-                "THEN 'nuevo' ELSE status END, expected_answer = ? "
+                "THEN 'nuevo' ELSE status END, export_json = CASE WHEN expected_answer IS NOT ? "
+                "THEN NULL ELSE export_json END, expected_answer = ? "
                 "WHERE conversation_id = ? AND feedback_id = ?",
-                (answer, answer, conversation_id, feedback_id),
+                (answer, answer, answer, conversation_id, feedback_id),
             )
             return cursor.rowcount == 1
 
@@ -391,24 +459,21 @@ class HistoryStore:
         """Atomically save an expected answer and mark a feedback item reviewed."""
         if not answer.strip():
             raise ValueError("expected answer must not be empty")
-        with self._connect() as db:
-            cursor = db.execute(
-                "UPDATE feedback SET expected_answer = ?, status = 'revisado' "
-                "WHERE conversation_id = ? AND feedback_id = ?",
-                (answer, conversation_id, feedback_id),
-            )
-            return cursor.rowcount == 1
+        item = self.get_feedback(conversation_id, feedback_id)
+        if item is None:
+            return False
+        return self.decide_feedback(
+            feedback_id, "revisado", answer=answer, cause="otro", redacted_comment=item["comment"]
+        )
 
     def export_reviewed(self, conversation_id: str) -> Iterator[str]:
         """Yield JSONL drafts with an expected answer, never approved gold cases."""
         with self._connect() as db:
             rows = db.execute(
-                "SELECT feedback_id, request_id, created_at, kind, comment, trace_json, status, expected_answer "
-                "FROM feedback WHERE conversation_id = ? AND status = 'revisado' "
-                "AND expected_answer IS NOT NULL "
+                "SELECT export_json FROM feedback WHERE conversation_id = ? AND status = 'revisado' "
+                "AND export_json IS NOT NULL "
                 "ORDER BY created_at, feedback_id",
                 (conversation_id,),
             )
             for row in rows:
-                if row[7].strip():
-                    yield json.dumps(self._feedback_row(row), ensure_ascii=False) + "\n"
+                yield row[0] + "\n"
