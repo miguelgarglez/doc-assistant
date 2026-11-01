@@ -22,6 +22,9 @@ const sensitive = /(\b[A-Z]{2}\d{2}(?:[ ]?\d){10,30}\b|\b\d{8}[A-Z]\b|\b[\w.+-]+
 function Highlight({ text }: { text: string }) {
   return <>{text.split(sensitive).map((part, index) => index % 2 ? <mark key={index} className="rounded-sm bg-amber-200 text-black">{part}</mark> : part)}</>
 }
+function SensitiveHint({ text }: { text: string }) {
+  return text.match(sensitive) ? <p className="whitespace-pre-wrap text-sm">Posibles datos sensibles: <Highlight text={text} /></p> : null
+}
 
 export default function ReviewPage() {
   const [filter, setFilter] = useState<Status>("nuevo")
@@ -144,9 +147,9 @@ export default function ReviewPage() {
         </section>
         <section className="flex flex-col gap-4 border-t pt-5"><div><h3 className="font-semibold">Preparar la revisión</h3><p className="text-sm text-muted-foreground">Se resaltan posibles datos sensibles, incluidos nombres, importes, IBAN, NIF, correos y teléfonos. La detección puede omitir datos: revisa todo antes de confirmar. Los cambios del borrador se guardan al marcar revisado.</p></div>
           <FieldGroup><FieldSet><FieldLegend>Causa del fallo</FieldLegend><ToggleGroup aria-label="Causa del fallo" className="flex-wrap" disabled={saving} value={[cause]} onValueChange={(values) => { const option = causes.find((item) => item.value === values[0]); if (option) { setCause(option.value); setSafe(false) } }} variant="outline" size="sm">{causes.map((option) => <ToggleGroupItem key={option.value} value={option.value}>{option.label}</ToggleGroupItem>)}</ToggleGroup></FieldSet>
-            <Field><FieldLabel htmlFor="answer">Respuesta esperada</FieldLabel><FieldDescription>Describe la respuesta correcta sin incluir datos personales ni importes identificables.</FieldDescription><Textarea disabled={saving} id="answer" value={answer} maxLength={4000} onChange={(e) => { setAnswer(e.target.value); setSafe(false) }} /><p className="whitespace-pre-wrap text-sm"><Highlight text={answer} /></p></Field>
-            <Field><FieldLabel htmlFor="comment">Comentario para exportar</FieldLabel><Textarea disabled={saving} id="comment" value={comment} maxLength={4000} onChange={(e) => { setComment(e.target.value); setSafe(false) }} /><p className="text-sm"><Highlight text={comment} /></p></Field>
-            <Field><FieldLabel htmlFor="context">Contexto redactado para exportar (opcional)</FieldLabel><FieldDescription>Escribe únicamente los fragmentos que quieras compartir tras quitar los datos sensibles. La conversación original no se exporta.</FieldDescription><Textarea disabled={saving} id="context" value={context} maxLength={40000} onChange={(e) => { setContext(e.target.value); setSafe(false) }} /><p className="whitespace-pre-wrap text-sm"><Highlight text={context} /></p></Field>
+            <Field><FieldLabel htmlFor="answer">Respuesta esperada</FieldLabel><FieldDescription>Describe la respuesta correcta sin incluir datos personales ni importes identificables.</FieldDescription><Textarea disabled={saving} id="answer" value={answer} maxLength={4000} onChange={(e) => { setAnswer(e.target.value); setSafe(false) }} /><SensitiveHint text={answer} /></Field>
+            <Field><FieldLabel htmlFor="comment">Comentario para exportar</FieldLabel><Textarea disabled={saving} id="comment" value={comment} maxLength={4000} onChange={(e) => { setComment(e.target.value); setSafe(false) }} /><SensitiveHint text={comment} /></Field>
+            <Field><FieldLabel htmlFor="context">Contexto redactado para exportar (opcional)</FieldLabel><FieldDescription>Escribe únicamente los fragmentos que quieras compartir tras quitar los datos sensibles. La conversación original no se exporta.</FieldDescription><Textarea disabled={saving} id="context" value={context} maxLength={40000} onChange={(e) => { setContext(e.target.value); setSafe(false) }} /><SensitiveHint text={context} /></Field>
             <Field orientation="horizontal"><Checkbox disabled={saving} id="confirmed" checked={confirmed} onCheckedChange={setConfirmed} /><FieldLabel htmlFor="confirmed">He comprobado que hay un fallo real.</FieldLabel></Field>
             <Field orientation="horizontal"><Checkbox disabled={saving} id="safe" checked={safe} onCheckedChange={setSafe} /><FieldLabel htmlFor="safe">He revisado toda la vista previa y quitado los datos sensibles.</FieldLabel></Field>
           </FieldGroup>
