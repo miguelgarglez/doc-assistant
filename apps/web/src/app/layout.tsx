@@ -4,8 +4,8 @@ import { DM_Sans, IBM_Plex_Mono, Manrope, Space_Grotesk } from "next/font/google
 import { ThemeProvider } from "@/components/theme/theme-provider"
 import { PromptInputProvider } from "@/components/ai-elements/prompt-input"
 import { ChatProvider } from "@/components/providers/chat-provider"
-import { SourcesProvider } from "@/components/providers/sources-provider"
-import { UploadsProvider } from "@/components/providers/uploads-provider"
+import { SourcesProvider } from "@/features/sources"
+import { UploadsWithSources } from "@/app/uploads-with-sources"
 import { AppShell } from "@/components/shell/app-shell"
 import { Toaster } from "@/components/ui/sonner"
 import { UploadToast } from "@/components/uploads/upload-toast"
@@ -65,7 +65,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeProvider>
           <TooltipProvider delay={300}>
             <SourcesProvider>
-              <UploadsProvider>
+              <UploadsWithSources>
                 <AddSourcesProvider>
                   <ChatProvider>
                     <PromptInputProvider>
@@ -75,7 +75,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 </AddSourcesProvider>
                 <Toaster />
                 <UploadToast />
-              </UploadsProvider>
+              </UploadsWithSources>
             </SourcesProvider>
           </TooltipProvider>
         </ThemeProvider>

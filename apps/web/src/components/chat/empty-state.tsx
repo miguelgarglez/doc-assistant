@@ -4,7 +4,7 @@ import { FileSearchIcon, PlusIcon } from "lucide-react"
 
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion"
 import { useAddSources } from "@/components/providers/add-sources-provider"
-import { useSources } from "@/components/providers/sources-provider"
+import { useSources } from "@/features/sources"
 import { Button } from "@/components/ui/button"
 import type { Source } from "@/lib/api/types"
 

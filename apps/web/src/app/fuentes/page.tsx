@@ -1,4 +1,4 @@
-import { SourcesView } from "@/components/sources/sources-view"
+import { SourcesView } from "@/features/sources"
 
 export default function SourcesPage() {
   return <SourcesView />

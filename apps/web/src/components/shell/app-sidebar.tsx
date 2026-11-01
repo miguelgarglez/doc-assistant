@@ -15,7 +15,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { HistoryPanel } from "@/features/history"
 import { useAddSources } from "@/components/providers/add-sources-provider"
 import { useConversation } from "@/components/providers/chat-provider"
-import { useSources } from "@/components/providers/sources-provider"
+import { useSources } from "@/features/sources"
 import {
   Sidebar,
   SidebarContent,

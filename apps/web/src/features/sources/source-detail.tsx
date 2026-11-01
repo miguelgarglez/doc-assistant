@@ -3,7 +3,7 @@
 import { ChevronLeftIcon, ChevronRightIcon, Trash2Icon, XIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 
-import { StatusBadge } from "@/components/sources/status-badge"
+import { StatusBadge } from "@/features/sources/status-badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { invoiceImageUrl, sourcePageUrl } from "@/lib/api/source-url"

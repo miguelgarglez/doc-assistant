@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react"
 
-import { useSources } from "@/components/providers/sources-provider"
 import { UploadStore, type UploadItem, type UploadOrigin } from "@/lib/uploads/store"
 
 export type { UploadItem, UploadOrigin, UploadStatus } from "@/lib/uploads/store"
@@ -20,12 +19,11 @@ type UploadsContextValue = {
 const UploadsContext = createContext<UploadsContextValue | null>(null)
 const EMPTY: UploadItem[] = []
 
-export function UploadsProvider({ children }: { children: ReactNode }) {
-  const { refresh } = useSources()
+export function UploadsProvider({ children, onUploaded }: { children: ReactNode; onUploaded: () => Promise<void> }) {
   const [store] = useState(() => new UploadStore())
   useEffect(() => {
-    store.setOnUploaded(refresh)
-  }, [store, refresh])
+    store.setOnUploaded(onUploaded)
+  }, [store, onUploaded])
   const items = useSyncExternalStore(store.subscribe, store.getSnapshot, () => EMPTY)
 
   const value = useMemo<UploadsContextValue>(
