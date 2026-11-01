@@ -421,3 +421,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:25 CET · Suite del servicio
 - La suite completa del servicio pasa con 340 pruebas y 35 live omitidas, usando el intérprete existente y `PYTHONPATH` de este worktree. Hay una advertencia de deprecación de Starlette.
 - No sustituye `mise run check`, las pasadas de navegador ni la auditoría necesarias para una versión nueva.
+
+## 01-Nov 07:27 CET · Aislamiento de la selección de facturas
+- La selección y las candidatas de aclaración de la traza son copias independientes del resultado interno. Una regresión reproduce la mutación compartida antes de la corrección.
+- Pasan 60 pruebas de facturas, Ruff y la comprobación de formato. La traza sigue sin persistir ni estar conectada a endpoints.

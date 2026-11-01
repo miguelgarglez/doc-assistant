@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
+from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from decimal import Decimal
 from typing import Any
@@ -583,12 +584,12 @@ def execute(
     sel = select(con, plan, question)
     if trace is not None:
         trace["selection"] = {
-            "numeros": sel.numeros,
+            "numeros": deepcopy(sel.numeros),
             "rol": sel.rol,
             "label": sel.label,
-            "selector_fields": sel.selector_fields,
+            "selector_fields": deepcopy(sel.selector_fields),
             "stop_reason": sel.stop.get("reason") if sel.stop else None,
-            "clarification": sel.stop.get("clarification") if sel.stop else None,
+            "clarification": deepcopy(sel.stop.get("clarification")) if sel.stop else None,
         }
     if sel.stop:
         return sel.stop
@@ -601,7 +602,7 @@ def execute(
     result = _shape(con, plan, sel, numeros, has_selector, question)
     if trace is not None and result.get("clarification"):
         trace["selection"]["stop_reason"] = result.get("reason")
-        trace["selection"]["clarification"] = result["clarification"]
+        trace["selection"]["clarification"] = deepcopy(result["clarification"])
     result["selected"] = numeros
     return result
 

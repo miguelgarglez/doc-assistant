@@ -634,3 +634,25 @@ def test_invoice_trace_records_clarification_candidates(config_path):
         "2026/0317",
     }
     assert {row["numero"] for row in trace["rows"]} == {"2026/0317", "FAC-2026-0042"}
+
+
+def test_invoice_selection_trace_is_independent_of_result(config_path):
+    from doc_assistant.config import load_config
+    from doc_assistant.invoice_query import Plan, execute
+
+    db = InvoiceDB(str(load_config(config_path).db))
+    try:
+        db.upsert(LUCIA)
+        db.upsert(TECNO)
+        trace = {}
+        result = execute(
+            db.con,
+            Plan(intent="valor", campos=["importe_total"]),
+            "¿cuál es el importe total de la factura?",
+            trace,
+        )
+        original = trace["selection"]["clarification"]["candidates"][0]["numero"]
+        result["clarification"]["candidates"][0]["numero"] = "modificada"
+        assert trace["selection"]["clarification"]["candidates"][0]["numero"] == original
+    finally:
+        db.con.close()
