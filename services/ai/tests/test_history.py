@@ -138,3 +138,26 @@ def test_existing_history_file_permissions_are_not_changed(tmp_path):
     path.chmod(0o640)
     HistoryStore(path)
     assert stat.S_IMODE(path.stat().st_mode) == 0o640
+
+
+def test_feedback_pages_survive_request_removal_and_isolate_conversations(tmp_path):
+    path = tmp_path / "history.db"
+    store = HistoryStore(path)
+    store.record("r", "c", "now", {"question": "private"})
+    store.record("other", "different", "now", {"question": "other"})
+    for feedback_id in ("a", "b", "c"):
+        assert store.add_feedback(feedback_id, "c", "r", "2026-01-01", "otro", None)
+    assert store.add_feedback("other", "different", "other", "2026-01-01", "otro", None)
+    with sqlite3.connect(path) as db:
+        db.execute("DELETE FROM requests WHERE request_id = 'r'")
+    first, cursor = store.list_feedback_page("c", limit=2)
+    store.record("new", "c", "now", {})
+    assert store.add_feedback("new", "c", "new", "2026-01-02", "otro", None)
+    second, cursor = store.list_feedback_page("c", limit=2, before=cursor)
+    assert [item["feedback_id"] for item in first + second] == ["c", "b", "a"]
+    assert all(item["trace"] == {"question": "private"} for item in first + second)
+    assert cursor is None
+    assert [item["feedback_id"] for item in store.list_feedback_page("different")[0]] == ["other"]
+    for invalid_limit in (0, -1, 101):
+        with pytest.raises(ValueError):
+            store.list_feedback_page("c", limit=invalid_limit)

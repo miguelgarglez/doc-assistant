@@ -456,3 +456,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 11:03 CET · Lectura interna del feedback
 - El almacén permite recuperar la copia de feedback por conversación incluso después de borrar la petición. Una prueba comprueba el contenido y rechaza otra conversación. El identificador no autentica y no se expone ningún endpoint.
 - Ocho pruebas de historial, Ruff y mypy pasan.
+
+## 01-Nov 11:04 CET · Paginación interna de feedback
+- El almacén lista copias de feedback por conversación, con cursor estable por fecha e identificador y límite de 100. Conserva las copias cuando desaparece la petición; un índice facilita la consulta. No hay endpoint ni autenticación.
+- Nueve pruebas de historial, Ruff y mypy pasan. Una primera ejecución de Ruff desde la raíz usó una configuración de imports distinta; la repetición desde el servicio pasó.

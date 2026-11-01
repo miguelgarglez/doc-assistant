@@ -62,6 +62,10 @@ class HistoryStore:
                     "UPDATE feedback SET conversation_id = "
                     "(SELECT conversation_id FROM requests WHERE requests.request_id = feedback.request_id)"
                 )
+            db.execute(
+                "CREATE INDEX IF NOT EXISTS feedback_conversation_time "
+                "ON feedback(conversation_id, created_at DESC, feedback_id DESC)"
+            )
 
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
@@ -126,6 +130,43 @@ class HistoryStore:
             )
             return cursor.rowcount == 1
 
+    def list_feedback_page(
+        self,
+        conversation_id: str,
+        *,
+        limit: int = 50,
+        before: tuple[str, str] | None = None,
+    ) -> tuple[list[dict[str, Any]], tuple[str, str] | None]:
+        """List feedback snapshots for one conversation, newest first."""
+        if not 1 <= limit <= 100:
+            raise ValueError("limit must be between 1 and 100")
+        query = (
+            "SELECT feedback_id, request_id, created_at, kind, comment, trace_json "
+            "FROM feedback WHERE conversation_id = ?"
+        )
+        params: list[Any] = [conversation_id]
+        if before is not None:
+            query += " AND (created_at, feedback_id) < (?, ?)"
+            params.extend(before)
+        query += " ORDER BY created_at DESC, feedback_id DESC LIMIT ?"
+        params.append(limit + 1)
+        with self._connect() as db:
+            rows = db.execute(query, params).fetchall()
+        page = rows[:limit]
+        cursor = (page[-1][2], page[-1][0]) if len(rows) > limit else None
+        return [self._feedback_row(row) for row in page], cursor
+
+    @staticmethod
+    def _feedback_row(row: tuple[Any, ...]) -> dict[str, Any]:
+        return {
+            "feedback_id": row[0],
+            "request_id": row[1],
+            "created_at": row[2],
+            "kind": row[3],
+            "comment": row[4],
+            "trace": json.loads(row[5]),
+        }
+
     def get_feedback(self, conversation_id: str, feedback_id: str) -> dict[str, Any] | None:
         """Read the server snapshot, including after its request has been removed."""
         with self._connect() as db:
@@ -136,11 +177,4 @@ class HistoryStore:
             ).fetchone()
         if row is None:
             return None
-        return {
-            "feedback_id": row[0],
-            "request_id": row[1],
-            "created_at": row[2],
-            "kind": row[3],
-            "comment": row[4],
-            "trace": json.loads(row[5]),
-        }
+        return self._feedback_row(row)
