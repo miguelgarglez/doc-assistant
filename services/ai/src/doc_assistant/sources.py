@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from doc_assistant.chunking import invoice_doc_id, pdf_doc_id
 from doc_assistant.config import AppConfig
 from doc_assistant.store import ChunkStore
 
@@ -111,3 +112,38 @@ def remove_source(cfg: AppConfig, source: dict[str, Any]) -> None:
         removed.mkdir(exist_ok=True)
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
         shutil.move(str(src), str(removed / f"{stamp}_{src.name}"))
+
+
+def source_chunks(cfg: AppConfig, source_id: str) -> list[dict[str, Any]]:
+    store = ChunkStore(cfg.db, cfg.embeddings.dim)
+    try:
+        return [
+            {
+                "chunk_id": row["chunk_id"],
+                "section": row["section"],
+                "pages": json.loads(row["pages"]),
+                "text": row["body"],
+            }
+            for row in store.db.execute(
+                "SELECT chunk_id, section, pages, body FROM chunks WHERE doc = ? ORDER BY rowid",
+                (source_id,),
+            )
+        ]
+    finally:
+        store.db.close()
+
+
+def source_page(cfg: AppConfig, doc_id: str, n: int) -> bytes | None:
+    store = ChunkStore(cfg.db, cfg.embeddings.dim)
+    try:
+        png = store.page(doc_id, n)
+        if png is None and not doc_id.startswith(("pdf-", "inv-")):
+            matches = [
+                page
+                for key in (pdf_doc_id(doc_id), invoice_doc_id(doc_id))
+                if (page := store.page(key, n)) is not None
+            ]
+            png = matches[0] if len(matches) == 1 else None
+        return png
+    finally:
+        store.db.close()

@@ -82,7 +82,7 @@ def ensure_schema(path: str | Path) -> None:
 
 
 class ChunkStore:
-    def __init__(self, path: str | Path, dim: int) -> None:
+    def __init__(self, path: str | Path, dim: int | None) -> None:
         self.path = Path(path)
         self.dim = dim
         self.path.parent.mkdir(parents=True, exist_ok=True)

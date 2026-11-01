@@ -20,14 +20,14 @@ from doc_assistant.ask import ask
 from doc_assistant.ask_schemas import AskRequest, AskResponse
 from doc_assistant.ask_stream import STREAM_SCHEMA, queued_ask_stream
 from doc_assistant.bootstrap import lifespan_for
-from doc_assistant.chunking import invoice_doc_id, pdf_doc_id
 from doc_assistant.health import ComponentsHealth, check_components
 from doc_assistant.highlight import locate
 from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
-from doc_assistant.invoices import InvoiceDB, invoice_image, upload_invoice
+from doc_assistant.invoices import invoice_image, list_invoices, upload_invoice
 from doc_assistant.pdf_lock import pdf_lock
 from doc_assistant.sources import find_source, list_sources, remove_source
-from doc_assistant.store import ChunkStore
+from doc_assistant.sources import source_chunks as fetch_source_chunks
+from doc_assistant.sources import source_page as fetch_source_page
 
 DEFAULT_CONFIG = Path(__file__).resolve().parents[4] / "config/config.yaml"
 ASK_QUEUE_TIMEOUT_S = 60.0
@@ -464,23 +464,10 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
 
     @app.get("/sources/{source_id}/chunks", response_model=list[SourceChunk])
     def source_chunks(source_id: str, request: Request) -> Any:
-        cfg = request.app.state.config
-        store = ChunkStore(cfg.db, cfg.embeddings.dim)
-        try:
-            return [
-                SourceChunk(
-                    chunk_id=row["chunk_id"],
-                    section=row["section"],
-                    pages=json.loads(row["pages"]),
-                    text=row["body"],
-                )
-                for row in store.db.execute(
-                    "SELECT chunk_id, section, pages, body FROM chunks WHERE doc = ? ORDER BY rowid",
-                    (source_id,),
-                )
-            ]
-        finally:
-            store.db.close()
+        return [
+            SourceChunk.model_validate(row)
+            for row in fetch_source_chunks(request.app.state.config, source_id)
+        ]
 
     @app.get(
         "/ingest/jobs/{job_id}/events",
@@ -566,19 +553,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         responses={200: {"content": {"image/png": {}}}, 404: {"model": ErrorBody}},
     )
     def source_page(doc_id: str, n: int, request: Request) -> Response:
-        cfg = request.app.state.config
-        store = ChunkStore(cfg.db, cfg.embeddings.dim)
-        try:
-            png = store.page(doc_id, n)
-            if png is None and not doc_id.startswith(("pdf-", "inv-")):
-                matches = [
-                    page
-                    for key in (pdf_doc_id(doc_id), invoice_doc_id(doc_id))
-                    if (page := store.page(key, n)) is not None
-                ]
-                png = matches[0] if len(matches) == 1 else None
-        finally:
-            store.db.close()
+        png = fetch_source_page(request.app.state.config, doc_id, n)
         if png is None:
             return JSONResponse(
                 status_code=404,
@@ -590,16 +565,12 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
 
     @app.get("/invoices", response_model=list[InvoiceListItem])
     def invoices(request: Request) -> Any:
-        db = InvoiceDB(str(request.app.state.config.db))
-        try:
-            return [
-                InvoiceListItem.model_validate(
-                    {**row, "estado": "ok" if row["cuadra"] == "1" else "revisar"}
-                )
-                for row in db.rows()
-            ]
-        finally:
-            db.con.close()
+        return [
+            InvoiceListItem.model_validate(
+                {**row, "estado": "ok" if row["cuadra"] == "1" else "revisar"}
+            )
+            for row in list_invoices(request.app.state.config.db)
+        ]
 
     @app.post(
         "/invoices/upload",

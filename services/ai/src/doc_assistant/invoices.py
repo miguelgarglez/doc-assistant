@@ -76,6 +76,14 @@ class InvoiceDB:
         return hits[0] if len(hits) == 1 else None
 
 
+def list_invoices(path: str | Path) -> list[dict[str, Any]]:
+    db = InvoiceDB(str(path))
+    try:
+        return db.rows()
+    finally:
+        db.con.close()
+
+
 def sanitize_image_filename(name: str, numero: str) -> str:
     base = Path(name or f"{numero}.png").name
     safe = re.sub(r"[^\w.\-]+", "_", base, flags=re.UNICODE).strip("._") or numero
