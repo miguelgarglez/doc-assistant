@@ -1,31 +1,49 @@
 # Modelos y hardware
 
-La configuración actual se ha probado en el Mac descrito en [README](../README.md#probado-en). Los nombres, tamaños y hashes de los archivos proceden de `scripts/assets.json`. Los tamaños de esta tabla son los archivos en disco, no el consumo de memoria en ejecución.
+## Hardware real
 
-| Función | Archivo | Cuantización | Tamaño en disco |
-|---|---|---|---:|
-| Respuesta y planificación | Qwen3.5-4B-Q4_K_M.gguf | Q4_K_M | 2,553 GiB |
-| Embeddings | bge-m3-Q8_0.gguf | Q8_0 | 0,591 GiB |
-| Reordenación | bge-reranker-v2-m3-Q8_0.gguf | Q8_0 | 0,592 GiB |
-| OCR | GLM-OCR-Q8_0.gguf | Q8_0 | 0,885 GiB |
-| Proyector visual para OCR | mmproj-GLM-OCR-Q8_0.gguf | Q8_0 | 0,451 GiB |
+Configuración medida el 1 de noviembre de 2026:
 
-Los cinco archivos suman aproximadamente 5,072 GiB. La memoria unificada disponible es de 16 GiB, pero esa resta no predice la memoria libre durante la ejecución. El sistema operativo, los procesos, el contexto y las estructuras de inferencia también ocupan memoria. Falta medir el pico de memoria con los cuatro servidores activos y durante OCR y consulta.
+- macOS 26.6.2 (25G83).
+- Apple M4, 10 núcleos de CPU y 10 de GPU.
+- 16 GiB de memoria unificada.
 
-La división por función permite cambiar cada modelo sin sustituir toda la aplicación. `config/config.yaml` define los servicios y `scripts/assets.json` fija sus archivos. Los resultados anteriores documentan pruebas de humo y baterías sintéticas, no una comparación controlada entre modelos ni una evaluación gold aprobada.
+En Apple Silicon CPU y GPU comparten memoria. Por eso no se presenta una cifra de «VRAM libre» separada: sería ficticia. Las medidas disponibles son RSS por proceso y memoria física total.
 
-## Alternativas que faltan por medir
+```sh
+sw_vers
+sysctl -n machdep.cpu.brand_string hw.physicalcpu hw.logicalcpu hw.memsize
+system_profiler SPDisplaysDataType
+```
 
-- Un modelo de lenguaje mayor puede mejorar o empeorar las respuestas y necesita más recursos. Comparar calidad, latencia y memoria con el mismo conjunto aprobado antes de cambiarlo.
-- Otra cuantización puede cambiar memoria y calidad. Medir ambas en el mismo hardware antes de elegirla.
-- Ollama con GLM-OCR es una alternativa de runtime ya documentada en el README. No hay una comparación reproducible frente a llama-server en este repositorio.
-- Sustituir embeddings o reranker exige reindexar o repetir la recuperación según corresponda. Comparar recuperación y citas con un conjunto aprobado antes de cambiar esos modelos.
+## Selección final
 
-No se conocen comparaciones documentadas que permitan presentar estas alternativas como descartadas por resultados. C4/C5/E-C1 y E-B2 siguen abiertos hasta disponer de esa evidencia.
+| Función | Modelo y cuantización | Disco | Configuración | Por qué encaja en 16 GiB |
+|---|---|---:|---|---|
+| Respuesta y planificación | Qwen3.5-4B Q4_K_M | 2,553 GiB | contexto 8192, 2 slots, temperatura 0, `reasoning-budget 0` | Es el mayor consumidor. Q4_K_M deja margen para tres servidores auxiliares, web, API e índice y ofrece latencia interactiva. |
+| Embeddings | bge-m3 Q8_0 | 0,591 GiB | 1024 dimensiones | Multilingüe y adecuado para español técnico. Su tamaño permite Q8_0 sin comprometer el presupuesto global. |
+| Reranking | bge-reranker-v2-m3 Q8_0 | 0,592 GiB | endpoint local de reranking | Reduce candidatos irrelevantes antes de generar. Q8_0 cabe junto al embedding y evita delegar selección al LLM. |
+| OCR | GLM-OCR Q8_0 | 0,885 GiB | contexto 8192, flash attention, máximo 1600 tokens de imagen | OCR local especializado y compatible con llama.cpp; evita API o runtime adicional. |
+| Proyector OCR | mmproj GLM-OCR Q8_0 | 0,451 GiB | cargado con GLM-OCR | Necesario para la entrada visual; forma una sola decisión con el OCR. |
 
-## Muestra de memoria residente (1 de noviembre)
+Los cinco archivos suman 5,072 GiB en disco. Eso no equivale a memoria de ejecución: también cuentan contexto, cachés, páginas compartidas, SQLite, Node y el sistema operativo. Los archivos, versiones y SHA256 están fijados en `scripts/assets.json`.
 
-En el Mac del README se arrancaron los cuatro modelos de `scripts/dev.py` por separado en los puertos 8181–8184, con los mismos argumentos del plan y `llama-server` ya instalado, versión 0.8.0 (compilación 11960). Esta compilación no es la b12020 fijada para el paquete. Tras recibir `/health` de los cuatro, se consultó `ps -o pid,pgid,rss -p PID`; luego se hizo una petición de texto sintética al LLM y se repitió la consulta. RSS se expresa aquí en MiB a partir de KiB informados por `ps`.
+## Alternativas consideradas
+
+| Alternativa | Decisión | Motivo vinculado al hardware y al riesgo |
+|---|---|---|
+| Qwen3.5 9B Q4_K_M | No se incluye en la entrega | En tres preguntas sintéticas no aportó una mejora observable y fue más lento. Su RSS varió entre ejecuciones y reduce el margen de una máquina de 16 GiB mientras conviven OCR, embeddings y reranker. Se reevaluaría con un gold independiente, no por tamaño nominal. |
+| Cuantización menor del LLM | Descartada para esta entrega | Ahorraría memoria, pero la prioridad es fundamentación y no hay una comparación que demuestre que conserva calidad. Q4_K_M ya cabe. |
+| Embeddings o reranker más cuantizados | Descartados | Cada uno ronda 0,6 GiB; el ahorro sería pequeño frente al riesgo de degradar recuperación. |
+| Eliminar el reranker | Descartado | Ahorraría un proceso, pero trasladaría más fragmentos o candidatos peores al LLM. La precisión de recuperación pesa más que ese ahorro en la máquina medida. |
+| Ollama para OCR | Alternativa operativa, no valor por defecto | Funcionó con GLM-OCR, pero añade otro runtime. llama.cpp ya se empaqueta, se verifica por SHA256 y sirve los cuatro roles. |
+| APIs cloud | Incompatible | Viola la restricción de privacidad y procesamiento local, con independencia de su calidad. |
+
+La comparación 4B/9B es exploratoria: tres preguntas no miden calidad general. La decisión final se apoya también en el presupuesto simultáneo y en minimizar piezas operativas, no en declarar ganador al 4B.
+
+## Memoria observada
+
+Instantáneas RSS con los cuatro servidores cargados y una inferencia sintética. Se usó llama-server 0.8.0, compilación 11960; el ZIP fija b12020, por lo que estas cifras son orientativas y no una medición exacta del paquete final.
 
 | Proceso | Tras cargar | Tras inferencia del LLM |
 |---|---:|---:|
@@ -34,38 +52,33 @@ En el Mac del README se arrancaron los cuatro modelos de `scripts/dev.py` por se
 | Reranker | 620 MiB | 617 MiB |
 | OCR | 1.791 MiB | 1.791 MiB |
 
-Son dos instantáneas, no el pico de una carga completa; RSS puede incluir páginas compartidas y no permite sumar sin más ni separar memoria GPU en este Mac de memoria unificada. No hubo OCR, recuperación ni trabajo concurrente durante la consulta. La versión de llama.cpp, el contexto y la carga afectan los resultados. Por eso E-B2 sigue parcial: faltan pico de memoria y carga representativa con la compilación de entrega. Los cuatro procesos se cerraron por sus PID y sus puertos quedaron libres.
+Son instantáneas, no picos. RSS puede contar páginas compartidas y no se suma como si fueran reservas independientes. No se ejecutó OCR simultáneo en esa muestra. La conclusión defendible es más estrecha: los cuatro modelos cargaron y operaron juntos en el M4 de 16 GiB sin agotar memoria durante los recorridos publicados.
 
-## Comparación exploratoria de dos modelos de lenguaje
+## Latencia en el mismo equipo
 
-Con los dos archivos Qwen3.5 Q4_K_M locales se ejecutaron tres preguntas sintéticas idénticas, secuencialmente y con temperatura 0: dos datos literales y una ausencia explícita. Ambos devolvieron los tres resultados esperados. Las respuestas fueron `4 m`, `24 V` y `No está indicado.` para ambos. El servidor fue la compilación 11960, con contexto 8192 y dos slots. Hubo otra actividad en el equipo, incluidas pruebas de navegador. Una sola ejecución por pregunta no permite comparar calidad ni rendimiento de forma fiable.
+Diez peticiones válidas por operación, primero en serie y después de dos en dos:
 
-| Modelo | RSS al cargar | RSS tras las consultas | Tiempos observados |
-|---|---:|---:|---|
-| Qwen3.5 4B | 3.152 MiB | 3.420 MiB | 0,30 / 0,35 / 0,40 s |
-| Qwen3.5 9B | 2.630 MiB | 2.902 MiB | 0,55 / 0,61 / 0,67 s |
-
-La RSS observada del 9B fue menor en esta muestra. No es el consumo total ni demuestra que necesite menos memoria: la residencia de páginas y la memoria del dispositivo pueden variar. En una segunda ejecución del script publicado, la RSS final del 9B fue 4.194 MiB frente a 2.902 MiB en la primera, lo que ilustra esa variabilidad; tampoco se ha medido el pico. Los tiempos incluyen la petición HTTP y corresponden a salidas cortas; no son una comparación controlada ni predicen tiempos de la aplicación. El experimento no permite descartar ninguna alternativa y C4/C5/E-C1 sigue en «no».
-
-Para repetirlo en macOS con los dos GGUF ya disponibles y `llama-server` compatible en PATH:
-
-```sh
-DOC_ASSISTANT_MODELS_DIR=/ruta/a/modelos uv run --frozen --project services/ai python evidence/modelos/comparar.py
-```
-
-Usa el puerto 8181 y cierra por PID los servidores que crea. Se puede seleccionar otro ejecutable mediante `DOC_ASSISTANT_LLAMA_SERVER`; las cifras dependen de su versión y de la carga del equipo.
-
-## Latencia de una carga sintética local
-
-En el mismo Mac se midieron diez peticiones válidas por operación, primero en serie y después con dos peticiones concurrentes. Se usaron los modelos locales, `llama-server` con dos slots para el LLM y HTTP local. Las consultas se comprobaron con un oráculo simple y una cita cuando correspondía; las ingestas verificaron la creación y los campos esperados.
-
-| Operación | Serie p50 / p95 (s) | Concurrencia 2 p50 / p95 (s) |
+| Operación | Serie p50 / p95 | Concurrencia 2 p50 / p95 |
 |---|---:|---:|
-| Documento | 3,115 / 3,922 | 4,775 / 6,599 |
-| Factura | 1,747 / 3,256 | 3,352 / 6,221 |
-| Aclaración | 1,833 / 1,969 | 3,122 / 3,187 |
-| Rechazo | 2,126 / 3,606 | 3,315 / 6,389 |
-| Ingesta PDF | 0,054 / 0,246 | 0,068 / 0,084 |
-| Ingesta imagen | 15,057 / 16,922 | 29,131 / 31,338 |
+| Consulta documental | 3,115 / 3,922 s | 4,775 / 6,599 s |
+| Consulta de factura | 1,747 / 3,256 s | 3,352 / 6,221 s |
+| Aclaración | 1,833 / 1,969 s | 3,122 / 3,187 s |
+| Rechazo | 2,126 / 3,606 s | 3,315 / 6,389 s |
+| Ingesta PDF sintético | 0,054 / 0,246 s | 0,068 / 0,084 s |
+| Ingesta de factura sintética | 15,057 / 16,922 s | 29,131 / 31,338 s |
 
-El p95 usa interpolación inclusiva. Diez muestras producen una estimación inestable. Los modos se ejecutaron por bloques, sin calentamiento separado, y no se midió el pico de memoria ni la capacidad sostenida. La actividad de otros procesos no se controló. Estos datos no permiten atribuir diferencias a una causa ni extrapolarlas a documentos reales.
+El p95 usa interpolación inclusiva sobre diez muestras, por lo que es inestable. Los bloques no tuvieron calentamiento controlado ni máquina dedicada. Sirven para identificar el cuello de botella —OCR— y confirmar una experiencia interactiva local; no son un SLA.
+
+La corrida reproducible `mise run evidence --live` publica además tiempos por fichero y pregunta en `evidence/live/results.md`.
+
+## Criterio para cambiar un modelo
+
+Un cambio solo es aceptable si se repite el mismo conjunto independiente y mejora el compromiso relevante:
+
+1. ninguna respuesta sin respaldo;
+2. tasa de respuesta correcta y de rechazo correcto;
+3. recall de recuperación y precisión de citas;
+4. p50/p95 y pico de memoria con los cuatro roles cargados;
+5. extracción por campo y puertas aritméticas para facturas.
+
+Hasta disponer de ese conjunto, subir parámetros o cambiar cuantización sería una apuesta, no una mejora acreditada.

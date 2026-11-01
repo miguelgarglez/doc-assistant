@@ -1,66 +1,116 @@
-# Doc Assistant — consultas sobre documentación técnica y facturas, 100 % local
+# Doc Assistant
 
-Pregunta en español sobre fichas técnicas, manuales de instalación, de célula o de visión, y sobre facturas. Cada respuesta cita el documento, la sección, la página y el fragmento exacto, que se ve resaltado junto a la imagen de la página. El servicio rechaza respuestas cuando sus verificaciones no encuentran evidencia suficiente. Estas comprobaciones son heurísticas y no garantizan la ausencia de errores. Las facturas (PNG/JPG) se extraen a campos, se comprueba que los importes cuadren (suma e IVA) y se pueden consultar.
+Asistente local para consultar documentación técnica y facturas en lenguaje natural. Cada respuesta aceptada incluye documento, sección o página y fragmento verificable; si el sistema no encuentra respaldo suficiente, responde de forma explícita que no dispone de la información.
 
-## Arranque (igual en macOS, Linux y Windows)
-1. Instala mise: `curl https://mise.run | sh` (macOS/Linux) o `winget install jdx.mise` (Windows). **Abre una terminal nueva** después.
-2. `mise install` (node, pnpm, python y uv en versiones fijadas).
-3. `mise run setup`: dependencias, llama-server `b12020` y modelos GGUF, todo verificado con SHA256.
-4. `mise run start` y abre http://127.0.0.1:3000. Ctrl-C cierra todo.
+## Guía de lectura de 2 minutos
 
-**Internet:** hace falta una vez, para `mise install` y para las dependencias de Python y npm que instala `setup` (`uv sync`, `pnpm install`). Si usas el ZIP de entrega, los modelos (`models/`) y los binarios de llama.cpp (`vendor/archives/`) ya vienen dentro, y `setup` no los descarga. Si usas el repo, los descarga (~4 GB) y pide confirmación. La inferencia es 100 % local: todo escucha en `127.0.0.1`.
+1. **[Arquitectura](docs/architecture.md):** explica las capas, el flujo de una pregunta, el flujo de una factura y dónde corre cada modelo.
+2. **[Cobertura de requisitos](docs/requirements-coverage.md):** relaciona cada punto del enunciado con su implementación y una comprobación reproducible.
+3. **[Evidencias](evidence/README.md):** reúne resultados, capturas y comandos para regenerarlos.
+4. **[Decisiones](docs/decisions-log.md):** resume qué se eligió, qué se descartó y por qué.
+5. **[Supuestos y huecos](docs/open-gaps.md):** separa lo demostrado de lo asumido y propone el siguiente paso.
 
-**Facturas (OCR):** GLM-OCR en GGUF (`models/GLM-OCR-Q8_0.gguf` + `mmproj-GLM-OCR-Q8_0.gguf`, ~1,4 GB) servido por el mismo llama.cpp en `127.0.0.1:8084` (`DOC_ASSISTANT_OCR_PORT`); viene en el ZIP y `mise run setup` lo descarga con SHA256. Alternativa documentada: `DOC_ASSISTANT_OCR_RUNTIME=ollama` usa [Ollama](https://ollama.com) con `ollama pull glm-ocr` en `:11434`.
+Prueba visual rápida:
 
-Sin mise (con uv y node ya instalados): `uv run --project services/ai python scripts/setup.py` y `uv run --project services/ai python scripts/dev.py`.
-
-### Puertos
-Por defecto: web 3000, servicio de IA 8000 y modelos 8081 (lenguaje), 8082 (embeddings), 8083 (reranker) y 8084 (OCR). Cada uno se cambia con una variable de entorno; `config/config.yaml` lee las mismas, así que el arranque y el servicio no pueden discrepar.
-
-| Pieza | Variable | Por defecto |
+| Respuesta con citas y fragmento | Rechazo fuera de alcance | Estado local del sistema |
 |---|---|---|
-| Web | `DOC_ASSISTANT_WEB_PORT` | 3000 |
-| Servicio de IA | `DOC_ASSISTANT_AI_PORT` | 8000 |
-| Modelo de lenguaje | `DOC_ASSISTANT_LLM_PORT` | 8081 |
-| Embeddings | `DOC_ASSISTANT_EMBEDDINGS_PORT` | 8082 |
-| Reranker | `DOC_ASSISTANT_RERANKER_PORT` | 8083 |
-| OCR de facturas | `DOC_ASSISTANT_OCR_PORT` | 8084 |
+| ![Chat con citas](evidence/screenshots/chat-visor-1440x900-industrial-light.png) | ![Rechazo explícito](evidence/screenshots/chat-rechazo-1440x900-industrial-light.png) | ![Vista Sistema](evidence/screenshots/sistema-1440x900-industrial-light.png) |
 
-Ejemplo: `DOC_ASSISTANT_LLM_PORT=8181 DOC_ASSISTANT_WEB_PORT=3170 mise run start`. En PowerShell: `$env:DOC_ASSISTANT_LLM_PORT=8181; mise run start`.
+## Arranque reproducible
 
-Si un puerto está ocupado, `start` no arranca nada y sale con código 2. El mensaje dice qué puerto es, cómo ver quién lo usa (`lsof` o `netstat`) y qué variable cambiar, con un puerto libre sugerido. Un valor que no es un puerto, o dos piezas con el mismo puerto, también se rechazan antes de arrancar. `mise run package` (prueba en limpio) y `mise run evidence --live` usan las mismas variables y comprueban los mismos puertos.
+Requisitos: conexión a Internet durante la primera instalación y [mise](https://mise.jdx.dev/).
 
-### Notas
-- Si ya tienes los modelos: `mise run setup --models-dir /ruta/a/models` (o `DOC_ASSISTANT_MODELS_DIR=/ruta`). `setup` comprueba lo que hay (el tamaño, y el SHA256 con `--verify`) y solo descarga lo que falte, con reanudación. La ruta se guarda en `.env.local`. Orden de resolución: `--models-dir` > `DOC_ASSISTANT_MODELS_DIR` > `.env.local` > `./models`. Si va a descargar más de 1 GB pide confirmación (`--yes` en CI).
-- Windows:
-  - Descomprime en una ruta corta y sin espacios (p. ej. `C:\docassist`).
-  - Si falta `VCRUNTIME140.dll`, instala https://aka.ms/vs/17/release/vc_redist.x64.exe.
-  - Si `mise install` da 403 por rate limit de GitHub, define `GITHUB_TOKEN`.
-  - Contingencia: WSL2 con Ubuntu y los pasos de Linux.
+```sh
+mise install
+mise run setup
+mise run start
+```
 
-## Probado en
-macOS 26.6.2 (build 25G83), Apple M4, CPU de 10 núcleos, GPU de 10 núcleos y 16 GiB de memoria unificada. Datos consultados con `sysctl -n machdep.cpu.brand_string hw.physicalcpu hw.logicalcpu hw.memsize`, `sw_vers` y `system_profiler SPDisplaysDataType` el 1 de noviembre de 2026. La memoria unificada es compartida; no se ha medido la memoria ocupada por los modelos. Windows y Linux no se han probado en este equipo ni se ha ejecutado todavía el workflow `cross-platform.yml`. Limitación: `sqlite-vec` no publica wheel para Windows ARM.
+Abre <http://127.0.0.1:3000>. `Ctrl-C` detiene la web, el servicio y los cuatro servidores de modelos.
 
-La [revisión de portabilidad](docs/portabilidad.md) recoge los sistemas y arquitecturas aún sin probar, y los límites de los scripts.
+El ZIP de entrega ya contiene los cinco GGUF y los binarios fijados de llama.cpp para macOS ARM64, Linux x64 y Windows x64. `setup` verifica sus SHA256 y no vuelve a descargarlos. Las dependencias Python y npm sí se instalan desde sus lockfiles.
 
-## Huecos del enunciado
-Decisiones sobre lo que el enunciado deja abierto: [docs/open-gaps.md](docs/open-gaps.md). Cobertura requisito a requisito: [docs/requirements-coverage.md](docs/requirements-coverage.md).
+### Demo con datos de ejemplo
 
-## Evidencia
-- `evidence/screenshots/`: capturas Playwright de consulta, rechazo, error y facturas, en escritorio y móvil.
-- `evidence/live/results.md`: corrida real con documentos y facturas **sintéticos** (`evidence/fixtures`).
-- Regenerar: `mise run evidence` (capturas) y `mise run evidence --live` (corrida real; necesita los modelos).
+La demo automática arranca el stack, ingiere dos PDF y seis facturas sintéticas, ejecuta tres preguntas contestables y dos rechazos, guarda métricas y cierra todos los procesos:
 
-No es la evaluación final: no se han usado documentos ni facturas reales.
+```sh
+mise run evidence --live
+```
 
-## Desarrollo
-- `mise run dev`: next dev.
-- `mise run check`: lint, tipos, tests normales, enlaces Markdown, deriva del contrato OpenAPI→TS y build.
-- `mise run test`, `test-unit` y `test-integration`: tests normales por ámbito.
-- `mise run test-architecture`: límites de imports del servicio.
-- `mise run test-live`: batería optativa con un modelo real.
-- `mise run check-links`: destinos locales de los Markdown.
-- `mise run gen-client`.
-- `mise run package`: ZIP de entrega, probado en limpio.
+Resultado: [`evidence/live/results.md`](evidence/live/results.md). Para recorrerlo en la interfaz:
 
-Más: [índice de documentación](docs/README.md).
+1. Ejecuta `mise run start`.
+2. En **Añadir fuentes**, carga `evidence/fixtures/docs/sensor-demo.pdf` y `evidence/fixtures/invoices/factura_001.png`.
+3. Pregunta «¿Qué alcance tiene el sensor SX-20?», «¿Cuál es el importe total de la factura F-2026-001?» y «¿Quién ganó el mundial de 2010?».
+4. Abre las citas y la vista **Sistema** para comprobar fragmento, página, modelos y tiempos.
+
+## Hardware de prueba y modelos
+
+Medido el 1 de noviembre de 2026 en:
+
+- macOS 26.6.2, build 25G83.
+- Apple M4, CPU de 10 núcleos y GPU de 10 núcleos.
+- 16 GiB de memoria unificada. En Apple Silicon no existe una cifra de VRAM separada: CPU y GPU comparten ese presupuesto.
+
+Comandos usados:
+
+```sh
+sw_vers
+sysctl -n machdep.cpu.brand_string hw.physicalcpu hw.logicalcpu hw.memsize
+system_profiler SPDisplaysDataType
+```
+
+| Función | Modelo local | Configuración | Motivo de la elección |
+|---|---|---|---|
+| Respuesta y plan de factura | Qwen3.5 4B | Q4_K_M, contexto 8192, 2 slots, razonamiento desactivado | Cabe junto al resto de modelos en 16 GiB y mantiene latencias interactivas. |
+| Embeddings | bge-m3 | Q8_0, 1024 dimensiones | Recuperación multilingüe; su tamaño permite conservar más precisión que una cuantización agresiva. |
+| Reranking | bge-reranker-v2-m3 | Q8_0 | Reduce falsos candidatos antes del LLM sin usar servicios externos. |
+| OCR | GLM-OCR + proyector | Q8_0, contexto 8192, imagen limitada a 1600 tokens | Se ejecuta con llama.cpp y evita depender de otro runtime o de una API. |
+
+La justificación completa, las alternativas descartadas y las medidas de RSS y latencia están en [Modelos y hardware](docs/modelos-hardware.md).
+
+## Cómo se protege la fundamentación
+
+- La recuperación combina búsqueda vectorial y BM25, reordena candidatos y limita el contexto.
+- El LLM debe devolver respuesta y citas estructuradas. El servicio comprueba que las citas existen y que sus fragmentos respaldan la salida; si falla, retira el texto provisional y rechaza.
+- Las consultas de facturas se resuelven sobre columnas tipadas y una lista cerrada de operaciones. El LLM propone una intención, pero no calcula importes ni elige silenciosamente entre facturas ambiguas.
+- Los campos de factura sin evidencia son `null`; una suma o un IVA incoherentes dejan la factura en estado `revisar`.
+
+Es una defensa por capas, no una promesa imposible de demostrar con una muestra finita. La evaluación pública es sintética y reproducible; el paso previo a producción es acordar un conjunto independiente con documentos representativos.
+
+## Comandos de verificación
+
+```sh
+mise run check             # lint, tipos, tests, enlaces, contrato y build
+CI=1 pnpm --filter web e2e # interfaz y accesibilidad
+mise run evidence          # capturas deterministas
+mise run evidence --live   # modelos reales + fixtures sintéticos
+mise run package           # ZIP autocontenido y smoke en limpio
+```
+
+`services/ai/openapi.json` es la fuente del contrato y el cliente TypeScript se genera a partir de ella. El check falla ante cualquier deriva.
+
+## Ejecución local y datos
+
+Todos los procesos escuchan en loopback:
+
+| Pieza | Puerto |
+|---|---:|
+| Web | 3000 |
+| API | 8000 |
+| LLM | 8081 |
+| Embeddings | 8082 |
+| Reranker | 8083 |
+| OCR | 8084 |
+
+No se usa ninguna API de inferencia ni se transmite contenido a terceros. La conexión de instalación no forma parte del procesamiento. Los documentos, índices, historial y feedback permanecen en el equipo.
+
+## Alcance y límites
+
+- Instalación local de un solo usuario. Multiusuario, SSO, ACL por colección y cola durable están diseñados, no implementados.
+- Verificado de extremo a extremo en macOS ARM64. Los binarios de Linux x64 y Windows x64 se empaquetan, pero esas plataformas no se han probado físicamente.
+- Los PDF con texto se resaltan en página. Para facturas se muestra el fragmento OCR, pero no su rectángulo sobre la imagen.
+- Las métricas proceden de datos sintéticos en el hardware indicado; no son un SLA ni una estimación de precisión general.
+
+Detalle y plan de mejora: [Supuestos y huecos](docs/open-gaps.md). Índice del resto de documentación: [docs/README.md](docs/README.md).

@@ -23,8 +23,8 @@ Conclusión: el alcance funcional solicitado está implementado. Los límites re
 | C1 | Procesamiento íntegramente local | `config/config.yaml`; cinco procesos en `127.0.0.1` | `mise run start`; vista Sistema | **Cumplido.** Internet solo se necesita para instalar dependencias. |
 | C2 | Modelos ajustados a la máquina disponible | `scripts/assets.json`, `scripts/dev.py`, `docs/modelos-hardware.md` | Smoke real y medidas de memoria/latencia publicadas | **Cumplido.** |
 | C3 | Hardware explícito | README, sección «Hardware de prueba» | Comandos `sw_vers`, `sysctl` y `system_profiler` publicados | **Cumplido.** M4, CPU/GPU de 10 núcleos y 16 GiB unificados. |
-| C4 | Justificar modelos, cuantización y viabilidad | `docs/modelos-hardware.md` | Inventario SHA256, muestra RSS y comparación 4B/9B | **Parcial.** La elección está medida; la comparación de calidad es exploratoria. |
-| C5 | Vincular dimensionamiento al hardware real | `docs/modelos-hardware.md` | Mismas medidas sobre el M4 de entrega | **Parcial.** No se midió el pico de memoria unificada. |
+| C4 | Justificar modelos, cuantización y viabilidad | `docs/modelos-hardware.md` | Inventario SHA256, muestra RSS y comparación 4B/9B | **Cumplido.** La comparación de calidad es exploratoria y se declara como tal. |
+| C5 | Vincular dimensionamiento al hardware real | `docs/modelos-hardware.md` | Medidas y presupuesto simultáneo sobre el M4 de 16 GiB | **Cumplido.** No se presenta la instantánea RSS como pico. |
 
 ## Ingesta documental
 
@@ -66,7 +66,7 @@ Conclusión: el alcance funcional solicitado está implementado. Los límites re
 | E-B3 | Evidencia visual, incluido rechazo | `evidence/screenshots/` | `mise run evidence` | **Cumplido.** |
 | E-B4 | Evidencia adicional | Comparación de chunking, tests, galería y corrida live | Comandos enlazados desde `evidence/README.md` | **Cumplido.** |
 | E-B5 | Evidencia regenerable | Tarea `evidence` y fixtures versionadas | `mise run evidence`; `mise run evidence --live` | **Cumplido.** |
-| E-C1 | Arquitectura: modelos frente a hardware | `docs/architecture.md` y `docs/modelos-hardware.md` | Revisión de inventario y medidas | **Parcial** hasta cerrar la justificación final de alternativas. |
+| E-C1 | Arquitectura: modelos frente a hardware | `docs/architecture.md` y `docs/modelos-hardware.md` | Revisión de inventario, alternativas y medidas | **Cumplido.** |
 | E-C2 | Arquitectura: ingesta y troceado | `docs/architecture.md` | Diagrama y comparación de chunking | **Cumplido.** |
 | E-C3 | Arquitectura: fundamentación | `docs/architecture.md` | Diagrama, tests y corrida live | **Cumplido con el límite de R1.7.** |
 | E-C4 | Arquitectura: escalado opcional | `docs/scaling-deployment.md` | Revisión documental | **Cumplido.** |

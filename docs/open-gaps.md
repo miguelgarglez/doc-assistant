@@ -1,34 +1,45 @@
-# Huecos del enunciado y decisiones
+# Supuestos y huecos
 
-El enunciado deja huecos a propósito. Para cada uno: qué se decidió, por qué y qué alternativa queda.
+El enunciado deja decisiones abiertas. Esta página separa qué se asumió, por qué es razonable, qué queda fuera y cómo se cerraría antes de producción.
 
-| Hueco | Decisión | Por qué | Alternativa |
+| Supuesto o hueco | Decisión y razón | Qué queda fuera | Plan de mejora |
 |---|---|---|---|
-| Idioma de preguntas y documentos | Español en la UI, los prompts y los rechazos; modelos multilingües (bge-m3) | Los usuarios son ingenieros hispanohablantes | Detectar el idioma y responder en el de la pregunta |
-| Qué cuenta como "fuente exacta" | Documento + sección + página + fragmento literal; la cita debe aparecer tal cual en el fragmento | Es verificable por código, sin depender del LLM | Coordenadas en la página (bbox) para resaltar sobre la imagen |
-| Qué hacer si la evidencia es parcial | Rechazar ("no dispongo") antes que responder a medias | Inventar es un fallo grave; rechazar de más es un fallo leve | Respuesta parcial marcada como tal |
-| Campos de factura | Número, fecha, emisor, cliente, NIF, base, IVA, IRPF y total; los ausentes van como `null` | Son los que aparecen en facturas españolas y permiten las puertas aritméticas | Esquema configurable por cliente |
-| Factura que no cuadra | Se guarda con estado "revisar" y su motivo; las respuestas lo avisan | Mejor un dato marcado que uno descartado o en silencio | Bloquear la consulta hasta que alguien la revise |
-| Preguntas agregadas sobre facturas ("suma de todas") | Contar y sumar con SQL generado por código sobre columnas tipadas; el LLM solo elige la intención (ADR-012) | Las cifras salen de la base, no del modelo | Agrupar por mes o por persona (no implementado) |
-| Formato de fecha | El texto original se conserva; una columna derivada guarda la fecha ISO cuando una regla la reconoce (día/mes/año, ISO, nombre del mes). Si no la reconoce, queda nula y la factura no entra en filtros de fecha | Normalizar sin regla podía inventar | Pedir la fecha al revisar la factura |
-| Pregunta sobre facturas con persona o número ambiguo | Se pregunta «¿De qué factura?» con hasta 5 candidatas como botones; cada una reenvía la pregunta con su número (ADR-013). Nunca se elige una al azar | Elegir mal es una respuesta falsa, y un rechazo decía lo contrario de lo que pasaba | Recordar la elección en la conversación; candidatas de persona para listas, conteos y sumas |
-| Mes sin año ("facturas de marzo") | Cualquier año; el año solo se toma de la pregunta, nunca del modelo | El modelo inventaba el año | Usar el año en curso |
-| Cómo acreditar "cero alucinaciones" | No se afirma ninguna cifra hasta tener un gold aprobado; hay pruebas de humo y evaluaciones sintéticas con límites documentados | Una cifra sobre un borrador no acredita nada | Gold aprobado + métricas reproducibles en `mise run evidence` |
-| OCR | GLM-OCR GGUF Q8_0 en llama-server :8084 (en el ZIP) | Medido frente a Ollama glm-ocr con 6 facturas sintéticas y el LLM cargado: 72/72 campos ambos, ~22 s/factura frente a 27–36 s, ~2,3–2,7 GB de RAM pico | Ollama queda como alternativa (`DOC_ASSISTANT_OCR_RUNTIME=ollama`) |
-| Hardware objetivo | El portátil disponible (M4, 16 GB); modelos de 4B cuantizados | El enunciado no da hardware | Un servidor GPU (ver `scaling-deployment.md`) |
-| Sistema operativo del evaluador | mise + scripts Python, sin shell ni Docker | Es lo que funciona igual en macOS, Linux y Windows | Docker o WSL2 como plan B |
-| Usuarios y permisos | No hay: es una herramienta de un solo usuario y local | Está fuera del núcleo pedido | Autenticación en la capa servidor de Next (ver `scaling-deployment.md`) |
-| Formato de entrega de la evidencia | Va dentro del ZIP ya generada, y se puede regenerar | El evaluador puede verla sin ejecutar nada | Que solo se pueda regenerar |
-| Preguntas panorámicas ("¿qué sabes hacer?", "¿de qué trata X?") | Se responden sin LLM con metadatos reales del índice (documentos, títulos, apartados citados literalmente y la primera frase del alcance) | Mantiene cero invenciones y deja de rechazar lo que sí se sabe (ADR-009) | Resumen por documento generado en la ingesta y verificado frase a frase |
-| Respuesta en tiempo real frente a verificación | Texto provisional en streaming, verificado al final; si falla, se retira y se sustituye por el rechazo | El texto puede verse antes del resultado final; `done` prevalece y no se acepta una respuesta sin verificar (ADR-009) | Retener el texto hasta verificarlo |
+| «Ausencia de alucinaciones» | Se interpreta como una propiedad operacional: ninguna respuesta se acepta sin evidencia recuperada y verificada; ante duda se rechaza. Una muestra finita no prueba ausencia universal. | No existe una garantía formal de implicación semántica ni una tasa general sobre documentos desconocidos. | Acordar un gold independiente, incluir preguntas adversariales y bloquear cambios que introduzcan respuestas sin respaldo. |
+| Corpus de evaluación | Se publican fixtures y expectativas sintéticos para que cualquier evaluador pueda repetirlos sin recibir información sensible. | No representan toda la variedad de manuales o facturas de una planta. | Muestrear por tipo de documento, idioma, maquetación y calidad de escaneo; separar conjunto de ajuste y conjunto ciego. |
+| Idioma | Interfaz, reglas y mensajes en español; modelos multilingües para tolerar documentación técnica en otros idiomas. | Las reglas de intención y campos no tienen cobertura equivalente en todos los idiomas. | Detectar idioma y ampliar baterías antes de declarar soporte multilingüe. |
+| Fuente exacta | Documento, sección, página y fragmento literal. En PDF con capa de texto se resalta el fragmento. | Las facturas OCR no conservan coordenadas; se muestra el valor extraído, no su caja en la imagen. | Guardar bounding boxes del OCR y enlazar cada campo con su región. |
+| PDF escaneado | El flujo documental presupone PDF con texto extraíble. | OCR documental completo y reconstrucción de tablas complejas. | Detectar páginas sin texto y pasarlas por OCR local, conservando página y cajas. |
+| Troceado | La sección es la unidad semántica; se subdivide cuando es larga. | Documentos sin encabezados, dos columnas irregulares o tablas extensas pueden fragmentarse mal. | Añadir detección de layout y medir recall por tipo de documento. |
+| Campos de factura | Número, fecha, emisor, cliente, NIF, base, IVA, IRPF, total e IBAN cuando aparece. Ausente = `null`. | Esquemas fiscales de otros países y líneas de producto detalladas. | Esquema configurable por organización y validadores por país. |
+| Factura incoherente | Se conserva en estado `revisar` con motivo; no se corrige ni descarta. | Flujo de aprobación contable o edición manual. | Cola de revisión con auditoría y doble validación antes de activar el dato corregido. |
+| Fecha no reconocida | Se conserva el literal; la fecha normalizada queda nula y no participa en filtros. | Interpretación probabilística de formatos desconocidos. | Incorporar formatos aprobados por el cliente y pedir confirmación en revisión. |
+| Usuario objetivo | Una instalación local para una persona. El token entre proxy y API protege rutas locales, no identifica usuarios. | SSO, roles, ACL, aislamiento por planta y auditoría corporativa. | OIDC en el BFF, identidad firmada, filtro de permisos antes de recuperar y pruebas de aislamiento. |
+| Persistencia | SQLite y cola de escritura en memoria son suficientes para el recorrido local. | Alta disponibilidad y recuperación de pendientes tras reinicio. | Postgres y cola durable antes de desplegar varias réplicas. |
+| Concurrencia | Dos consultas activas y cuatro en espera por proceso. | Capacidad sostenida, equidad y coordinación entre procesos. | Prueba de carga representativa y cola compartida con límites por usuario. |
+| Plataformas | Verificación completa en macOS ARM64. El ZIP incluye binarios de Linux x64 y Windows x64. | No se ha ejecutado el recorrido real en esas dos plataformas. | Ejecutar setup, check, arranque, demo y cierre en máquinas limpias de cada sistema. |
+| Hardware objetivo | El M4 de 16 GiB es la máquina real disponible y condiciona Qwen 4B Q4_K_M. | No se dimensiona un servidor de producción ni se promete un SLA. | Repetir calidad, latencia y pico de memoria en el hardware de cada planta antes de elegir modelo o réplicas. |
+| Texto provisional | Puede mostrarse durante el streaming, siempre marcado como «verificando»; `done` puede retirarlo. | Un usuario puede leer durante unos segundos texto que finalmente no se acepta. | Ofrecer un modo conservador que retenga texto hasta verificar si el contexto operativo lo exige. |
+| Historial y feedback | Activos localmente con 30 días de retención configurable; el feedback solo copia contexto con consentimiento y exige revisión. | Validación legal, política corporativa y clasificación de datos. | Revisión de privacidad por despliegue, cifrado, roles y retención central. |
 
-## Decisiones incorporadas hasta v0.15.2
+## Qué sí se puede afirmar
 
-| Hueco | Decisión actual | Límite pendiente |
-|---|---|---|
-| Presentar cifras y listas sin perder evidencia | Bloques `key_data` y `table` construidos en el servicio, con citas y `blocks_version: 1` (ADR-014) | Markdown completo ante versión desconocida o bloques inválidos; sin posiciones OCR |
-| Saturación de consultas | Dos consultas activas y cuatro en espera por proceso, hasta 60 segundos; `queue_full` o `queue_timeout` para reintentar | Sin cola durable ni límite de ingestas; falta medir carga sostenida y equidad |
-| Diagnóstico de la última consulta | Sistema reconstruye la traza desde SSE y conserva códigos de fallo temprano | Sin historial persistente ni opción de trazas internas en la configuración del servicio |
-| Etiquetas de importes con dos puntos | El extractor admite el separador y conserva la evidencia literal | La repetición sintética obtuvo 11 coincidencias de 12 con un oráculo limitado; no acredita precisión general |
+- El flujo completo funciona localmente en el hardware descrito.
+- Las respuestas aceptadas por las pruebas publicadas llevan citas; los casos fuera de alcance publicados se rechazan.
+- Las seis facturas sintéticas de la corrida live coinciden en los campos comprobados.
+- OpenAPI, cliente, tests, capturas y paquete tienen comandos reproducibles.
 
-Fuentes: [arquitectura](architecture.md), [CHANGELOG](CHANGELOG.md), [evaluación sintética](../evidence/evaluacion-sintetica/README.md). Las decisiones abiertas están en [decisiones pendientes](decisiones-pendientes.md).
+## Qué no se afirma
+
+- Precisión general sobre cualquier documento o factura.
+- Cero errores universal.
+- Soporte de producción multiusuario.
+- Compatibilidad verificada en sistemas distintos de macOS ARM64.
+- Un SLA de latencia o capacidad.
+
+## Orden de mejora
+
+1. Gold independiente y representativo, con umbrales de fundamentación, recuperación y extracción por campo.
+2. Posiciones OCR y OCR de PDF escaneado.
+3. Pruebas físicas de Linux y Windows.
+4. SSO, ACL antes de recuperar, Postgres y cola durable.
+5. Medición de carga y dimensionamiento por planta.
