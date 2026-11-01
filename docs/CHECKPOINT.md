@@ -269,3 +269,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 03:14 CET · Entorno de verificación
 - Registrada la autorización pendiente para instalar las dependencias de los lockfiles en este worktree. El check con enlaces y raíz temporal ampliada pasó; el build con la configuración original no resolvió dependencias externas.
 
+## 01-Nov 03:15 CET · Tres pasadas de navegador
+- Tres pasadas del build corregido: 182 pruebas aprobadas y 4 live omitidas en cada una, con axe en las rutas cubiertas. El build se generó con la raíz temporal ampliada y dependencias existentes. Las capturas sintéticas del fallo se inspeccionaron.
+- El servidor propio se cerró por PID. Se retiraron a `_trash/` los enlaces y la configuración temporal. Continúan pendientes la cola y el cierre de versión.
+
