@@ -1,6 +1,6 @@
 # Persistencia del historial de peticiones y feedback con traza
 
-Estado: propuesta, sin implementar. La propuesta multiusuario y sus límites de seguridad están en [arquitectura multiusuario](arquitectura-multiusuario.md). ADR-014 ya corresponde a respuestas enriquecidas; una decisión futura sobre historial necesita otro identificador.
+Estado: implementación parcial interna, sin persistencia conectada ni interfaz de historial. La propuesta multiusuario y sus límites de seguridad están en [arquitectura multiusuario](arquitectura-multiusuario.md). ADR-014 ya corresponde a respuestas enriquecidas; una decisión futura sobre historial necesita otro identificador.
 
 Dos peticiones del backlog dependen de lo mismo: guardar cada petición con su traza.
 1. Un historial de consultas en Sistema, no solo la última.
@@ -20,6 +20,14 @@ Dos peticiones del backlog dependen de lo mismo: guardar cada petición con su t
 | Usuarios | No existen (`open-gaps.md`, `scaling-deployment.md`) | El BFF de Next es hoy solo un proxy. |
 
 Conclusión: una traza útil para diagnosticar exige capturar más datos en el servicio. El cliente no tiene las puntuaciones y no se le debe confiar la traza.
+
+## Avance de la traza interna
+
+El servicio dispone de un colector opcional en memoria y de un almacén SQLite aislado. Ningún endpoint activa el colector ni escribe en el almacén. El colector registra el identificador de petición en el stream, el estado y los errores de cola, los pasos, las puntuaciones y el orden de candidatos, el resultado y los detalles de verificación. En consultas de facturas también recoge el plan, el SQL parametrizado y las filas seleccionadas.
+
+La huella `chunk_index_sha256` cubre las filas de fragmentos documentales en la misma transacción de lectura que la búsqueda. No cubre vectores, facturas ni archivos de origen. Calcularla recorre todos los fragmentos: falta medir su coste con índices representativos antes de conectar la persistencia. Los nombres de modelos son los de configuración, no una prueba de qué archivos están cargados. La traza todavía no contiene todas las versiones ni la selección entre aclaraciones.
+
+El almacén y el colector son piezas aisladas. Antes de activar la persistencia faltan la política de privacidad y retención, el tratamiento de errores y desconexiones de extremo a extremo, los endpoints, la interfaz y la medición del coste sobre una petición completa.
 
 ## 2. Qué debe guardar una petición
 

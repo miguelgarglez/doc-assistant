@@ -2,6 +2,7 @@
 (Horas reales de los commits, Europe/Madrid, tomadas de `git log`.)
 
 ## Hitos
+- **01-nov 07:18 · Estado del diseño de historial.** El documento distingue las piezas internas ya implementadas de la persistencia y la interfaz pendientes, y describe los límites y el coste aún no medido de la huella del índice.
 - **01-nov 07:17 · Identidad de traza.** El colector opcional conserva el identificador de petición, incluido el rechazo en cola; en una consulta completada coincide con el evento `done`. Cinco pruebas de cola y Ruff pasan.
 - **01-nov 07:17 · Huella del índice documental.** La traza opcional calcula un SHA256 de las filas de fragmentos y la versión de esquema en la misma transacción de lectura que la búsqueda. No identifica vectores, facturas ni archivos de origen; requiere medir el coste de recorrer el índice. Suite del servicio: 334 pruebas pasan y 35 live se omiten; Ruff y mypy pasan.
 - **01-nov 07:17 · Detalles de verificación.** La traza opcional conserva los detalles del verificador, incluidos los modos de las citas y cantidades no respaldadas cuando existan. Siete pruebas de consulta y Ruff pasan; no se ha activado persistencia.
