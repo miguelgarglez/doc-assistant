@@ -4,9 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { isEditableTarget } from "@/lib/shortcuts"
 
 type Status = "nuevo" | "revisado" | "descartado"
@@ -134,7 +135,7 @@ export default function ReviewPage() {
           {original?.steps?.length ? <div><p className="text-sm font-medium">Traza</p><ul className="text-sm text-muted-foreground">{original.steps.map((step, i) => <li key={i}>{step.label ?? "Paso"} · {step.status ?? "—"} {step.elapsed_s == null ? "" : `· ${step.elapsed_s} s`}</li>)}</ul></div> : null}<details><summary className="cursor-pointer text-sm font-medium">Ver JSON original</summary><pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-xs">{JSON.stringify(original ?? detail.trace, null, 2)}</pre></details>
         </section>
         <section className="flex flex-col gap-4 border-t pt-5"><div><h3 className="font-semibold">Preparar la revisión</h3><p className="text-sm text-muted-foreground">Se resaltan posibles datos sensibles, incluidos nombres, importes, IBAN, NIF, correos y teléfonos. La detección puede omitir datos: revisa todo antes de confirmar.</p></div>
-          <FieldGroup><Field><FieldLabel htmlFor="cause">Causa del fallo</FieldLabel><select disabled={saving} id="cause" className="h-9 rounded-md border border-input bg-background px-3 text-sm" value={cause} onChange={(e) => { setCause(e.target.value as Cause); setSafe(false) }}>{causes.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
+          <FieldGroup><FieldSet><FieldLegend>Causa del fallo</FieldLegend><ToggleGroup aria-label="Causa del fallo" className="flex-wrap" disabled={saving} value={[cause]} onValueChange={(values) => { const option = causes.find((item) => item.value === values[0]); if (option) { setCause(option.value); setSafe(false) } }} variant="outline" size="sm">{causes.map((option) => <ToggleGroupItem key={option.value} value={option.value}>{option.label}</ToggleGroupItem>)}</ToggleGroup></FieldSet>
             <Field><FieldLabel htmlFor="answer">Respuesta esperada</FieldLabel><FieldDescription>Describe la respuesta correcta sin incluir datos personales ni importes identificables.</FieldDescription><Textarea disabled={saving} id="answer" value={answer} maxLength={4000} onChange={(e) => { setAnswer(e.target.value); setSafe(false) }} /><p className="whitespace-pre-wrap text-sm"><Highlight text={answer} /></p></Field>
             <Field><FieldLabel htmlFor="comment">Comentario para exportar</FieldLabel><Textarea disabled={saving} id="comment" value={comment} maxLength={4000} onChange={(e) => { setComment(e.target.value); setSafe(false) }} /><p className="text-sm"><Highlight text={comment} /></p></Field>
             <Field><FieldLabel htmlFor="context">Contexto redactado para exportar (opcional)</FieldLabel><FieldDescription>Escribe únicamente los fragmentos que quieras compartir tras quitar los datos sensibles. La conversación original no se exporta.</FieldDescription><Textarea disabled={saving} id="context" value={context} maxLength={40000} onChange={(e) => { setContext(e.target.value); setSafe(false) }} /><p className="whitespace-pre-wrap text-sm"><Highlight text={context} /></p></Field>
