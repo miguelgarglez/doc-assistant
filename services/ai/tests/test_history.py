@@ -206,3 +206,28 @@ def test_expected_answer_is_scoped_and_preserves_snapshot(tmp_path):
     assert saved["trace"] == trace
     assert store.set_expected_answer("c", "f", None)
     assert store.get_feedback("c", "f")["expected_answer"] is None
+
+
+def test_export_contains_only_reviewed_drafts_with_expected_answers(tmp_path):
+    store = HistoryStore(tmp_path / "history.db")
+    for conversation in ("c", "other"):
+        store.record(conversation, conversation, "now", {"question": conversation})
+        for feedback_id in (
+            f"{conversation}-ready",
+            f"{conversation}-empty",
+            f"{conversation}-new",
+        ):
+            assert store.add_feedback(feedback_id, conversation, conversation, "now", "otro", None)
+        assert store.set_expected_answer(conversation, f"{conversation}-ready", "15 €")
+        assert store.set_feedback_status(conversation, f"{conversation}-ready", "revisado")
+        assert store.set_expected_answer(conversation, f"{conversation}-empty", "  ")
+        assert store.set_feedback_status(conversation, f"{conversation}-empty", "revisado")
+        assert store.set_expected_answer(conversation, f"{conversation}-new", "pending review")
+
+    lines = list(store.export_reviewed("c"))
+    assert len(lines) == 1
+    assert lines[0].endswith("\n")
+    item = json.loads(lines[0])
+    assert item["feedback_id"] == "c-ready"
+    assert item["expected_answer"] == "15 €"
+    assert item["trace"] == {"question": "c"}

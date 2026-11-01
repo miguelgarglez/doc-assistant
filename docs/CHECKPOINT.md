@@ -488,3 +488,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 11:10 CET · Respuesta esperada del feedback
 - El almacén interno admite una respuesta esperada escrita por quien revisa, separada de la traza capturada. Las bases anteriores se migran con valor nulo y las operaciones se filtran por conversación. Aún no hay exportación ni endpoints.
 - Pasan 12 pruebas de historial, Ruff, formato y mypy. El filtro por conversación no autentica al usuario.
+
+## 01-Nov 11:11 CET · Exportación interna de borradores
+- El almacén genera líneas JSON para feedback revisado con respuesta esperada no vacía, limitado a una conversación. Incluyen la copia de la traza y siguen siendo borradores, no gold aprobado. Falta un comando de usuario y una política de acceso.
+- Pasan 13 pruebas de historial, Ruff, formato y mypy. Las trazas exportadas pueden contener información confidencial.

@@ -210,3 +210,16 @@ class HistoryStore:
                 (answer, conversation_id, feedback_id),
             )
             return cursor.rowcount == 1
+
+    def export_reviewed(self, conversation_id: str) -> Iterator[str]:
+        """Yield JSONL drafts with an expected answer, never approved gold cases."""
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT feedback_id, request_id, created_at, kind, comment, trace_json, status, expected_answer "
+                "FROM feedback WHERE conversation_id = ? AND status = 'revisado' "
+                "AND expected_answer IS NOT NULL AND length(trim(expected_answer)) > 0 "
+                "ORDER BY created_at, feedback_id",
+                (conversation_id,),
+            )
+            for row in rows:
+                yield json.dumps(self._feedback_row(row), ensure_ascii=False) + "\n"
