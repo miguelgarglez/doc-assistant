@@ -130,11 +130,14 @@ class HistoryStore:
 
     def delete_conversation(self, conversation_id: str, *, owner: str = "local") -> int:
         with self._connect() as db:
-            db.execute(
-                "DELETE FROM feedback WHERE conversation_id = ? AND EXISTS "
-                "(SELECT 1 FROM requests WHERE conversation_id = ? AND owner = ?)",
-                (conversation_id, conversation_id, owner),
-            )
+            if owner == "local":
+                db.execute("DELETE FROM feedback WHERE conversation_id = ?", (conversation_id,))
+            else:
+                db.execute(
+                    "DELETE FROM feedback WHERE conversation_id = ? AND EXISTS "
+                    "(SELECT 1 FROM requests WHERE conversation_id = ? AND owner = ?)",
+                    (conversation_id, conversation_id, owner),
+                )
             return db.execute(
                 "DELETE FROM requests WHERE conversation_id = ? AND owner = ?",
                 (conversation_id, owner),
@@ -142,11 +145,16 @@ class HistoryStore:
 
     def delete_all(self, *, owner: str = "local") -> int:
         with self._connect() as db:
-            db.execute(
-                "DELETE FROM feedback WHERE conversation_id IN "
-                "(SELECT conversation_id FROM requests WHERE owner = ?)",
-                (owner,),
-            )
+            if owner == "local":
+                # Feedback has no owner column yet and can outlive a retained request.
+                # The installation is single-owner, so delete orphaned snapshots too.
+                db.execute("DELETE FROM feedback")
+            else:
+                db.execute(
+                    "DELETE FROM feedback WHERE conversation_id IN "
+                    "(SELECT conversation_id FROM requests WHERE owner = ?)",
+                    (owner,),
+                )
             return db.execute("DELETE FROM requests WHERE owner = ?", (owner,)).rowcount
 
     def add_private_feedback(

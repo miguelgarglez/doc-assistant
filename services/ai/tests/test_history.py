@@ -312,6 +312,21 @@ def test_conversation_pages_search_and_delete(tmp_path):
     assert store.conversations_page() == []
 
 
+@pytest.mark.parametrize("delete_all", [False, True])
+def test_deletion_removes_feedback_after_request_expired(tmp_path, delete_all):
+    store = HistoryStore(tmp_path / "history.db")
+    store.record("r", "c", "2026-01-01", {"question": "private"})
+    assert store.add_private_feedback("f", "c", "r", "2026-02-01", None, include_context=True)
+    assert store.purge_before("2026-01-15") == (1, 0)
+    assert store.get_feedback("c", "f") is not None
+
+    if delete_all:
+        store.delete_all()
+    else:
+        store.delete_conversation("c")
+    assert store.get_feedback("c", "f") is None
+
+
 def test_global_review_queue_and_export_only_reviewed(tmp_path):
     store = HistoryStore(tmp_path / "history.db")
     for i in range(3):
