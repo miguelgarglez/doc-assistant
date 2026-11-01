@@ -117,4 +117,4 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 - Pendientes: B5 sigue parcial hasta tener un gold aprobado; E-B1 sigue en "no".
 - Recuento final de 31 filas: 17 cumplidas, 10 parciales y 4 no.
 
-**Estado de trabajo sin tag (31 filas; algunas agrupan varios requisitos): 18 cumplidas, 10 parciales, 3 no (R1.7, C4/C5/E-C1, E-B1).** A2 sigue parcial: la comparación sintética no mide recuperación. Los tres "no" requieren acreditación o justificación de modelos frente al hardware.
+**Estado v0.17.0 (31 filas; algunas agrupan varios requisitos): 18 cumplidas, 10 parciales, 3 no (R1.7, C4/C5/E-C1, E-B1).** A2 sigue parcial: la comparación sintética no mide recuperación. Los tres "no" requieren acreditación o justificación de modelos frente al hardware.
