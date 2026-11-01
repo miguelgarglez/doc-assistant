@@ -2,6 +2,7 @@
 (Horas reales de los commits, Europe/Madrid, tomadas de `git log`.)
 
 ## Hitos
+- **01-nov 07:18 · Tipo de resultado en traza.** El colector distingue respuesta, rechazo, aclaración y error, incluida la interrupción. Catorce pruebas focalizadas, Ruff y mypy pasan; el dato sigue en memoria.
 - **01-nov 07:18 · Colector sin streaming.** La función interna `ask` acepta el mismo colector opcional que el pipeline de streaming. Ocho pruebas de consulta, Ruff y mypy pasan; el endpoint no activa el colector.
 - **01-nov 07:18 · Estado del diseño de historial.** El documento distingue las piezas internas ya implementadas de la persistencia y la interfaz pendientes, y describe los límites y el coste aún no medido de la huella del índice.
 - **01-nov 07:17 · Identidad de traza.** El colector opcional conserva el identificador de petición, incluido el rechazo en cola; en una consulta completada coincide con el evento `done`. Cinco pruebas de cola y Ruff pasan.

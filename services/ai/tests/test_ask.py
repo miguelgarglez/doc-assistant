@@ -97,6 +97,7 @@ def test_private_trace_captures_scores_without_changing_events(
     candidate = next(c for c in trace["candidates"] if c["chunk_id"] == chunk["chunk_id"])
     assert candidate["text_sha256"] == hashlib.sha256(chunk["text"].encode()).hexdigest()
     assert any(c["vector_score"] is not None for c in trace["candidates"])
+    assert trace["kind"] == "answer"
     assert trace["verification"]["ok"] is True
     assert trace["verification"]["details"]["citation_modes"] == ["literal"]
     assert trace["verification"]["citations"][0]["quote"] == "24 V"
@@ -198,6 +199,7 @@ def test_trace_marks_completion_and_interruption(config_path: Path) -> None:
     completed: dict = {}
     events = list(ask_events(config_path, "", trace=completed))
     assert completed["status"] == "completed"
+    assert completed["kind"] == "refusal"
     assert completed["result"] == events[-1][1]
     assert completed["trace_schema_version"] == 1
     assert completed["started_at"] <= completed["finished_at"]
@@ -206,6 +208,7 @@ def test_trace_marks_completion_and_interruption(config_path: Path) -> None:
     next(stream)
     stream.close()
     assert interrupted["status"] == "interrupted"
+    assert interrupted["kind"] == "error"
     assert interrupted["steps"]
     assert "elapsed_s" in interrupted
 
@@ -230,6 +233,17 @@ def test_trace_marks_pipeline_error(config_path: Path, monkeypatch) -> None:
     with pytest.raises(RuntimeError, match="failure"):
         list(ask_events(config_path, "pregunta", trace=trace))
     assert trace["status"] == "error"
+    assert trace["kind"] == "error"
     assert trace["error_code"] == "internal_error"
     assert trace["started_at"] <= trace["finished_at"]
     assert "elapsed_s" in trace
+
+
+def test_trace_distinguishes_clarification(config_path: Path, monkeypatch) -> None:
+    def clarify(*args, **kwargs):
+        yield "result", {"ok": False, "clarification": {"candidates": ["A", "B"]}}
+
+    monkeypatch.setattr("doc_assistant.ask._ask_events", clarify)
+    trace: dict = {}
+    list(ask_events(config_path, "pregunta", trace=trace))
+    assert trace["kind"] == "clarification"

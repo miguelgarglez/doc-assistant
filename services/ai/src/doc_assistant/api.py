@@ -480,6 +480,7 @@ def queued_ask_stream(
                     "elapsed_s": round(time.monotonic() - started, 4),
                 }
             )
+            trace["kind"] = "error"
             if code is not None:
                 trace["error_code"] = code
 

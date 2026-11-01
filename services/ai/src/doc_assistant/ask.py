@@ -514,14 +514,24 @@ def ask_events(
                 trace["steps"].append(data.copy())
             elif kind == "result":
                 trace["result"] = data.copy()
+                trace["kind"] = (
+                    "answer"
+                    if data.get("ok")
+                    else "clarification"
+                    if data.get("clarification")
+                    else "refusal"
+                )
                 trace["status"] = "completed"
             yield kind, data
     except Exception as exc:
         trace["status"] = "error"
+        trace["kind"] = "error"
         trace["error_code"] = exc.code if isinstance(exc, AdapterError) else "internal_error"
         raise
     finally:
         events.close()
+        if trace["status"] == "interrupted":
+            trace["kind"] = "error"
         trace["finished_at"] = datetime.now(UTC).isoformat()
         trace["elapsed_s"] = round(time.perf_counter() - started, 4)
 
