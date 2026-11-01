@@ -382,3 +382,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 - La migración añade causa y copia de exportación aprobada. El cambio de estado invalida esa copia; las revisiones anteriores sin una copia aprobada no se exportan hasta revisarlas de nuevo. La API anterior sigue disponible y exporta solo identificadores, comentario y respuesta confirmados, sin la traza original.
 - Pruebas focalizadas cubren migración, confirmaciones, redacción, recuento y revocación; pasan tipos y lint del servicio. Quedan pendientes la página de revisión y la verificación completa.
+
+## 01-Nov 15:16 CET · Página de revisión
+
+- La cola muestra pendientes, revisados y descartados; la página presenta la petición original, citas y traza, ayuda de teclado, campos de redacción y vista previa. La exportación usa solo la copia confirmada, y los cambios de filtro o una escritura fallida no deben mezclar avisos.
+- La revisión sintética se comprobó con API real y JSONL sin los datos originales; cinco pruebas de navegador cubren flujo, axe, 101 avisos, fallo de detalle y de guardado. Faltan verificaciones completas y revisión visual final de todos los estados.

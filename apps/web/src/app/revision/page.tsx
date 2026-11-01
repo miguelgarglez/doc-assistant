@@ -31,6 +31,8 @@ export default function ReviewPage() {
   const [originalMissing, setOriginalMissing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [detailError, setDetailError] = useState(false)
+  const [detailRetry, setDetailRetry] = useState(0)
   const [error, setError] = useState("")
   const [saving, setSaving] = useState(false)
   const [answer, setAnswer] = useState("")
@@ -62,7 +64,7 @@ export default function ReviewPage() {
   useEffect(() => {
     if (!selectedId) return
     const controller = new AbortController()
-    void Promise.resolve().then(() => { setDetailLoading(true); setDetail(null); setOriginal(null); setOriginalMissing(false) })
+    void Promise.resolve().then(() => { setDetailLoading(true); setDetail(null); setDetailError(false); setOriginal(null); setOriginalMissing(false) })
     void (async () => {
       try {
         const response = await fetch(`/api/history/feedback/${encodeURIComponent(selectedId)}`, { signal: controller.signal })
@@ -77,17 +79,18 @@ export default function ReviewPage() {
         setComment(typeof item.export_preview?.comment === "string" ? item.export_preview.comment : item.comment ?? "")
         setContext(typeof item.export_preview?.redacted_context === "string" ? item.export_preview.redacted_context : "")
         setCause(item.review_cause ?? "respuesta_incorrecta"); setConfirmed(false); setSafe(false)
-      } catch { if (!controller.signal.aborted) setError("No se pudo cargar el aviso.") }
+      } catch { if (!controller.signal.aborted) setDetailError(true) }
       finally { if (!controller.signal.aborted) setDetailLoading(false) }
     })()
     return () => controller.abort()
-  }, [selectedId])
+  }, [selectedId, detailRetry])
 
   const move = useCallback((direction: number) => {
+    if (saving) return
     const index = items.findIndex((item) => item.feedback_id === selectedId)
     const next = items[index + direction]
     if (next) setSelectedId(next.feedback_id)
-  }, [items, selectedId])
+  }, [items, selectedId, saving])
   const decide = useCallback(async (status: Status) => {
     if (!detail || saving) return
     if (status === "revisado" && (!answer.trim() || !confirmed || !safe)) { toast.error("Completa la respuesta y las confirmaciones de revisión."); return }
@@ -119,24 +122,24 @@ export default function ReviewPage() {
   return <div className="flex min-h-0 flex-1 flex-col">
     <header className="flex flex-wrap items-center justify-between gap-3 border-b px-6 py-4"><div><h1 className="font-heading text-xl font-semibold">Revisión de avisos</h1><p className="text-sm text-muted-foreground">Comprueba el fallo y prepara una copia segura para exportar.</p></div><a className={buttonVariants({ variant: "outline", size: "sm" })} href="/api/history/feedback/export" download="feedback-revisado.jsonl">Exportar revisados</a></header>
     <div className="grid min-h-0 flex-1 md:grid-cols-[20rem_minmax(0,1fr)]">
-      <aside aria-label="Cola de avisos" className="flex min-h-0 flex-col gap-3 border-r p-4"><Tabs value={filter} onValueChange={(value) => { if (value === "nuevo" || value === "revisado" || value === "descartado") { setSelectedId(null); setDetail(null); setFilter(value) } }}><TabsList>{(Object.keys(statusLabels) as Status[]).map((value) => <TabsTrigger key={value} value={value} disabled={saving}>{statusLabels[value]} {counts[value] ?? 0}</TabsTrigger>)}</TabsList></Tabs>
+      <aside aria-label="Cola de avisos" className="flex min-h-0 flex-col gap-3 border-r p-4"><Tabs value={filter} onValueChange={(value) => { if (value !== filter && (value === "nuevo" || value === "revisado" || value === "descartado")) { setSelectedId(null); setDetail(null); setItems([]); setFilter(value) } }}><TabsList>{(Object.keys(statusLabels) as Status[]).map((value) => <TabsTrigger key={value} value={value} disabled={saving}>{statusLabels[value]} {counts[value] ?? 0}</TabsTrigger>)}</TabsList></Tabs>
         <p className="text-xs text-muted-foreground">j / k siguiente o anterior · a revisar · d descartar · ? ayuda</p>
         {loading ? <p role="status">Cargando avisos…</p> : null}{error ? <p role="alert">{error} <Button size="sm" variant="outline" onClick={() => void load(filter)}>Reintentar</Button></p> : null}
         {!loading && !items.length && !error ? <p className="text-sm text-muted-foreground">No hay avisos en esta categoría.</p> : null}
-        <div className="min-h-0 flex-1 overflow-y-auto"><ul className="flex flex-col">{items.map((item) => <li key={item.feedback_id}><button type="button" aria-current={selectedId === item.feedback_id ? "true" : undefined} className="w-full border-b px-2 py-3 text-left text-sm hover:bg-muted aria-current:bg-muted" onClick={() => setSelectedId(item.feedback_id)}><span className="block truncate font-medium">{item.comment || "Sin comentario"}</span><span className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleString("es-ES")}</span></button></li>)}</ul>{hasMore ? <Button disabled={loading} variant="ghost" onClick={() => void load(filter, offset, true)}>Cargar más</Button> : null}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto"><ul className="flex flex-col">{items.map((item) => <li key={item.feedback_id}><button type="button" disabled={saving} aria-current={selectedId === item.feedback_id ? "true" : undefined} className="w-full border-b px-2 py-3 text-left text-sm hover:bg-muted aria-current:bg-muted" onClick={() => setSelectedId(item.feedback_id)}><span className="block truncate font-medium">{item.comment || "Sin comentario"}</span><span className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleString("es-ES")}</span></button></li>)}</ul>{hasMore ? <Button disabled={loading || saving} variant="ghost" onClick={() => void load(filter, offset, true)}>Cargar más</Button> : null}</div>
       </aside>
-      <section aria-label="Detalle de revisión" className="min-h-0 overflow-y-auto p-6">{detailLoading ? <p role="status">Cargando detalle…</p> : null}{!detailLoading && !detail ? <p className="text-muted-foreground">Selecciona un aviso para revisarlo.</p> : null}{detail ? <div className="mx-auto flex max-w-4xl flex-col gap-6">
-        <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="font-heading text-lg font-semibold">Detalle del aviso</h2><p className="break-all text-xs text-muted-foreground">Petición: {detail.request_id} · Conversación: {detail.conversation_id}</p></div><div className="flex gap-2"><Button size="sm" variant="outline" disabled={index <= 0} onClick={() => move(-1)}>Anterior</Button><Button size="sm" variant="outline" disabled={index < 0 || index >= items.length - 1} onClick={() => move(1)}>Siguiente</Button></div></div>
+      <section aria-label="Detalle de revisión" className="min-h-0 overflow-y-auto p-6">{detailLoading ? <p role="status">Cargando detalle…</p> : null}{detailError ? <p role="alert">No se pudo cargar el aviso. <Button size="sm" variant="outline" onClick={() => setDetailRetry((n) => n + 1)}>Reintentar detalle</Button></p> : null}{!detailLoading && !detail && !detailError ? <p className="text-muted-foreground">Selecciona un aviso para revisarlo.</p> : null}{detail ? <div className="mx-auto flex max-w-4xl flex-col gap-6">
+        <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="font-heading text-lg font-semibold">Detalle del aviso</h2><p className="text-sm">Estado: {detail.status === "nuevo" ? "Pendiente" : detail.status === "revisado" ? "Revisado" : "Descartado"}</p><p className="break-all text-xs text-muted-foreground">Petición: {detail.request_id} · Conversación: {detail.conversation_id}</p></div><div className="flex gap-2"><Button size="sm" variant="outline" disabled={saving || index <= 0} onClick={() => move(-1)}>Anterior</Button><Button size="sm" variant="outline" disabled={saving || index < 0 || index >= items.length - 1} onClick={() => move(1)}>Siguiente</Button></div></div>
         <section className="flex flex-col gap-3"><h3 className="font-semibold">Conversación original</h3>{originalMissing ? <p>La conversación original ya no está disponible. El aviso conserva su captura.</p> : null}<div><p className="text-xs font-medium text-muted-foreground">Pregunta</p><p className="whitespace-pre-wrap"><Highlight text={original?.question ?? "No disponible"} /></p></div><div><p className="text-xs font-medium text-muted-foreground">Respuesta</p><p className="whitespace-pre-wrap"><Highlight text={original?.result?.answer ?? "No disponible"} /></p></div>{original?.result?.citations?.map((citation, i) => <div className="border-l-2 pl-3 text-sm" key={i}><p className="font-medium">{citation.doc ?? "Documento"} {citation.section ? `· ${citation.section}` : ""} {citation.pages?.length ? `· pág. ${citation.pages.join(", ")}` : ""}</p><p className="whitespace-pre-wrap"><Highlight text={citation.fragment || citation.quote || "Sin fragmento"} /></p></div>)}
           {original?.steps?.length ? <div><p className="text-sm font-medium">Traza</p><ul className="text-sm text-muted-foreground">{original.steps.map((step, i) => <li key={i}>{step.label ?? "Paso"} · {step.status ?? "—"} {step.elapsed_s == null ? "" : `· ${step.elapsed_s} s`}</li>)}</ul></div> : null}<details><summary className="cursor-pointer text-sm font-medium">Ver JSON original</summary><pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-xs">{JSON.stringify(original ?? detail.trace, null, 2)}</pre></details>
         </section>
         <section className="flex flex-col gap-4 border-t pt-5"><div><h3 className="font-semibold">Preparar la revisión</h3><p className="text-sm text-muted-foreground">Se resaltan posibles datos sensibles, incluidos nombres, importes, IBAN, NIF, correos y teléfonos. La detección puede omitir datos: revisa todo antes de confirmar.</p></div>
-          <FieldGroup><Field><FieldLabel htmlFor="cause">Causa del fallo</FieldLabel><select id="cause" className="h-9 rounded-md border border-input bg-background px-3 text-sm" value={cause} onChange={(e) => { setCause(e.target.value as Cause); setSafe(false) }}>{causes.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
-            <Field><FieldLabel htmlFor="answer">Respuesta esperada</FieldLabel><FieldDescription>Describe la respuesta correcta sin incluir datos personales ni importes identificables.</FieldDescription><Textarea id="answer" value={answer} maxLength={4000} onChange={(e) => { setAnswer(e.target.value); setSafe(false) }} /><p className="whitespace-pre-wrap text-sm"><Highlight text={answer} /></p></Field>
-            <Field><FieldLabel htmlFor="comment">Comentario para exportar</FieldLabel><Textarea id="comment" value={comment} maxLength={4000} onChange={(e) => { setComment(e.target.value); setSafe(false) }} /><p className="text-sm"><Highlight text={comment} /></p></Field>
-            <Field><FieldLabel htmlFor="context">Contexto redactado para exportar (opcional)</FieldLabel><FieldDescription>Escribe únicamente los fragmentos que quieras compartir tras quitar los datos sensibles. La conversación original no se exporta.</FieldDescription><Textarea id="context" value={context} maxLength={40000} onChange={(e) => { setContext(e.target.value); setSafe(false) }} /><p className="whitespace-pre-wrap text-sm"><Highlight text={context} /></p></Field>
-            <Field orientation="horizontal"><Checkbox id="confirmed" checked={confirmed} onCheckedChange={setConfirmed} /><FieldLabel htmlFor="confirmed">He comprobado que hay un fallo real.</FieldLabel></Field>
-            <Field orientation="horizontal"><Checkbox id="safe" checked={safe} onCheckedChange={setSafe} /><FieldLabel htmlFor="safe">He revisado toda la vista previa y quitado los datos sensibles.</FieldLabel></Field>
+          <FieldGroup><Field><FieldLabel htmlFor="cause">Causa del fallo</FieldLabel><select disabled={saving} id="cause" className="h-9 rounded-md border border-input bg-background px-3 text-sm" value={cause} onChange={(e) => { setCause(e.target.value as Cause); setSafe(false) }}>{causes.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
+            <Field><FieldLabel htmlFor="answer">Respuesta esperada</FieldLabel><FieldDescription>Describe la respuesta correcta sin incluir datos personales ni importes identificables.</FieldDescription><Textarea disabled={saving} id="answer" value={answer} maxLength={4000} onChange={(e) => { setAnswer(e.target.value); setSafe(false) }} /><p className="whitespace-pre-wrap text-sm"><Highlight text={answer} /></p></Field>
+            <Field><FieldLabel htmlFor="comment">Comentario para exportar</FieldLabel><Textarea disabled={saving} id="comment" value={comment} maxLength={4000} onChange={(e) => { setComment(e.target.value); setSafe(false) }} /><p className="text-sm"><Highlight text={comment} /></p></Field>
+            <Field><FieldLabel htmlFor="context">Contexto redactado para exportar (opcional)</FieldLabel><FieldDescription>Escribe únicamente los fragmentos que quieras compartir tras quitar los datos sensibles. La conversación original no se exporta.</FieldDescription><Textarea disabled={saving} id="context" value={context} maxLength={40000} onChange={(e) => { setContext(e.target.value); setSafe(false) }} /><p className="whitespace-pre-wrap text-sm"><Highlight text={context} /></p></Field>
+            <Field orientation="horizontal"><Checkbox disabled={saving} id="confirmed" checked={confirmed} onCheckedChange={setConfirmed} /><FieldLabel htmlFor="confirmed">He comprobado que hay un fallo real.</FieldLabel></Field>
+            <Field orientation="horizontal"><Checkbox disabled={saving} id="safe" checked={safe} onCheckedChange={setSafe} /><FieldLabel htmlFor="safe">He revisado toda la vista previa y quitado los datos sensibles.</FieldLabel></Field>
           </FieldGroup>
           <details><summary className="cursor-pointer text-sm font-medium">Vista previa del registro JSONL</summary><pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-xs">{JSON.stringify(preview, null, 2)}</pre></details>
           <div className="flex flex-wrap gap-2"><Button disabled={saving || !answer.trim() || !confirmed || !safe} onClick={() => void decide("revisado")}>Marcar revisado</Button><Button disabled={saving} variant="outline" onClick={() => void decide("descartado")}>Descartar</Button><Button disabled={saving} variant="ghost" onClick={() => void decide("nuevo")}>Volver a pendiente</Button>{saving ? <span role="status">Guardando…</span> : null}</div>

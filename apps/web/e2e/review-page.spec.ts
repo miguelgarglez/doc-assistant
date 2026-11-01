@@ -36,3 +36,24 @@ test("revisa con redacciones, confirma y puede descartar desde teclado", async (
   await page.keyboard.press("d")
   await expect.poll(() => status).toBe("descartado")
 })
+
+test("permite reintentar el detalle y conserva el aviso si falla el guardado", async ({ page }) => {
+  await mockBackend(page)
+  let detailAttempts = 0
+  const item = { feedback_id: "f2", request_id: "r2", conversation_id: "c2", created_at: "2026-11-01T10:00:00Z", kind: "incorrecta", comment: "Aviso de prueba", status: "nuevo", expected_answer: null, trace: {} }
+  await page.route("**/api/history/feedback**", (route) => {
+    const url = new URL(route.request().url())
+    if (url.pathname.endsWith("/counts")) return route.fulfill({ json: { nuevo: 1 } })
+    if (url.pathname.endsWith("/decision")) return route.fulfill({ status: 503, json: {} })
+    if (url.pathname.endsWith("/original")) return route.fulfill({ status: 404, json: {} })
+    if (url.pathname.endsWith("/f2")) { detailAttempts++; return route.fulfill(detailAttempts === 1 ? { status: 503, json: {} } : { json: item }) }
+    return route.fulfill({ json: [item] })
+  })
+  await page.goto("/revision")
+  await expect(page.getByRole("alert").filter({ hasText: "No se pudo cargar el aviso" })).toBeVisible()
+  await page.getByRole("button", { name: "Reintentar detalle" }).click()
+  await expect(page.getByRole("heading", { name: "Detalle del aviso" })).toBeVisible()
+  await page.getByRole("button", { name: "Descartar" }).click()
+  await expect(page.getByText("No se pudo guardar; se ha restaurado el estado anterior.")).toBeVisible()
+  await expect(page.getByRole("button", { name: /Aviso de prueba/ })).toBeVisible()
+})
