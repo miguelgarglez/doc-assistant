@@ -111,7 +111,7 @@ test.describe("sistema", () => {
     await expect(page.getByTestId("trace-step-verify")).toBeVisible()
   })
 
-  test("sin scroll de página en 1440x900 y 1280x720", async ({ page }) => {
+  test("Sistema mantiene la página fija y permite alcanzar el historial", async ({ page }) => {
     for (const viewport of [
       { width: 1440, height: 900 },
       { width: 1280, height: 720 },
@@ -126,11 +126,9 @@ test.describe("sistema", () => {
       await expect(page.getByTestId("trace-step-verify")).toBeVisible()
       const overflow = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight)
       expect(overflow).toBeLessThanOrEqual(0)
-      const scrolls = await page.evaluate(() => {
-        const page = document.querySelector('[data-testid="system-diagram"]')!.closest(".overflow-y-auto") as HTMLElement
-        return page.scrollHeight - page.clientHeight
-      })
-      expect(scrolls).toBeLessThanOrEqual(0)
+      const history = page.getByRole("region", { name: "Historial y revisión" })
+      await history.scrollIntoViewIfNeeded()
+      await expect(history.getByText("Retención: 30 días")).toBeVisible()
       await page.evaluate(() => window.sessionStorage.clear())
       await page.goto("/")
     }
