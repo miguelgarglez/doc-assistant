@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test"
 
+const port = 3300
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -12,7 +14,7 @@ export default defineConfig({
     toHaveScreenshot: { maxDiffPixels: 100 },
   },
   use: {
-    baseURL: "http://127.0.0.1:3100",
+    baseURL: `http://127.0.0.1:${port}`,
     viewport: { width: 1280, height: 800 },
     deviceScaleFactor: 1,
     locale: "es-ES",
@@ -31,8 +33,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm exec next start --hostname 127.0.0.1 --port 3100",
-    url: "http://127.0.0.1:3100",
+    command: `pnpm exec next start --hostname 127.0.0.1 --port ${port}`,
+    url: `http://127.0.0.1:${port}`,
     reuseExistingServer: false,
     timeout: 120_000,
   },
