@@ -476,3 +476,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 11:07 CET · Traza de facturas ante errores
 - El colector principal enlaza la traza de factura antes de invocar el planificador. Si este falla, conserva los datos capturados hasta ese momento. También conserva la traza de la comprobación de facturas cuando la consulta continúa por documentos.
 - Diez pruebas de consulta, Ruff y mypy pasan. La traza no se persiste ni se expone.
+
+## 01-Nov 11:08 CET · Stream sin resultado
+- Si el pipeline termina sin resultado, el transporte emite `internal_error` en vez de cerrar el stream sin evento terminal. La traza opcional registra el fallo del transporte.
+- La regresión reprodujo el cierre tras un token y pasa tras la corrección. Pasan 45 pruebas de streaming y cola, y Ruff. La persistencia sigue desconectada.

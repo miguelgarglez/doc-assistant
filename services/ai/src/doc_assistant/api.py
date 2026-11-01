@@ -431,6 +431,7 @@ def _translate_ask_events(
     trace: dict[str, Any] | None = None,
 ) -> Iterator[str]:
     emitted = False
+    completed = False
     for kind, data in events:
         if kind == "step":
             yield sse(StepEvent.model_validate(data))
@@ -461,7 +462,10 @@ def _translate_ask_events(
             frame = sse(DoneEvent(**response.model_dump(), timings=timings, request_id=request_id))
             if trace is not None:
                 trace["transport_status"] = "completed"
+            completed = True
             yield frame
+    if not completed:
+        raise RuntimeError("pipeline ended without a result")
 
 
 def queued_ask_stream(

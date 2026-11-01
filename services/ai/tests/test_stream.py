@@ -543,3 +543,20 @@ def test_stream_trace_records_translation_failure_without_exception_details(
     assert trace["transport_status"] == "error"
     assert trace["transport_error_code"] == "internal_error"
     assert "secret" not in str(trace)
+
+
+def test_stream_without_pipeline_result_ends_with_error(
+    config_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from doc_assistant import api
+
+    def incomplete_events(*args, **kwargs):
+        yield "token", {"text": "Respuesta incompleta"}
+
+    monkeypatch.setattr(api, "ask_events", incomplete_events)
+    trace: dict = {}
+    frames = list(ask_stream_events(config_path, "pregunta", trace=trace))
+    parsed = events("".join(frames))
+    assert [event[0] for event in parsed] == ["token", "error"]
+    assert parsed[-1][1]["code"] == "internal_error"
+    assert trace["transport_status"] == "error"
