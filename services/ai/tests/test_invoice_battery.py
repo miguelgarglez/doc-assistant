@@ -107,6 +107,7 @@ class Case:
     kind: str = "answer"  # answer | clarify | refuse
     want: tuple[str, ...] = ()
     forbid: tuple[str, ...] = ()
+    live_want: tuple[str, ...] | None = None
     reason: str | None = None
     note: str = field(default="", repr=False)
 
@@ -238,6 +239,7 @@ CASES = [
     Case(
         "total de las facturas de Talleres Sur",
         {"intent": "valor", "parte": "Talleres Sur", "campos": ["importe_total"]},
+        live_want=("Factura T-100: total: 3.630,00 €", "Factura T-101: total: 12.345,67 €"),
         want=(
             "Talleres Sur, S.A. tiene 2 facturas.",
             "Factura T-100: total: 3.630,00 €",
@@ -483,6 +485,7 @@ def test_battery(battery_config, case: Case):
     for piece in case.forbid:
         assert piece not in text, f"{piece!r} found in {text!r}"
     assert_no_false_answer(case.question, result)
+    assert_blocks_grounded(result)
 
 
 def test_battery_has_no_false_answer_and_covers_every_intent():
@@ -504,7 +507,11 @@ def test_battery_with_a_real_model(battery_config, case: Case):
     result = ask_invoices(battery_config, case.question, llm=llm)
     assert result is not None
     assert_no_false_answer(case.question, result)
-    if case.kind == "answer" and result["ok"]:
+    assert_blocks_grounded(result)
+    if result["ok"]:
+        assert case.kind == "answer", f"answered a {case.kind} case: {result['answer']}"
+        for piece in case.want if case.live_want is None else case.live_want:
+            assert piece in result["answer"], f"expected {piece!r} in {result['answer']!r}"
         for piece in case.forbid:
             assert piece not in result["answer"], f"{piece!r} in {result['answer']!r}"
 
@@ -641,3 +648,23 @@ def test_comparison_numbers_are_not_duplicated(battery_config):
         {"intent": "valor", "parte": "Talleres Sur", "campos": ["numero"]},
     )
     assert [column["key"] for column in result["blocks"][0]["columns"]] == ["numero"]
+
+
+def test_general_key_data_is_stable_even_with_an_overbroad_plan(battery_config):
+    from doc_assistant.invoice_fields import FIELD_SPECS
+
+    result = blocks_of(
+        battery_config,
+        "¿Qué datos tiene la factura T-100?",
+        {"intent": "valor", "numero": "T-100", "campos": list(FIELD_SPECS)},
+    )
+    (block,) = result["blocks"]
+    assert block["title"] == "Datos clave"
+    assert [item["field"] for item in block["items"]] == [
+        "emisor",
+        "cliente",
+        "numero",
+        "fecha_emision",
+        "importe_total",
+    ]
+    assert "IBAN" not in result["answer"]

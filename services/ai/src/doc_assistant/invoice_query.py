@@ -22,6 +22,7 @@ from doc_assistant.adapters import AdapterError
 from doc_assistant.chunking import invoice_doc_id
 from doc_assistant.invoice_fields import (
     FIELD_SPECS,
+    asks_for,
     display_value,
     format_eur,
     labels_for,
@@ -668,7 +669,12 @@ def _shape(
         asked = prune_unasked(
             plan.campos or lexical_fields(question, sel.rol), question, party_role=sel.rol
         )
-        picked = _role_fields(asked, sel.rol, question)
+        general_data = (
+            "datos" in fold(question).split()
+            and not {"numero", "numeros"} & set(fold(question).split())
+            and not any(asks_for(c, question, party_role=sel.rol) for c in FIELDS)
+        )
+        picked = [] if general_data else _role_fields(asked, sel.rol, question)
         campos = picked or (KEY_DATA_FIELDS if len(rows) == 1 else SUMMARY_FIELDS)
         labels = labels_for(campos, question)
         lines, cits, elements, shown_rows = [], [], [], []

@@ -145,3 +145,11 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 ## 01-Nov 01:39 CET · Corrección de expectativa del lector SSE
 - La primera suite completa dio 179 pasadas, 1 fallo y 4 omitidas. El fallo era una expectativa del test de tramas crudas: se había añadido blocks_version al sobre SSE en vez de a su JSON. Corregida solo la expectativa; la trama cruda no lleva ese campo. Se repetirán tres pasadas completas tras esta corrección.
+
+## 01-Nov 01:40 CET · Batería sintética y captura de línea base
+- Batería con modelo real aislado en 8171: 81 tests pasados, incluidos 35 casos live con invariantes de ausencia de respuestas falsas. Las pruebas adicionales de bloques comprueban igualdad de valor/cita y operandos de sumas.
+- Capturado el antes con una exportación del tag v0.13.3 y sus propios servicio/web; mismo índice local de humo y modelos propios, sin usar puertos de Miguel. Capturas reales solo fuera del repo.
+- La segunda pasada ya en curso había cargado la expectativa SSE antigua y repitió ese fallo. Se reinicia ahora una secuencia nueva de tres pasadas contra la expectativa corregida.
+
+## 01-Nov 01:43 CET · Ficha general estable y oráculo de batería
+- La presentación de datos generales se limita determinísticamente a emisor, cliente, número, fecha y total incluso si el plan propone todos los campos. Reproducido con fixture sintética y plan sobrecargado; sin cambiar parser de extracción ni prompts. La batería comprueba ahora todas las celdas y valores esperados también con modelo real. La formulación ambigua total de las facturas admite suma o desglose, conservando los dos importes esperados. Primera pasada final e2e: 180/180, 4 live omitidas.
