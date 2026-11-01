@@ -156,4 +156,6 @@ Las citas SQL corresponden al dato extraído y almacenado en InvoiceDB. `chunk_i
 
 El contrato público se exporta desde Pydantic a `services/ai/openapi.json` y de ahí a `schema.d.ts`. `blocks_version: 1` versiona la representación nueva sin cambiar la versión histórica global del API. `mise run check` comprueba su deriva.
 
-Los errores del modelo terminan el flujo con `error`, sin `done`. El código `model_busy` indica una respuesta HTTP 429 o 503 del modelo; `model_timeout` indica que se agotó la espera. El mensaje propone reintentar y no incluye la dirección del modelo. Estos códigos también pueden aparecer en errores de ingesta. No garantizan que el servicio mantenga una cola propia.
+Los errores del modelo terminan el flujo con `error`, sin `done`. El código `model_busy` indica una respuesta HTTP 429 o 503 del modelo; `model_timeout` indica que se agotó la espera. El mensaje propone reintentar y no incluye la dirección del modelo. Estos códigos también pueden aparecer en errores de ingesta.
+
+Cada proceso del servicio admite dos consultas activas y cuatro en espera. Una consulta SSE en espera recibe un paso `route` con el texto «Esperando turno para responder». Si la cola está llena, el servicio termina el flujo con `queue_full`; si la espera supera 60 segundos, usa `queue_timeout`. En `/ask` ambos casos devuelven HTTP 503 con el mismo código. La cola es en memoria, no es durable ni compartida entre procesos y no limita las ingestas. El tiempo de cola no se suma al `timings.total` de la respuesta.

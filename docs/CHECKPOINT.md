@@ -273,3 +273,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Tres pasadas del build corregido: 182 pruebas aprobadas y 4 live omitidas en cada una, con axe en las rutas cubiertas. El build se generó con la raíz temporal ampliada y dependencias existentes. Las capturas sintéticas del fallo se inspeccionaron.
 - El servidor propio se cerró por PID. Se retiraron a `_trash/` los enlaces y la configuración temporal. Continúan pendientes la cola y el cierre de versión.
 
+## 01-Nov 03:17 CET · Cola acotada de consultas
+- Cada proceso admite dos consultas activas y cuatro en espera durante un máximo de 60 segundos. El flujo indica la espera con un paso existente; al llenarse o agotarse devuelve un error recuperable. `/ask` devuelve HTTP 503 para ambos casos.
+- Cuatro pruebas deterministas cubren espera, capacidad, desconexión, timeout y el endpoint sin streaming. Pasaron 36 pruebas focalizadas y mypy. La cola es local al proceso y no limita ingestas; falta repetir carga con modelos y las verificaciones de entrega.
+

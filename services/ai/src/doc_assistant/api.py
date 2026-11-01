@@ -2,6 +2,7 @@
 
 import copy
 import json
+import time
 from collections.abc import AsyncIterator, Callable, Iterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -15,6 +16,7 @@ from pydantic import BaseModel, Field, TypeAdapter
 
 from doc_assistant.adapters import AdapterError
 from doc_assistant.ask import ask, ask_events
+from doc_assistant.ask_capacity import AskCapacity
 from doc_assistant.chunking import invoice_doc_id, pdf_doc_id
 from doc_assistant.config import load_config
 from doc_assistant.health import ComponentsHealth, check_components
@@ -27,6 +29,7 @@ from doc_assistant.sources import find_source, list_sources, remove_source
 from doc_assistant.store import ChunkStore
 
 DEFAULT_CONFIG = Path(__file__).resolve().parents[4] / "config/config.yaml"
+ASK_QUEUE_TIMEOUT_S = 60.0
 
 
 class ErrorBody(BaseModel):
@@ -431,6 +434,47 @@ def ask_stream_events(config_path: Path, question: str) -> Iterator[str]:
         yield sse(ErrorEvent(code="internal_error", message="Error interno al responder"))
 
 
+def queued_ask_stream(capacity: AskCapacity, config_path: Path, question: str) -> Iterator[str]:
+    if not capacity.admitted.acquire(blocking=False):
+        yield sse(
+            ErrorEvent(
+                code="queue_full",
+                message="Hay demasiadas consultas pendientes. Inténtalo de nuevo en unos segundos.",
+            )
+        )
+        return
+    acquired = False
+    try:
+        acquired = capacity.running.acquire(blocking=False)
+        if not acquired:
+            started = time.monotonic()
+            yield sse(
+                StepEvent(id="route", status="running", label="Esperando turno para responder")
+            )
+            acquired = capacity.running.acquire(timeout=ASK_QUEUE_TIMEOUT_S)
+            if not acquired:
+                yield sse(
+                    ErrorEvent(
+                        code="queue_timeout",
+                        message="La espera ha sido demasiado larga. Inténtalo de nuevo.",
+                    )
+                )
+                return
+            yield sse(
+                StepEvent(
+                    id="route",
+                    status="done",
+                    label="Turno disponible",
+                    elapsed_s=round(time.monotonic() - started, 4),
+                )
+            )
+        yield from ask_stream_events(config_path, question)
+    finally:
+        if acquired:
+            capacity.running.release()
+        capacity.admitted.release()
+
+
 STREAM_SCHEMA = TypeAdapter(StreamEvent).json_schema(ref_template="#/components/schemas/{model}")
 
 
@@ -491,6 +535,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.config = load_config(config_path)
         app.state.jobs = IngestJobs()
+        app.state.ask_capacity = AskCapacity()
         app.state.config.db.parent.mkdir(parents=True, exist_ok=True)
         yield
 
@@ -615,9 +660,31 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
 
         return tracked(request.app.state.jobs, job, run, summarize_document)
 
-    @app.post("/ask", response_model=AskResponse, responses={502: {"model": ErrorBody}})
-    def query(payload: AskRequest) -> Any:
-        return ask(config_path, payload.question)
+    @app.post(
+        "/ask",
+        response_model=AskResponse,
+        responses={502: {"model": ErrorBody}, 503: {"model": ErrorBody}},
+    )
+    def query(payload: AskRequest, request: Request) -> Any:
+        capacity = request.app.state.ask_capacity
+        if not capacity.admitted.acquire(blocking=False):
+            return upload_error(
+                "queue_full",
+                "Hay demasiadas consultas pendientes. Inténtalo de nuevo en unos segundos.",
+                503,
+            )
+        acquired = False
+        try:
+            acquired = capacity.running.acquire(timeout=ASK_QUEUE_TIMEOUT_S)
+            if not acquired:
+                return upload_error(
+                    "queue_timeout", "La espera ha sido demasiado larga. Inténtalo de nuevo.", 503
+                )
+            return ask(config_path, payload.question)
+        finally:
+            if acquired:
+                capacity.running.release()
+            capacity.admitted.release()
 
     @app.post(
         "/ask/stream",
@@ -632,9 +699,9 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
             }
         },
     )
-    def query_stream(payload: AskRequest) -> StreamingResponse:
+    def query_stream(payload: AskRequest, request: Request) -> StreamingResponse:
         return StreamingResponse(
-            ask_stream_events(config_path, payload.question),
+            queued_ask_stream(request.app.state.ask_capacity, config_path, payload.question),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
