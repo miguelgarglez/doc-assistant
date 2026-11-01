@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react"
 
 import { useConversation } from "@/components/providers/chat-provider"
 import { Page, PageHeader } from "@/components/shell/page"
+import { HistoryStatusPanel } from "@/components/system/history-status"
 import { SystemDiagram } from "@/components/system/system-diagram"
 import { TracePanel } from "@/components/system/trace-panel"
 import { Button } from "@/components/ui/button"
@@ -70,6 +71,7 @@ export default function SystemPage() {
           trace={trace}
         />
       </div>
+      <HistoryStatusPanel />
     </Page>
   )
 }
