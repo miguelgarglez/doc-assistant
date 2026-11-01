@@ -480,3 +480,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 11:08 CET · Stream sin resultado
 - Si el pipeline termina sin resultado, el transporte emite `internal_error` en vez de cerrar el stream sin evento terminal. La traza opcional registra el fallo del transporte.
 - La regresión reprodujo el cierre tras un token y pasa tras la corrección. Pasan 45 pruebas de streaming y cola, y Ruff. La persistencia sigue desconectada.
+
+## 01-Nov 11:09 CET · Traza de pipeline sin resultado
+- Si el pipeline se agota sin resultado, el colector lo clasifica como error interno en vez de interrupción. El transporte sigue enviando un evento de error; no se exponen detalles internos.
+- Pasan 56 pruebas de consulta, streaming y cola, y Ruff. La primera ejecución de la regresión falló por un import ausente; corregido, reprodujo el defecto antes de la solución. La persistencia sigue desconectada.

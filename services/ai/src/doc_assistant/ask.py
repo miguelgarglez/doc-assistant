@@ -524,6 +524,8 @@ def ask_events(
                 )
                 trace["status"] = "completed"
             yield kind, data
+        if trace["status"] != "completed":
+            raise RuntimeError("pipeline ended without a result")
     except Exception as exc:
         trace["status"] = "error"
         trace["kind"] = "error"

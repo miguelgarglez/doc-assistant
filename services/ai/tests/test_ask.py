@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
+import pytest
+
 from doc_assistant.adapters import FakeEmbedder, FakeLLM, FakeReranker
 from doc_assistant.ask import ask, ask_events
 from doc_assistant.chunking import chunk_pdf
@@ -248,6 +250,21 @@ def test_trace_marks_pipeline_error(config_path: Path, monkeypatch) -> None:
     assert trace["error_code"] == "internal_error"
     assert trace["started_at"] <= trace["finished_at"]
     assert "elapsed_s" in trace
+
+
+def test_trace_marks_pipeline_without_result_as_error(config_path: Path, monkeypatch) -> None:
+    from doc_assistant import ask as ask_module
+
+    def incomplete_events(*args, **kwargs):
+        yield "token", {"text": "incompleto"}
+
+    monkeypatch.setattr(ask_module, "_ask_events", incomplete_events)
+    trace: dict = {}
+    with pytest.raises(RuntimeError, match="without a result"):
+        list(ask_module.ask_events(config_path, "pregunta", trace=trace))
+    assert trace["status"] == "error"
+    assert trace["kind"] == "error"
+    assert trace["error_code"] == "internal_error"
 
 
 def test_trace_distinguishes_clarification(config_path: Path, monkeypatch) -> None:
