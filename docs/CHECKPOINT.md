@@ -200,3 +200,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Añadida arquitectura para cientos de usuarios registrados: SSO, inquilinos y ACL por documento, recuperación autorizada, colas, almacenamiento, caché, observabilidad, despliegue y costes. La capacidad simultánea queda pendiente de medición.
 - Corregidas afirmaciones no medidas sobre GPU y coste, la cabecera de identidad como confianza suficiente y la colisión con ADR-014. Revisión documental y `git diff --check`; fase aún sin cierre ni tag.
 
+
+## 01-Nov 02:00 CET · Revisión privada del gold
+- Copia byte a byte del borrador de 44 casos y revisión de cada caso frente a los cuatro PDF. Detectados M03 (confusión de dos tareas), Z01 (citas incompletas y señales frente a alimentación) y otras ambigüedades. Informe y datos solo en `_agents/night/`. No contiene casos de facturas.
+- Preparado colector de una pasada para un gold aprobado, probado con dos casos sintéticos y transporte simulado; no califica ni se ejecutó con datos reales. El primer intento de prueba con servidor temporal quedó bloqueado y se terminó solo su PID 95809. El servicio ajeno que escucha en 8000 no se tocó. Sin evaluación final ni tag.
+
