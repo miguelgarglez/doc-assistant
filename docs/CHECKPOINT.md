@@ -436,3 +436,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 ## 01-Nov 07:29 CET · Cierre de la cola tras done
 - Una prueba adicional cierra el generador de cola tras `done`: conserva el estado completado y libera ambos permisos de capacidad. Siete pruebas de cola y Ruff pasan.
+
+## 01-Nov 07:29 CET · Migración concurrente y suite
+- La prueba de migración abre la base anterior desde cuatro hilos y comprueba que se preservan el vínculo recuperable y el feedback huérfano. Cinco pruebas de historial, Ruff y formato pasan.
+- Suite completa del servicio con el código actual: 344 pasadas y 35 live omitidas. No sustituye los checks de entrega.

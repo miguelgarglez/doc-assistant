@@ -76,7 +76,8 @@ def test_existing_feedback_gains_conversation_without_losing_orphans(tmp_path):
             INSERT INTO feedback VALUES ('f', 'r', 'now', 'otro', NULL, '{}');
             INSERT INTO feedback VALUES ('orphan', 'deleted', 'now', 'otro', NULL, '{}');
         """)
-    HistoryStore(path)
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        list(executor.map(lambda _: HistoryStore(path), range(4)))
     HistoryStore(path)
     with sqlite3.connect(path) as db:
         rows = dict(db.execute("SELECT feedback_id, conversation_id FROM feedback"))
