@@ -57,6 +57,39 @@ def test_ask_verified_answer(
     assert "latencies" in result
 
 
+def test_trace_hashes_config_used_even_if_file_changes(
+    tmp_path: Path, synthetic_pdf: Path, config_path: Path, fake_embedder: FakeEmbedder, monkeypatch
+) -> None:
+    import importlib
+
+    import yaml
+
+    ask_module = importlib.import_module("doc_assistant.ask")
+    store = _seed(tmp_path, synthetic_pdf, fake_embedder)
+    cfg = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    cfg["db"] = str(store.path)
+    config_path.write_text(yaml.dump(cfg), encoding="utf-8")
+    expected = hashlib.sha256(config_path.read_bytes()).hexdigest()
+    load_config = ask_module.load_config
+
+    def load_then_change(path):
+        loaded = load_config(path)
+        config_path.write_text("changed: true\n", encoding="utf-8")
+        return loaded
+
+    monkeypatch.setattr(ask_module, "load_config", load_then_change)
+    trace: dict = {}
+    ask(
+        config_path,
+        "¿A qué voltaje opera?",
+        embedder=fake_embedder,
+        reranker=FakeReranker(),
+        llm=FakeLLM(response={"answerable": False, "answer": None, "citations": []}),
+        trace=trace,
+    )
+    assert trace["versions"]["config_sha256"] == expected
+
+
 def test_private_trace_captures_scores_without_changing_events(
     tmp_path: Path, synthetic_pdf: Path, config_path: Path, fake_embedder: FakeEmbedder
 ) -> None:

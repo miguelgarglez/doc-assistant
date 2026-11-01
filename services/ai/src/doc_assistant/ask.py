@@ -185,7 +185,7 @@ def _ask_events(
     cfg = load_config(config_path)
     if trace is not None:
         trace["versions"] = {
-            "config_sha256": hashlib.sha256(cfg.path.read_bytes()).hexdigest(),
+            "config_sha256": cfg._source_sha256,
             "models_configured": {
                 "llm": cfg.llm.model,
                 "embeddings": cfg.embeddings.model,

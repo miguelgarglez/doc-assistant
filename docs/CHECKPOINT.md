@@ -505,3 +505,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 11:14 CET · Revisión local de feedback
 - El comando `feedback_review` recibe la respuesta esperada por stdin y actualiza respuesta y estado en una transacción, limitada por conversación. Rechaza respuestas vacías y bases inexistentes. El identificador no autentica y no hay persistencia conectada a la API.
 - Pasan 18 pruebas de historial, revisión y exportación; Ruff, formato y mypy correctos. La salida sigue siendo un borrador, no gold aprobado.
+
+## 01-Nov 11:15 CET · Huella de la configuración utilizada
+- La traza calcula `config_sha256` con los mismos bytes de YAML que carga la petición. Antes, si el archivo cambiaba entre la carga y una segunda lectura, la huella podía describir otro contenido. La huella no identifica las variables de entorno expandidas.
+- La regresión reproduce el fallo anterior y pasa con la corrección. Pasan 12 pruebas de consulta, Ruff y mypy; la persistencia sigue desconectada.

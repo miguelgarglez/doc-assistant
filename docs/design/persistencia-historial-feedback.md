@@ -33,6 +33,8 @@ Una prueba exploratoria ejecutó el mismo recorrido y serialización de la huell
 
 El almacén y el colector son piezas aisladas. Antes de activar la persistencia faltan la política de privacidad y retención, el tratamiento de errores y desconexiones de extremo a extremo, los endpoints, la interfaz y la medición del coste sobre una petición completa.
 
+La huella `config_sha256` identifica los bytes del YAML que se leyeron para esa petición, aunque el archivo cambie después. No identifica los valores de variables de entorno expandidas ni demuestra qué archivos de modelo están cargados.
+
 ## 2. Qué debe guardar una petición
 
 Todo se escribe una sola vez, al terminar la petición, con el estado final de `done`, o de `error` si falla.
