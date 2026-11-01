@@ -40,6 +40,20 @@ export function ChatView() {
   const { messages, status, error, busy, ask, regenerate, stop } = useConversation()
   const { textareaRef } = usePromptInput()
   const [viewer, setViewer] = useState<ViewerState | null>(null)
+  const [historyActive, setHistoryActive] = useState(false)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    void fetch("/api/history/status", { signal: controller.signal })
+      .then((response) => response.ok ? response.json() : null)
+      .then((value: unknown) => {
+        if (value && typeof value === "object" && "active" in value && value.active === true) {
+          setHistoryActive(true)
+        }
+      })
+      .catch(() => {})
+    return () => controller.abort()
+  }, [])
 
   useEffect(() => {
     if (window.matchMedia("(pointer: fine)").matches) textareaRef.current?.focus()
@@ -169,6 +183,11 @@ export function ChatView() {
           <p className="mt-2 text-center text-xs text-muted-foreground">
             Las respuestas se verifican contra los fragmentos indexados.
           </p>
+          {historyActive ? (
+            <p className="mt-1 text-center text-xs text-muted-foreground">
+              Las conversaciones se guardan en este equipo.
+            </p>
+          ) : null}
         </div>
       </div>
 

@@ -14,6 +14,19 @@ import {
 const assistant = (page: Page) => page.getByTestId("assistant-message")
 
 test.describe("chat", () => {
+  for (const active of [true, false]) {
+    test(`aviso de historial cuando está ${active ? "activo" : "desactivado"}`, async ({ page }) => {
+      await mockBackend(page)
+      await page.route("**/api/history/status", (route) => route.fulfill({ json: { active } }))
+      const status = page.waitForResponse("**/api/history/status")
+      await page.goto("/")
+      await status
+      const notice = page.getByText("Las conversaciones se guardan en este equipo.")
+      if (active) await expect(notice).toBeVisible()
+      else await expect(notice).toHaveCount(0)
+    })
+  }
+
   test("estado vacío: sugerencias reales, composer anclado y sin scroll de página", async ({ page }) => {
     await mockBackend(page)
     await page.goto("/")
