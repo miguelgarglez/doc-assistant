@@ -295,3 +295,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 03:22 CET · Auditoría v0.15.1
 - La auditoría del tag `b48094a` en un clon limpio terminó con TOTAL 0. Sus temporales se aislaron para no sobrescribir los archivos `/tmp/aud-*` existentes; el clon y esos temporales se movieron a `_trash/`.
 
+## 01-Nov 03:25 CET · Evaluación sintética
+- Copiado el borrador privado sin aprobar y añadidos 11 casos sintéticos a una copia ampliada. El caso de aclaración queda aparte porque el esquema binario no representa esa salida.
+- Una ejecución con modelos locales sobre dos PDF y tres imágenes sintéticas obtuvo 7 coincidencias de 12 con un oráculo limitado. Las tres facturas quedaron en revisión por importes incompletos y cinco preguntas no cumplieron la expectativa. El informe de `evidence/evaluacion-sintetica/` conserva los límites y resultados; no se evaluaron facturas reales.
+
