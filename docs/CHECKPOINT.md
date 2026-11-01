@@ -417,3 +417,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:25 CET · Código de transporte al rechazar la cola
 - Las trazas de cola llena y tiempo de espera registran el código también como error de transporte, igual que los errores del stream. Las pruebas cubren ambos casos.
 - Pasan 42 pruebas de cola y streaming y Ruff. El colector sigue sin activar en los endpoints.
+
+## 01-Nov 07:25 CET · Suite del servicio
+- La suite completa del servicio pasa con 340 pruebas y 35 live omitidas, usando el intérprete existente y `PYTHONPATH` de este worktree. Hay una advertencia de deprecación de Starlette.
+- No sustituye `mise run check`, las pasadas de navegador ni la auditoría necesarias para una versión nueva.
