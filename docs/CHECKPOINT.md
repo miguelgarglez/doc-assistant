@@ -180,3 +180,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Registradas las decisiones sobre gold y umbrales, privacidad del historial e identidad. Las recomendaciones no implican aprobación ni cambian el estado del gold.
 - Verificación: recuento automático de las 31 filas: 18 cumplidas, 9 parciales y 4 no. La fase continúa abierta.
 
+
+## 01-Nov 01:57 CET · Inventario de modelos
+- Documentados los cinco archivos, cuantizaciones y tamaños fijados. Los 5,072 GiB son tamaño en disco, no memoria usada. C4/C5/E-C1 y E-B2 siguen abiertos a falta de medidas y comparación.
+- Verificación: tamaños calculados desde `scripts/assets.json`; cuatro tests de troceado pasaron con el entorno Python ya existente de ui7, sin instalar dependencias.
+
