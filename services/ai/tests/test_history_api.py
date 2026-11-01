@@ -5,12 +5,14 @@ from fastapi.testclient import TestClient
 
 from doc_assistant.history import HistoryStore
 from doc_assistant.history_api import router
+from doc_assistant.history_outbox import HistoryOutbox
 
 
 def client_for(tmp_path, host="127.0.0.1"):
     app = FastAPI()
     app.state.history_token = "secret"
     app.state.history_store = HistoryStore(tmp_path / "history.db")
+    app.state.history_retention_days = 30
     app.include_router(router)
     return TestClient(app, client=(host, 1234)), app.state.history_store
 
@@ -68,3 +70,30 @@ def test_review_export_requires_human_confirmations_and_excludes_pending(tmp_pat
     assert exported[0]["feedback_id"] == feedback_id
     assert exported[0]["trace"] == {"request_id": "r", "conversation_id": "c"}
     assert len(client.get("/history/feedback", headers=headers).json()) == 1
+
+
+def test_conversation_cursor_and_deletion_cancel_old_stream(tmp_path):
+    client, store = client_for(tmp_path)
+    client.app.state.history_outbox = HistoryOutbox(store)
+    headers = {"x-history-token": "secret"}
+    try:
+        store.record("r1", "c", "2026-01-01", {"question": "one"})
+        store.record("r2", "c", "2026-01-02", {"question": "two"})
+        first = client.get("/history/conversations/c?limit=1", headers=headers).json()
+        assert first["items"] == [{"question": "two"}]
+        cursor = first["next_cursor"]
+        second = client.get(
+            "/history/conversations/c",
+            params={"before_at": cursor[0], "before_id": cursor[1]},
+            headers=headers,
+        ).json()
+        assert second["items"] == [{"question": "one"}]
+        outbox = client.app.state.history_outbox
+        ticket = outbox.ticket("c")
+        assert client.delete("/history/conversations/c", headers=headers).json() == {"deleted": 2}
+        outbox.submit("r3", "c", "2026-01-03", {}, ticket=ticket)
+        assert outbox.status()["pending"] == 0
+        assert store.get("c", "r3") is None
+        assert client.get("/history/status", headers=headers).json()["retention_days"] == 30
+    finally:
+        client.app.state.history_outbox.close()

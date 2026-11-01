@@ -70,11 +70,42 @@ def conversation(
     conversation_id: str,
     store: Store,
     limit: int = Query(default=50, ge=1, le=100),
+    before_at: str | None = None,
+    before_id: str | None = None,
 ) -> dict:
-    items, cursor = store.list_page(conversation_id, limit=limit)
-    if not items:
+    if (before_at is None) != (before_id is None):
+        raise HTTPException(status_code=422, detail="Both cursor fields are required")
+    before = (before_at, before_id) if before_at is not None and before_id is not None else None
+    items, cursor = store.list_page(conversation_id, limit=limit, before=before)
+    if not items and before is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
     return {"items": items, "next_cursor": cursor}
+
+
+@router.delete("/conversations/{conversation_id}")
+def delete_conversation(conversation_id: str, request: Request, store: Store) -> dict[str, int]:
+    outbox = request.app.state.history_outbox
+    deleted = outbox.delete(
+        lambda: store.delete_conversation(conversation_id), conversation_id=conversation_id
+    )
+    return {"deleted": deleted}
+
+
+@router.delete("/conversations")
+def delete_all(request: Request, store: Store) -> dict[str, int]:
+    deleted = request.app.state.history_outbox.delete(store.delete_all)
+    return {"deleted": deleted}
+
+
+@router.get("/status")
+def status(request: Request) -> dict:
+    store = getattr(request.app.state, "history_store", None)
+    outbox = getattr(request.app.state, "history_outbox", None)
+    return {
+        "active": store is not None and outbox is not None,
+        "retention_days": request.app.state.history_retention_days,
+        **(outbox.status() if outbox else {"pending": 0, "failures": []}),
+    }
 
 
 @router.post("/feedback", status_code=201)
