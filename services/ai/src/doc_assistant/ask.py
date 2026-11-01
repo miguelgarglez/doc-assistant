@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from collections.abc import Generator, Iterator
+from collections.abc import Generator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -474,11 +474,16 @@ def ask_events(
     llm: LLM | None = None,
     stream: bool = False,
     trace: dict[str, Any] | None = None,
-) -> Iterator[Event]:
+) -> Generator[Event, None, None]:
     """Yield the pipeline unchanged and optionally collect its final state in memory."""
     events = _ask_events(
-        config_path, question, embedder=embedder, reranker=reranker, llm=llm,
-        stream=stream, trace=trace,
+        config_path,
+        question,
+        embedder=embedder,
+        reranker=reranker,
+        llm=llm,
+        stream=stream,
+        trace=trace,
     )
     if trace is None:
         yield from events

@@ -5,7 +5,7 @@ import json
 import time
 import uuid
 from collections.abc import AsyncIterator, Callable, Iterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, closing
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -395,50 +395,55 @@ def sse(event: BaseModel) -> str:
 
 
 def ask_stream_events(
-    config_path: Path, question: str, request_id: str | None = None
+    config_path: Path,
+    question: str,
+    request_id: str | None = None,
+    *,
+    trace: dict[str, Any] | None = None,
 ) -> Iterator[str]:
     """Translate pipeline events into the SSE contract (see docs/streaming.md)."""
     request_id = request_id or str(uuid.uuid4())
-    emitted = False
     try:
-        for kind, data in ask_events(config_path, question, stream=True):
-            if kind == "step":
-                yield sse(StepEvent.model_validate(data))
-            elif kind == "token":
-                emitted = True
-                yield sse(TokenEvent(text=data["text"]))
-            else:
-                response = AskResponse.model_validate(data)
-                if response.ok:
-                    yield sse(CitationsEvent(citations=response.citations))
-                    if response.blocks or response.follow_ups:
-                        yield sse(
-                            BlocksEvent(blocks=response.blocks, follow_ups=response.follow_ups)
-                        )
-                elif response.clarification:
-                    yield sse(
-                        ClarificationEvent(
-                            reason=response.reason, clarification=response.clarification
-                        )
-                    )
-                else:
-                    yield sse(
-                        RefusalEvent(
-                            answer=response.answer,
-                            reason=response.reason,
-                            retract=emitted,
-                            suggestions=response.suggestions,
-                        )
-                    )
-                timings = dict(data.get("latencies") or {})
-                timings["total"] = round(sum(timings.values()), 4)
-                yield sse(
-                    DoneEvent(**response.model_dump(), timings=timings, request_id=request_id)
-                )
+        with closing(ask_events(config_path, question, stream=True, trace=trace)) as events:
+            yield from _translate_ask_events(events, request_id)
     except AdapterError as exc:
         yield sse(ErrorEvent(code=exc.code, message=exc.public_message))
     except Exception:  # noqa: BLE001 - the stream must always end with done or error
         yield sse(ErrorEvent(code="internal_error", message="Error interno al responder"))
+
+
+def _translate_ask_events(
+    events: Iterator[tuple[str, dict[str, Any]]], request_id: str
+) -> Iterator[str]:
+    emitted = False
+    for kind, data in events:
+        if kind == "step":
+            yield sse(StepEvent.model_validate(data))
+        elif kind == "token":
+            emitted = True
+            yield sse(TokenEvent(text=data["text"]))
+        else:
+            response = AskResponse.model_validate(data)
+            if response.ok:
+                yield sse(CitationsEvent(citations=response.citations))
+                if response.blocks or response.follow_ups:
+                    yield sse(BlocksEvent(blocks=response.blocks, follow_ups=response.follow_ups))
+            elif response.clarification:
+                yield sse(
+                    ClarificationEvent(reason=response.reason, clarification=response.clarification)
+                )
+            else:
+                yield sse(
+                    RefusalEvent(
+                        answer=response.answer,
+                        reason=response.reason,
+                        retract=emitted,
+                        suggestions=response.suggestions,
+                    )
+                )
+            timings = dict(data.get("latencies") or {})
+            timings["total"] = round(sum(timings.values()), 4)
+            yield sse(DoneEvent(**response.model_dump(), timings=timings, request_id=request_id))
 
 
 def queued_ask_stream(

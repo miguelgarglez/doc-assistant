@@ -497,3 +497,12 @@ def test_request_id_matches_stream_and_is_unique(config_path: Path) -> None:
     assert events(streamed.text)[-1][1]["request_id"] == stream_id
     assert str(uuid.UUID(plain.headers["x-request-id"])) == plain.headers["x-request-id"]
     assert plain.headers["x-request-id"] != stream_id
+
+
+def test_stream_close_finalizes_optional_trace(config_path: Path) -> None:
+    trace: dict = {}
+    iterator = ask_stream_events(config_path, "¿Qué documentos tienes?", trace=trace)
+    next(iterator)
+    iterator.close()
+    assert trace["status"] == "interrupted"
+    assert trace["finished_at"] >= trace["started_at"]

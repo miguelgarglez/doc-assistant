@@ -365,3 +365,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:14 CET · Medición exploratoria del almacén
 - Cien escrituras secuenciales de una traza sintética de 40 candidatos y 8.524 bytes produjeron p50 0,54 ms y p95 0,73 ms; se leyeron las 100 filas. El script, las muestras y la base sintética están en `_agents/night2/`.
 - Es una sola serie de `record`, sin perfilado, concurrencia ni petición completa. No permite estimar el coste para el usuario ni cerrar la prueba de rendimiento de la fase 1.
+
+## 01-Nov 07:14 CET · Traza opcional en SSE
+- El traductor SSE acepta un colector interno opcional y cierra el generador al finalizar o interrumpirse. Una prueba cierra el flujo después del primer evento y comprueba que la traza queda finalizada como interrumpida. Ningún endpoint activa el colector ni guarda datos todavía.
+- Pasan 45 pruebas de consulta, streaming y cola, además de Ruff y mypy. La integración del almacén y los errores de admisión siguen pendientes.
