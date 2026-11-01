@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
+import { toast } from "sonner"
 import { RecentRequests } from "@/components/system/recent-requests"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { copyText } from "@/lib/clipboard"
 
 type HistoryStatus = { active: boolean; enabled: boolean; initialization_error: string | null; retention_days: number; pending: number; failures: { request_id: string; error: string }[] }
 type Feedback = { feedback_id: string; created_at: string; comment: string | null }
@@ -27,6 +29,10 @@ export function HistoryStatusPanel() {
       setError("")
     } catch { setError("No se pudo consultar el estado del historial.") }
   }, [])
+  async function copyFailure(id: string) {
+    if (await copyText(id)) toast.success("Identificador copiado")
+    else toast.error("No se pudo copiar el identificador")
+  }
   useEffect(() => { void Promise.resolve().then(refresh) }, [refresh])
   return <section aria-label="Historial y revisión" className="mt-6 flex flex-col gap-4">
     <Card><CardHeader><CardTitle>Historial</CardTitle><CardDescription>Almacenamiento y revisión local</CardDescription></CardHeader>
@@ -34,7 +40,7 @@ export function HistoryStatusPanel() {
         {error ? <p role="alert">{error}</p> : null}
         {status ? <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm"><span>{status.active ? "Activo" : status.enabled ? "No disponible, reintentando" : "Desactivado"}</span><span>Retención: {status.retention_days} días</span><span>Guardados pendientes: {status.pending}</span></div> : <p role="status">Cargando estado…</p>}
         {status?.initialization_error ? <p className="text-sm">Error al abrir el almacén: {status.initialization_error}</p> : null}
-        {status?.failures.length ? <div><p className="font-medium">Últimos fallos de guardado</p><ul>{status.failures.map((failure, index) => <li className="break-all text-sm text-muted-foreground" key={`${failure.request_id}-${index}`}>{failure.request_id}: {failure.error}</li>)}</ul></div> : null}
+        {status?.failures.length ? <div><p className="font-medium">Últimos fallos de guardado</p><ul>{status.failures.map((failure, index) => <li className="break-all text-sm text-muted-foreground" key={`${failure.request_id}-${index}`}><Button variant="ghost" size="sm" aria-label={`Copiar identificador ${failure.request_id}`} onClick={() => void copyFailure(failure.request_id)}>{failure.request_id}</Button>: {failure.error}</li>)}</ul></div> : null}
         <div><Button onClick={() => void refresh()} size="sm" variant="outline">Actualizar</Button></div>
       </CardContent></Card>
     {status?.active ? <RecentRequests failures={status.failures} /> : null}
