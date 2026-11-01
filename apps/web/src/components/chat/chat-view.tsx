@@ -47,7 +47,7 @@ export function ChatView() {
     void fetch("/api/history/status", { signal: controller.signal })
       .then((response) => response.ok ? response.json() : null)
       .then((value: unknown) => {
-        if (value && typeof value === "object" && "active" in value && value.active === true) {
+        if (value && typeof value === "object" && "enabled" in value && value.enabled === true) {
           setHistoryActive(true)
         }
       })

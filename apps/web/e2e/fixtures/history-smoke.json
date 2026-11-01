@@ -1,0 +1,207 @@
+[
+  {
+    "request_id": "0",
+    "question": "¿Cuál es el precio de la electricidad en 2035?",
+    "result": {
+      "ok": false,
+      "answer": "No dispongo de esa información en los documentos",
+      "citations": [],
+      "segments": [],
+      "blocks_version": 1,
+      "blocks": [],
+      "follow_ups": [],
+      "inline": "none",
+      "reason": "llm_unanswerable",
+      "suggestions": [
+        {
+          "doc": "S-102",
+          "doc_id": "inv-efe9b848d9e6",
+          "section": "base_imponible_total",
+          "heading": "base_imponible_total",
+          "pages": [
+            1
+          ]
+        },
+        {
+          "doc": "P-301",
+          "doc_id": "inv-d8ba783fac99",
+          "section": "base_imponible_total",
+          "heading": "base_imponible_total",
+          "pages": [
+            1
+          ]
+        },
+        {
+          "doc": "S-102",
+          "doc_id": "inv-efe9b848d9e6",
+          "section": "cuota_iva_total",
+          "heading": "cuota_iva_total",
+          "pages": [
+            1
+          ]
+        }
+      ],
+      "clarification": null
+    }
+  },
+  {
+    "request_id": "1",
+    "question": "¿Cuál es el precio final de la factura?",
+    "result": {
+      "ok": false,
+      "answer": "¿De qué factura? ¿Te refieres a alguna de estas? P-301, emisor Papelera Luna, cliente Empresa Alba, 15/06/2026; S-101, emisor Servicios Nube, cliente Empresa Alba, 15/06/2026; S-102, emisor Servicios Nube, cliente Empresa Alba, 15/06/2026",
+      "citations": [],
+      "segments": [],
+      "blocks_version": 1,
+      "blocks": [],
+      "follow_ups": [],
+      "inline": "none",
+      "reason": "invoice:aclaracion",
+      "suggestions": [],
+      "clarification": {
+        "prompt": "¿De qué factura?",
+        "detail": null,
+        "total": 3,
+        "candidates": [
+          {
+            "doc": "P-301",
+            "doc_id": "inv-d8ba783fac99",
+            "emisor": "Papelera Luna",
+            "cliente": "Empresa Alba",
+            "fecha": "15/06/2026",
+            "total": "60,50 €",
+            "question": "¿Cuál es el precio final de la factura P-301?"
+          },
+          {
+            "doc": "S-101",
+            "doc_id": "inv-286d2dcdf66c",
+            "emisor": "Servicios Nube",
+            "cliente": "Empresa Alba",
+            "fecha": "15/06/2026",
+            "total": "121,00 €",
+            "question": "¿Cuál es el precio final de la factura S-101?"
+          },
+          {
+            "doc": "S-102",
+            "doc_id": "inv-efe9b848d9e6",
+            "emisor": "Servicios Nube",
+            "cliente": "Empresa Alba",
+            "fecha": "15/06/2026",
+            "total": "242,00 €",
+            "question": "¿Cuál es el precio final de la factura S-102?"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "request_id": "2",
+    "question": "¿Cuál es el importe total de la factura S-101?",
+    "result": {
+      "ok": true,
+      "answer": "- Factura S-101: importe total: 121,00 €",
+      "citations": [
+        {
+          "chunk_id": "S-101:importe_total",
+          "quote": "121,00 €",
+          "doc": "S-101",
+          "doc_id": "inv-286d2dcdf66c",
+          "section": "importe_total",
+          "pages": [
+            1
+          ],
+          "fragment": "121,00 €"
+        }
+      ],
+      "segments": [
+        {
+          "text": "- Factura S-101: importe total: 121,00 €",
+          "refs": [
+            0
+          ]
+        }
+      ],
+      "blocks_version": 1,
+      "blocks": [
+        {
+          "type": "key_data",
+          "title": "Factura S-101",
+          "doc_id": "inv-286d2dcdf66c",
+          "items": [
+            {
+              "text": "121,00 €",
+              "kind": "amount",
+              "cite": 0,
+              "field": "importe_total",
+              "label": "importe total"
+            }
+          ],
+          "note": null
+        }
+      ],
+      "follow_ups": [
+        {
+          "label": "Fecha de emisión",
+          "question": "¿Cuál es la fecha de emisión de la factura S-101?"
+        },
+        {
+          "label": "Emisor",
+          "question": "¿Cuál es el emisor de la factura S-101?"
+        },
+        {
+          "label": "Cliente",
+          "question": "¿Cuál es el cliente de la factura S-101?"
+        }
+      ],
+      "inline": "template",
+      "reason": "sql",
+      "suggestions": [],
+      "clarification": null
+    }
+  },
+  {
+    "request_id": "3",
+    "question": "¿A qué voltaje funciona el sensor Azul?",
+    "result": {
+      "ok": true,
+      "answer": "24 V de corriente continua",
+      "citations": [
+        {
+          "chunk_id": "4d55a1c529ff",
+          "quote": "El sensor Azul funciona con 24 V de corriente continua.",
+          "doc": "sensor-azul",
+          "doc_id": "pdf-842c9e5191d9",
+          "section": "1",
+          "pages": [
+            1
+          ],
+          "fragment": "[pdf-842c9e5191d9 · Manual sensor Azul · 1. Alimentacion] El sensor Azul funciona con 24 V de corriente continua."
+        }
+      ],
+      "segments": [
+        {
+          "text": "24 V de corriente continua",
+          "refs": [
+            0
+          ]
+        }
+      ],
+      "blocks_version": 1,
+      "blocks": [],
+      "follow_ups": [
+        {
+          "label": "sensor-azul · 2. Temperatura",
+          "question": "¿Qué dice sensor-azul sobre 2. Temperatura?"
+        },
+        {
+          "label": "S-101 · base_imponible_total",
+          "question": "¿Qué dice S-101 sobre base_imponible_total?"
+        }
+      ],
+      "inline": "rules",
+      "reason": "verified",
+      "suggestions": [],
+      "clarification": null
+    }
+  }
+]

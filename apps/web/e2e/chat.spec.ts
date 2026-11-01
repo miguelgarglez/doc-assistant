@@ -69,7 +69,7 @@ test.describe("chat", () => {
   for (const active of [true, false]) {
     test(`aviso de historial cuando está ${active ? "activo" : "desactivado"}`, async ({ page }) => {
       await mockBackend(page)
-      await page.route("**/api/history/status", (route) => route.fulfill({ json: { active } }))
+      await page.route("**/api/history/status", (route) => route.fulfill({ json: { active, enabled: active } }))
       const status = page.waitForResponse("**/api/history/status")
       await page.goto("/")
       await status

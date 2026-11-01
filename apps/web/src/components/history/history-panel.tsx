@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { useConversation } from "@/components/providers/chat-provider"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Empty, EmptyDescription } from "@/components/ui/empty"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { SidebarMenuButton } from "@/components/ui/sidebar"
@@ -102,7 +103,7 @@ export function HistoryPanel() {
             <Button onClick={() => setConfirm(true)} variant="outline">Borrar todo</Button>
           </div>
           {error ? <p role="alert">{error}</p> : null}
-          {!loading && items.length === 0 && !error ? <p className="text-muted-foreground">No hay conversaciones guardadas.</p> : null}
+          {!loading && items.length === 0 && !error ? <Empty><EmptyDescription>No hay conversaciones guardadas.</EmptyDescription></Empty> : null}
           <div className="min-h-0 flex-1 overflow-y-auto">
             <ul className="flex flex-col gap-2">
               {items.map((item) => (
@@ -111,7 +112,7 @@ export function HistoryPanel() {
                     <span className="block truncate font-medium">{item.question.trim() || "Conversación"}</span>
                     <span className="text-xs text-muted-foreground">{new Date(item.updated_at).toLocaleString("es-ES")} · {item.count} consultas</span>
                   </button>
-                  <Button aria-label={`Borrar ${item.question.trim() || "conversación"}`} onClick={() => void remove(item.conversation_id)} size="icon-sm" variant="ghost"><Trash2Icon /></Button>
+                  <Button aria-label={`Borrar ${item.question.trim() || "conversación"}`} onClick={() => void remove(item.conversation_id)} size="icon-sm" variant="ghost"><Trash2Icon data-icon="inline-start" /></Button>
                 </li>
               ))}
             </ul>

@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright"
 import { expect, test } from "@playwright/test"
 import { ask, mockBackend, sse, answerEvents } from "./mocks"
+import smokeHistory from "./fixtures/history-smoke.json"
 
 test("abre una conversación, la continúa y confirma el borrado", async ({ page }) => {
   await mockBackend(page)
@@ -62,4 +63,43 @@ test("busca y borra una conversación", async ({ page }) => {
   await sheet.getByRole("button", { name: "Borrar Pregunta azul" }).click()
   await expect(sheet.getByText("No hay conversaciones guardadas.")).toBeVisible()
   expect(removed).toBe(true)
+})
+
+test("recorre varias páginas de conversaciones", async ({ page }) => {
+  await mockBackend(page)
+  const rows = Array.from({ length: 101 }, (_, index) => ({ conversation_id: `c-${index}`, question: `Consulta ${index}`, updated_at: "2026-10-31T10:00:00Z", count: 1 }))
+  await page.route("**/api/history/conversations?**", (route) => {
+    const query = new URL(route.request().url()).searchParams
+    const offset = Number(query.get("offset"))
+    const limit = Number(query.get("limit"))
+    return route.fulfill({ json: rows.slice(offset, offset + limit) })
+  })
+  await page.goto("/")
+  await page.getByRole("button", { name: "Historial" }).click()
+  const sheet = page.getByRole("dialog", { name: "Historial" })
+  await expect(sheet.getByText("Consulta 49", { exact: true })).toBeVisible()
+  await sheet.getByRole("button", { name: "Cargar más", exact: true }).click()
+  await expect(sheet.getByText("Consulta 99", { exact: true })).toBeVisible()
+  await sheet.getByRole("button", { name: "Cargar más", exact: true }).click()
+  await expect(sheet.getByText("Consulta 100", { exact: true })).toBeVisible()
+  await expect(sheet.getByRole("button", { name: "Cargar más", exact: true })).toHaveCount(0)
+})
+
+test("restaura citas, aclaración y rechazo del humo sintético", async ({ page }) => {
+  await mockBackend(page)
+  await page.route("**/api/history/conversations**", (route) => {
+    const pathname = new URL(route.request().url()).pathname
+    return route.fulfill({ json: pathname.endsWith("synthetic")
+      ? { items: smokeHistory, next_cursor: null }
+      : [{ conversation_id: "synthetic", question: "Consultas sintéticas", updated_at: "2026-11-01T10:00:00Z", count: 4 }] })
+  })
+  await page.goto("/")
+  await page.getByRole("button", { name: "Historial" }).click()
+  await page.getByRole("dialog", { name: "Historial" }).getByText("Consultas sintéticas").click()
+  await expect(page.getByText("24 V de corriente continua", { exact: false }).first()).toBeVisible()
+  await expect(page.getByText("121,00 €", { exact: false }).first()).toBeVisible()
+  await expect(page.getByRole("button", { name: /Cita 1: sensor-azul/ })).toBeVisible()
+  await expect(page.getByRole("button", { name: /Cita 1: S-101/ })).toBeVisible()
+  await expect(page.getByTestId("clarification-notice")).toBeVisible()
+  await expect(page.getByTestId("refusal-notice")).toBeVisible()
 })

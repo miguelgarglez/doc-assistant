@@ -7,8 +7,9 @@ import { toast } from "sonner"
 import { MessageAction } from "@/components/ai-elements/message"
 import { useConversation } from "@/components/providers/chat-provider"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
 
 export function FeedbackAction({ requestId }: { requestId: string }) {
@@ -46,16 +47,16 @@ export function FeedbackAction({ requestId }: { requestId: string }) {
           <DialogTitle>Respuesta incorrecta</DialogTitle>
           <DialogDescription>Una persona revisará tu aviso antes de usarlo en evaluaciones.</DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={`feedback-${requestId}`}>Comentario opcional</Label>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor={`feedback-${requestId}`}>Comentario opcional</FieldLabel>
             <Textarea id={`feedback-${requestId}`} maxLength={4000} value={comment} onChange={(event) => setComment(event.target.value)} />
-          </div>
-          <label className="flex items-start gap-2 text-sm">
-            <input type="checkbox" checked={includeContext} onChange={(event) => setIncludeContext(event.target.checked)} />
-            <span>Incluir pregunta, respuesta y contexto. Puede contener datos de documentos o facturas.</span>
-          </label>
-        </div>
+          </Field>
+          <Field orientation="horizontal">
+            <Checkbox id={`feedback-context-${requestId}`} checked={includeContext} onCheckedChange={setIncludeContext} />
+            <FieldLabel htmlFor={`feedback-context-${requestId}`}>Incluir pregunta, respuesta y contexto. Puede contener datos de documentos o facturas.</FieldLabel>
+          </Field>
+        </FieldGroup>
         <DialogFooter>
           <Button type="button" onClick={() => void send()} disabled={sending}>Enviar para revisión</Button>
         </DialogFooter>
