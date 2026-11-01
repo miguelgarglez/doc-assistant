@@ -26,6 +26,11 @@ test("abre una conversación, la continúa y confirma el borrado", async ({ page
   await page.getByRole("button", { name: "Historial" }).click()
   const sheet = page.getByRole("dialog", { name: "Historial" })
   await expect(sheet.getByText("Pregunta guardada")).toBeVisible()
+  const narrowWidth = (await sheet.boundingBox())?.width ?? 0
+  expect(narrowWidth).toBeLessThan(600)
+  await sheet.getByRole("button", { name: "Ampliar vista" }).click()
+  expect((await sheet.boundingBox())?.width).toBeGreaterThan(narrowWidth)
+  await sheet.getByRole("button", { name: "Reducir vista" }).click()
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([])
   await sheet.getByText("Pregunta guardada").click()
   await expect(page.getByText("Respuesta guardada")).toBeVisible()

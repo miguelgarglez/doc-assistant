@@ -1,6 +1,6 @@
 "use client"
 
-import { HistoryIcon, Trash2Icon } from "lucide-react"
+import { HistoryIcon, Maximize2Icon, Minimize2Icon, Trash2Icon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -12,6 +12,7 @@ import { Empty, EmptyDescription } from "@/components/ui/empty"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { SidebarMenuButton } from "@/components/ui/sidebar"
+import { cn } from "@/lib/utils"
 
 type Conversation = { conversation_id: string; question: string; updated_at: string; count: number }
 const PAGE_SIZE = 50
@@ -20,6 +21,7 @@ export function HistoryPanel() {
   const router = useRouter()
   const { openConversation, clear, conversationId, busy } = useConversation()
   const [open, setOpen] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const [confirm, setConfirm] = useState(false)
   const [search, setSearch] = useState("")
   const [items, setItems] = useState<Conversation[]>([])
@@ -92,12 +94,13 @@ export function HistoryPanel() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger render={<SidebarMenuButton />}><HistoryIcon /><span>Historial</span></SheetTrigger>
-      <SheetContent className="data-[side=right]:w-full data-[side=right]:sm:max-w-none">
+      <SheetContent className={cn("data-[side=right]:w-full", expanded ? "data-[side=right]:sm:max-w-none" : "data-[side=right]:sm:max-w-md")}>
         <SheetHeader>
           <SheetTitle>Historial</SheetTitle>
-          <SheetDescription>Conversaciones guardadas en este equipo.</SheetDescription>
+          <SheetDescription>Conversaciones guardadas en este equipo · Alt+H</SheetDescription>
         </SheetHeader>
         <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col gap-4 px-4 pb-4">
+          <div><Button onClick={() => setExpanded(!expanded)} size="sm" variant="ghost">{expanded ? <Minimize2Icon data-icon="inline-start" /> : <Maximize2Icon data-icon="inline-start" />}{expanded ? "Reducir vista" : "Ampliar vista"}</Button></div>
           <div className="flex gap-2">
             <Input aria-label="Buscar en el historial" placeholder="Buscar conversaciones" value={search} onChange={(event) => setSearch(event.target.value)} />
             <Button onClick={() => setConfirm(true)} variant="outline">Borrar todo</Button>
