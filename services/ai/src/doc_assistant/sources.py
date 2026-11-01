@@ -11,7 +11,7 @@ from typing import Any
 
 from doc_assistant.chunking import invoice_doc_id, pdf_doc_id
 from doc_assistant.config import AppConfig
-from doc_assistant.store import ChunkStore
+from doc_assistant.infra.storage.chunks import ChunkStore
 
 
 def _section_key(section: str) -> tuple[Any, ...]:

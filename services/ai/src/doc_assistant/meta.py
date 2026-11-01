@@ -20,8 +20,8 @@ from doc_assistant.domain.answers.answer_markup import (
     section_label,
     split_heading,
 )
+from doc_assistant.infra.storage.chunks import ChunkStore
 from doc_assistant.invoice_fields import display_value
-from doc_assistant.store import ChunkStore
 
 
 def normalize(text: str) -> str:

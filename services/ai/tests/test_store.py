@@ -5,9 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from doc_assistant.chunking import chunk_pdf
+from doc_assistant.infra.storage.chunks import ChunkStore
 from doc_assistant.ingest import ingest_pdfs
 from doc_assistant.model_fakes import FakeEmbedder
-from doc_assistant.store import ChunkStore
 
 
 def test_upsert_and_search(

@@ -10,8 +10,8 @@ import pytest
 from doc_assistant.ask import ask, ask_events
 from doc_assistant.chunking import chunk_pdf
 from doc_assistant.infra.history.sqlite import HistoryStore
+from doc_assistant.infra.storage.chunks import ChunkStore
 from doc_assistant.model_fakes import FakeEmbedder, FakeLLM, FakeReranker
-from doc_assistant.store import ChunkStore
 
 
 def _seed(tmp_path: Path, synthetic_pdf: Path, embedder: FakeEmbedder) -> ChunkStore:

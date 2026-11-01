@@ -18,9 +18,9 @@ from doc_assistant.domain.answers.inline import (
     supports,
     validate_model_segments,
 )
+from doc_assistant.infra.storage.chunks import ChunkStore
 from doc_assistant.ingest import ingest_pdfs
 from doc_assistant.model_fakes import FakeEmbedder, FakeLLM, FakeReranker
-from doc_assistant.store import ChunkStore
 
 CABLE = "[d · t · 2.1. Cableado] Usar cable de 2.5 mm2 para la alimentación principal."
 STOP = "[d · t · 3. Parada] La parada se completa en menos de 500 ms."

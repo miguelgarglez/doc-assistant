@@ -3,10 +3,10 @@ from decimal import Decimal
 
 import pytest
 
+from doc_assistant.infra.storage.chunks import SCHEMA_VERSION
 from doc_assistant.invoice_index import fold, norm_key, parse_amount, parse_date_range, sync_derived
 from doc_assistant.invoice_query import FIELDS
 from doc_assistant.invoices import InvoiceDB
-from doc_assistant.store import SCHEMA_VERSION
 
 
 def test_fold_and_keys():

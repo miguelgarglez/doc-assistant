@@ -18,7 +18,7 @@ from doc_assistant.application.ports.models import Embedder
 from doc_assistant.chunking import chunk_invoice, chunk_pdf, pdf_doc_id
 from doc_assistant.config import load_config
 from doc_assistant.infra.pdf.lock import pdf_lock
-from doc_assistant.store import ChunkStore
+from doc_assistant.infra.storage.chunks import ChunkStore
 
 
 def content_hash(data: bytes) -> str:
