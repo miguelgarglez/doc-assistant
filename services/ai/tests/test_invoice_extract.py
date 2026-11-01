@@ -8,10 +8,10 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from doc_assistant.adapters import FakeEmbedder, FakeLLM, FakeOCR
 from doc_assistant.api import create_app
 from doc_assistant.ask import ask
 from doc_assistant.invoice_extract import check_gates, extract_amounts, extract_invoice
+from doc_assistant.model_fakes import FakeEmbedder, FakeLLM, FakeOCR
 
 
 def test_amount_labels_with_colons_keep_values_and_evidence():

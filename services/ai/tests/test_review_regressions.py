@@ -1,16 +1,17 @@
 from decimal import Decimal
 
-from doc_assistant.adapters import FakeLLM, FakeOCR
 from doc_assistant.invoice_extract import extract_invoice, parse_es_decimal
 from doc_assistant.invoice_query import run_plan
 from doc_assistant.invoices import InvoiceDB
+from doc_assistant.model_fakes import FakeLLM, FakeOCR
 
 
 def test_model_overload_and_timeout_are_preserved_at_transport_boundary(monkeypatch):
     import pytest
     import requests
 
-    from doc_assistant.adapters import AdapterBusy, AdapterTimeout, _request_json
+    from doc_assistant.model_http import _request_json
+    from doc_assistant.model_ports import AdapterBusy, AdapterTimeout
 
     for status in (429, 503):
         response = requests.Response()
@@ -33,8 +34,8 @@ def test_model_overload_and_timeout_are_preserved_at_transport_boundary(monkeypa
 def test_invoice_planner_propagates_model_overload():
     import pytest
 
-    from doc_assistant.adapters import AdapterBusy, AdapterTimeout
     from doc_assistant.invoice_query import plan_and_run
+    from doc_assistant.model_ports import AdapterBusy, AdapterTimeout
 
     for error in (AdapterBusy("busy"), AdapterTimeout("timeout")):
 
@@ -107,16 +108,17 @@ def test_upload_limits_and_symlink_confinement(config_path, tmp_path, synthetic_
 def test_adapters_reject_invalid_indices_and_dimensions(monkeypatch):
     import pytest
 
-    from doc_assistant.adapters import AdapterError, HttpEmbedder, HttpReranker
+    from doc_assistant.model_http import HttpEmbedder, HttpReranker
+    from doc_assistant.model_ports import AdapterError
 
     monkeypatch.setattr(
-        "doc_assistant.adapters._request_json",
+        "doc_assistant.model_http._request_json",
         lambda *a, **k: {"data": [{"index": 0, "embedding": [1.0]}]},
     )
     with pytest.raises(AdapterError):
         HttpEmbedder("url", "model", 1, 2).embed(["a"])
     monkeypatch.setattr(
-        "doc_assistant.adapters._request_json",
+        "doc_assistant.model_http._request_json",
         lambda *a, **k: {"results": [{"index": 2, "relevance_score": 1}]},
     )
     with pytest.raises(AdapterError):
@@ -179,17 +181,18 @@ def test_pdf_page_limit_and_sync_handlers(config_path, synthetic_pdf):
 def test_adapter_cardinality_and_duplicate_indices(monkeypatch):
     import pytest
 
-    from doc_assistant.adapters import AdapterError, HttpEmbedder, HttpReranker
+    from doc_assistant.model_http import HttpEmbedder, HttpReranker
+    from doc_assistant.model_ports import AdapterError
 
     for rows in ([{"index": 0, "embedding": [1]}], [{"index": 0, "embedding": [1]}] * 2):
         monkeypatch.setattr(
-            "doc_assistant.adapters._request_json", lambda *a, rows=rows, **k: {"data": rows}
+            "doc_assistant.model_http._request_json", lambda *a, rows=rows, **k: {"data": rows}
         )
         with pytest.raises(AdapterError):
             HttpEmbedder("url", "m", 1, 1).embed(["a", "b"])
     for rows in ([{"index": 0, "relevance_score": 1}], [{"index": 0, "relevance_score": 1}] * 2):
         monkeypatch.setattr(
-            "doc_assistant.adapters._request_json", lambda *a, rows=rows, **k: {"results": rows}
+            "doc_assistant.model_http._request_json", lambda *a, rows=rows, **k: {"results": rows}
         )
         with pytest.raises(AdapterError):
             HttpReranker("url", "m", 1).rerank("q", ["a", "b"])
@@ -220,12 +223,12 @@ def test_invoice_transaction_rolls_back_and_separates_pdf(config_path, synthetic
     import pytest
     from fastapi.testclient import TestClient
 
-    from doc_assistant.adapters import FakeEmbedder
     from doc_assistant.api import create_app
     from doc_assistant.chunking import invoice_doc_id, pdf_doc_id
     from doc_assistant.config import load_config
     from doc_assistant.ingest import ingest_pdfs
     from doc_assistant.invoices import InvoiceDB, upload_invoice
+    from doc_assistant.model_fakes import FakeEmbedder
     from doc_assistant.store import ChunkStore
 
     pdf = synthetic_pdf.with_name("A120.pdf")

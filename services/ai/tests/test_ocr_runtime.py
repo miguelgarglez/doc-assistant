@@ -9,8 +9,9 @@ from pathlib import Path
 
 import pytest
 
-from doc_assistant.adapters import LlamaOCR, OllamaOCR, build_ocr
+from doc_assistant.adapters import build_ocr
 from doc_assistant.config import load_config
+from doc_assistant.model_http import LlamaOCR, OllamaOCR
 
 ROOT = Path(__file__).resolve().parents[3]
 

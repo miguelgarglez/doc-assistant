@@ -12,7 +12,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from doc_assistant.adapters import LLM, Embedder, OcrPort, build_adapters, build_ocr
+from doc_assistant.adapters import build_adapters, build_ocr
 from doc_assistant.answer_markup import AnswerBuilder, md_escape
 from doc_assistant.chunking import chunk_invoice, invoice_doc_id
 from doc_assistant.config import load_config
@@ -26,6 +26,7 @@ from doc_assistant.invoice_query import (
     is_invoice_question,
     plan_and_run,
 )
+from doc_assistant.model_ports import LLM, Embedder, OcrPort
 from doc_assistant.store import SCHEMA_VERSION, ChunkStore, ensure_schema
 
 

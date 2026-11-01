@@ -7,7 +7,7 @@ from collections.abc import Callable
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from doc_assistant.adapters import LLM, OcrPort
+from doc_assistant.model_ports import LLM, OcrPort
 
 # Importes en formato español (exigen decimales con coma; evita capturar el "15" de "IRPF 15%").
 NUM = r"(-?\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})"

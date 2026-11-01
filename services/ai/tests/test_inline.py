@@ -9,7 +9,6 @@ import pytest
 import yaml
 from markup import make_pdf
 
-from doc_assistant.adapters import FakeEmbedder, FakeLLM, FakeReranker
 from doc_assistant.ask import ask, place_inline_citations
 from doc_assistant.config import load_config
 from doc_assistant.ingest import ingest_pdfs
@@ -20,6 +19,7 @@ from doc_assistant.inline import (
     supports,
     validate_model_segments,
 )
+from doc_assistant.model_fakes import FakeEmbedder, FakeLLM, FakeReranker
 from doc_assistant.store import ChunkStore
 
 CABLE = "[d · t · 2.1. Cableado] Usar cable de 2.5 mm2 para la alimentación principal."

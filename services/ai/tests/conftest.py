@@ -10,7 +10,7 @@ import yaml
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen.canvas import Canvas
 
-from doc_assistant.adapters import FakeEmbedder, FakeReranker
+from doc_assistant.model_fakes import FakeEmbedder, FakeReranker
 
 
 @pytest.fixture

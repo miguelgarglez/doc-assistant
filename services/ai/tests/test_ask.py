@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from doc_assistant.adapters import FakeEmbedder, FakeLLM, FakeReranker
 from doc_assistant.ask import ask, ask_events
 from doc_assistant.chunking import chunk_pdf
 from doc_assistant.history import HistoryStore
+from doc_assistant.model_fakes import FakeEmbedder, FakeLLM, FakeReranker
 from doc_assistant.store import ChunkStore
 
 
@@ -315,7 +315,7 @@ def test_invoice_trace_survives_planner_failure(config_path, fake_embedder, monk
 
     import pytest
 
-    from doc_assistant.adapters import AdapterBusy
+    from doc_assistant.model_ports import AdapterBusy
 
     module = importlib.import_module("doc_assistant.ask")
     monkeypatch.setattr(module, "list_sources", lambda cfg: [{"kind": "invoice"}])

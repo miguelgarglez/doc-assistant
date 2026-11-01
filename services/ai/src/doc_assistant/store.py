@@ -5,12 +5,12 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
+import struct
 from pathlib import Path
 from typing import Any
 
 import sqlite_vec
 
-from doc_assistant.adapters import serialize_f32
 from doc_assistant.config import load_config
 
 _STOP = {
@@ -275,3 +275,7 @@ class ChunkStore:
         d = dict(row)
         d["pages"] = json.loads(d["pages"]) if isinstance(d["pages"], str) else d["pages"]
         return d
+
+
+def serialize_f32(vec: list[float]) -> bytes:
+    return struct.pack(f"{len(vec)}f", *vec)

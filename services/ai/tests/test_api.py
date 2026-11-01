@@ -3,11 +3,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from doc_assistant.adapters import FakeEmbedder
 from doc_assistant.api import create_app
 from doc_assistant.chunking import pdf_doc_id
 from doc_assistant.config import load_config
 from doc_assistant.ingest import ingest_pdfs
+from doc_assistant.model_fakes import FakeEmbedder
 from doc_assistant.store import ChunkStore
 
 
@@ -16,7 +16,7 @@ def test_upload_error_reasons_and_transient_models(config_path, tmp_path, monkey
     from reportlab.lib.pdfencrypt import StandardEncryption
     from reportlab.pdfgen.canvas import Canvas
 
-    from doc_assistant.adapters import AdapterBusy, AdapterTimeout
+    from doc_assistant.model_ports import AdapterBusy, AdapterTimeout
 
     cfg = yaml.safe_load(config_path.read_text())
     cfg["upload_pdf_max_bytes"] = 100000

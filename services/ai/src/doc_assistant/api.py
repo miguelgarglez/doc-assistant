@@ -20,7 +20,6 @@ from fastapi import Path as PathParam
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
-from doc_assistant.adapters import AdapterError
 from doc_assistant.ask import ask
 from doc_assistant.ask_capacity import AskCapacity
 from doc_assistant.ask_schemas import AskRequest, AskResponse
@@ -32,6 +31,7 @@ from doc_assistant.highlight import locate
 from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
 from doc_assistant.ingest_jobs import IngestJobs, Progress, Stage
 from doc_assistant.invoices import InvoiceDB, invoice_image, upload_invoice
+from doc_assistant.model_ports import AdapterError
 from doc_assistant.pdf_lock import pdf_lock
 from doc_assistant.sources import find_source, list_sources, remove_source
 from doc_assistant.store import ChunkStore
