@@ -4,7 +4,7 @@ Comparación uno a uno de los **81** casos recolectados con `pytest --collect-on
 los tests del prototipo previo (fuera de este repo) frente a `services/ai/tests`.
 Las parametrizaciones aparecen como filas distintas. La evaluación queda fuera de esta fase.
 
-Comprobación de duplicados en `test_ingest_survives_bad_files`: el original dependía del kit;
+Comprobación de duplicados en `test_ingest_survives_bad_files`: el original dependía de fuentes no publicables;
 se recuperó con un PDF sintético duplicado en el test migrado.
 
 **Resumen:** 26 migrados · 55 excluidos a propósito (eval) · 0 perdidos.

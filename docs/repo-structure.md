@@ -8,7 +8,6 @@ scripts/
   setup.py, dev.py         instalación y arranque coordinado
   package.py               ZIP64 y prueba al descomprimir
   evidence.py              capturas y corrida live con fixtures
-  evolution.py             galería por tag
   fake_llama.py            servicios de modelo simulados para CI
   tests/                   pruebas de las herramientas
 services/ai/

@@ -12,7 +12,7 @@ La ruta de arranque está en [README](../README.md#arranque-igual-en-macos-linux
 ## Rutas y procesos revisados
 
 - Los scripts usan `pathlib` para las rutas del proyecto y `tempfile` para descomprimir el ZIP. El empaquetador incluye solo archivos versionados y excluye directorios de datos y dependencias.
-- `setup.py` resuelve ejecutables con `shutil.which`, instala las dependencias fijadas y construye la web. Estas instalaciones necesitan autorización previa en el equipo de Miguel.
+- `setup.py` resuelve ejecutables con `shutil.which`, instala las dependencias fijadas y construye la web. Estas instalaciones necesitan acceso a Internet y permisos de escritura en el entorno local.
 - `dev.py` crea grupos de procesos propios en POSIX y usa grupos de procesos y `taskkill /T` en Windows. En Windows, `taskkill /T` no encuentra descendientes si el padre ya ha terminado. La prueba en un sistema real sigue pendiente.
 - `package.py` envía SIGINT al grupo propio del proceso en POSIX para su prueba en limpio. La instrucción de esta sesión exige controlar procesos solo por PID. No se ha ejecutado esa prueba y hay que resolver esa incompatibilidad antes de usarla en este Mac.
 - La matriz configura puertos 3180, 8180 y 8181–8184. El backend falso no arranca OCR; comprobar que 8184 queda libre no prueba OCR.

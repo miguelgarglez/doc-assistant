@@ -37,11 +37,15 @@ PLATFORMS = {"macos-arm64": "tar.gz", "ubuntu-x64": "tar.gz", "win-cpu-x64": "zi
 FORBIDDEN = (
     "_trash/",
     "_agents/",
+    ".audit/",
     "node_modules/",
     ".venv/",
     "kit/",
     ".env.local",
     "data/",
+    "AGENTS.md",
+    "HANDOFF.md",
+    "CHECKPOINT.md",
 )
 STORED = (".gguf", ".zip", ".tar.gz", ".png", ".pdf")
 

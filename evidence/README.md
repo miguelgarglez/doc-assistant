@@ -32,7 +32,6 @@ Arranca los modelos reales, ingiere `evidence/fixtures`, ejecuta el conjunto con
 | `screenshots/` | Interfaz, estados, fragmentos, rechazo y vista Sistema | Calidad del LLM; usa respuestas deterministas |
 | `chunking/` | Integridad literal en dos PDF sintéticos | Recall general |
 | `evaluacion-sintetica/` | Regresión que detectó y comprobó una corrección del extractor | Gold independiente |
-| `comparison-*` y `evolution/` | Regresiones visuales e historia del diseño | Estado normativo actual |
 
 ## Métricas y criterio
 

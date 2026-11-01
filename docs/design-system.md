@@ -79,4 +79,4 @@ La copia de respuesta conserva Markdown y fuentes. La copia de tabla usa TSV con
 
 Mientras llega contenido se muestra Skeleton, oculto para lectores de pantalla, junto al estado accesible. El texto provisional entra con fade de 140 ms y sigue marcado como pendiente de verificación. Con `prefers-reduced-motion`, no se anima el streaming, no hay retardos CSS ni scroll suave de seguimiento. El envío por teclado lleva al final de forma instantánea.
 
-Auditoría de componentes y decisiones de copy en [revisión v0.14.0](reviews/respuestas-enriquecidas-v0.14.0.md). Capturas sintéticas antes/después en [comparación](../evidence/comparison-v0.13.3-v0.14.0/README.md).
+Las decisiones vigentes están en [Decisiones de arquitectura](decisions-log.md) y las capturas canónicas en [Evidencias](../evidence/README.md).

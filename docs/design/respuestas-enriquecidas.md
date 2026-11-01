@@ -50,7 +50,7 @@ No se inicia historial ni feedback. No se cambia extracción ni prompts a partir
 
 ## Cierre de implementación
 
-Se conservó B con bloques de presentación autocontenidos. La revisión independiente pidió un conjunto atómico en el cliente, identidad citada, referencias de suma y fidelidad al copiar notas y columnas. Se implementaron esas correcciones, incluida la deduplicación del número en comparativas. La versión es `blocks_version: 1`; los agregados declaran `operation: "sum"` y sus `refs`. El detalle de verificación y capturas queda en CHECKPOINT y en la revisión de v0.14.0.
+Se conservó B con bloques de presentación autocontenidos. La revisión pidió un conjunto atómico en el cliente, identidad citada, referencias de suma y fidelidad al copiar notas y columnas. Se implementaron esas correcciones, incluida la deduplicación del número en comparativas. La versión es `blocks_version: 1`; los agregados declaran `operation: "sum"` y sus `refs`. La verificación actual se resume en la [cobertura](../requirements-coverage.md) y las [evidencias](../../evidence/README.md).
 
 Se mantiene como límite la evidencia SQL del valor almacenado. Para citar una región del OCR haría falta guardar posiciones en la ingesta. Este cambio no introduce ese dato ni lo infiere.
 

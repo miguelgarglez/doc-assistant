@@ -31,9 +31,9 @@ Material útil para revisar o mantener la implementación, subordinado a los doc
 | [CHANGELOG](CHANGELOG.md) | Evolución por versión |
 | [Versionado](versioning.md) | Convención de tags y cierre |
 
-## Evidencia histórica
+## Historia
 
-`evolution-notes/`, `reviews/`, `evidence/comparison-*` y `evidence/evolution/` conservan comparaciones y revisiones de versiones anteriores. Sirven para trazabilidad, pero no sustituyen la arquitectura, cobertura y supuestos finales.
+El [CHANGELOG](CHANGELOG.md) resume la evolución. Las galerías y diarios de trabajo se excluyen de la entrega para que la evidencia canónica sea la que figura en `evidence/README.md`.
 
 ## Comandos
 

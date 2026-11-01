@@ -55,7 +55,7 @@ La caché de embeddings de ingesta puede usar hash del contenido y versión del 
 
 ## Historial, privacidad y observabilidad
 
-El historial se guarda en el servidor con `request_id`, identidad, inquilino, resultado, versiones y traza. El feedback referencia la petición y conserva una instantánea según la política de retención aprobada. La lectura y exportación vuelven a comprobar permisos. Las decisiones sobre texto literal, retención y rol revisor están en [decisiones pendientes](../decisiones-pendientes.md).
+El historial se guarda en el servidor con `request_id`, identidad, inquilino, resultado, versiones y traza. El feedback referencia la petición y conserva una instantánea según la política de retención aprobada. La lectura y exportación vuelven a comprobar permisos. Los límites de retención, identidad y revisión están resumidos en [Supuestos y huecos](../open-gaps.md).
 
 Trazas distribuidas conectan ingesta, recuperación, reranking, inferencia y verificación mediante un identificador de correlación. Las métricas incluyen latencia por etapa y percentiles, profundidad y edad de colas, errores, rechazos, uso de GPU, memoria y saturación. Los logs registran códigos y versiones, sin texto de documentos ni preguntas por defecto. El acceso a trazas con contenido requiere permisos y retención propios. Las evaluaciones continuas usan un gold aprobado y versionado; los cambios de modelo, índice o configuración se comparan con los mismos casos y umbrales fijados previamente.
 
