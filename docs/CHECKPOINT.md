@@ -397,3 +397,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 15:40 CET · Cobertura final de revisión
 
 - Tras ampliar las comprobaciones de carga, vacío, error y atajos de revisión y ajustar el resaltado, tres pasadas completas dieron 207 aprobadas y 4 live omitidas cada una. El check completo se repitió con 399 pruebas del servicio, 35 live omitidas y 26 de scripts; lint, tipos, contrato y build pasaron.
+
+## 01-Nov 16:07 CET · Fragmentos de PDF largo
+
+- Un PDF sintético de 80 páginas con un único apartado produjo 13.934 tokens en un solo fragmento y el modelo rechazó la petición. El troceado conserva la referencia a las páginas y limita los bytes enviados por fragmento; el mismo PDF generó 160 embeddings con el modelo real. La batería del servicio pasó con 401 pruebas y 35 omitidas. Falta la subida completa, la evaluación de recuperación y el resto de la ampliación.

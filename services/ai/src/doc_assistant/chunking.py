@@ -12,6 +12,9 @@ import pdfplumber
 HDR = re.compile(r"^(\d+(?:\.\d+)*)\.\s+(\S.*)$")
 FOOT = re.compile(r"^[^·\n]{2,40} · .* \d+$")
 
+# Conservative byte budget leaves room for tokenizer and model special tokens.
+PDF_EMBED_BYTES = 480
+
 
 def ws(s: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
@@ -69,10 +72,17 @@ def chunk_pdf(path: str | Path, doc: str | None = None) -> list[dict[str, Any]]:
                     "lines": [],
                 }
             elif cur is not None:
-                cur["lines"].append(line)
+                cur["lines"].append((line, pg["n"]))
                 cur["pages"].add(pg["n"])
             elif not line.startswith("Código"):
-                title = f"{title} {line}"
+                cur = {
+                    "doc": doc,
+                    "section": "0",
+                    "heading": title,
+                    "page": pg["n"],
+                    "pages": {pg["n"]},
+                    "lines": [(line, pg["n"])],
+                }
 
     if cur:
         out.append(cur)
@@ -82,24 +92,52 @@ def chunk_pdf(path: str | Path, doc: str | None = None) -> list[dict[str, Any]]:
 
     res: list[dict[str, Any]] = []
     for c in out:
-        body = ws(" ".join(c["lines"]))
-        if not body:
-            continue
-        prefix = f"[{c['doc']} · {c['title']} · {c['heading']}]"
-        cid = chunk_id_for(c["doc"], c["section"], body)
-        res.append(
-            {
-                "chunk_id": cid,
-                "doc": c["doc"],
-                "section": c["section"],
-                "heading": c["heading"],
-                "title": c["title"],
-                "display_doc": path.stem,
-                "pages": sorted(c["pages"]),
-                "body": body,
-                "text": prefix + " " + body,
-            }
-        )
+
+        def limit(text: str, size: int) -> str:
+            return text.encode("utf-8")[:size].decode("utf-8", errors="ignore")
+
+        prefix = f"[{limit(c['doc'], 32)} · {limit(c['title'], 64)} · {limit(c['heading'], 48)}]"
+        budget = PDF_EMBED_BYTES - len((prefix + " ").encode("utf-8"))
+        part: list[tuple[str, int]] = []
+        size = 0
+
+        def emit(c: dict[str, Any] = c, prefix: str = prefix) -> None:
+            nonlocal part, size
+            if not part:
+                return
+            body = " ".join(word for word, _ in part)
+            cid = chunk_id_for(c["doc"], f"{c['section']}:{len(res)}", body)
+            res.append(
+                {
+                    "chunk_id": cid,
+                    "doc": c["doc"],
+                    "section": c["section"],
+                    "heading": c["heading"],
+                    "title": c["title"],
+                    "display_doc": path.stem,
+                    "pages": sorted({page for _, page in part}),
+                    "body": body,
+                    "text": prefix + " " + body,
+                }
+            )
+            part, size = [], 0
+
+        for line, page in c["lines"]:
+            for word in line.split():
+                while word:
+                    room = budget - size - bool(part)
+                    if len(word.encode("utf-8")) <= room:
+                        size += len(word.encode("utf-8")) + bool(part)
+                        part.append((word, page))
+                        break
+                    if part:
+                        emit()
+                        continue
+                    piece = limit(word, budget)
+                    part.append((piece, page))
+                    emit()
+                    word = word[len(piece) :]
+        emit()
     return res
 
 
