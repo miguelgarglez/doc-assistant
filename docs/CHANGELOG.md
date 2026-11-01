@@ -2,12 +2,13 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
-## Sin publicar · robustez
+## v0.15.1 · 2026-11-01
 
 - La consulta libera SQLite antes de emitir eventos. PDFium se utiliza bajo un bloqueo compartido para que las ingestas y el visor no lo ejecuten a la vez en distintos hilos.
 - Los errores de modelo ocupado o sin respuesta tienen códigos y mensajes para reintentar. Sistema conserva el código incluso cuando el fallo ocurre antes del primer paso. [Capturas sintéticas](../evidence/comparison-v0.15.1/README.md).
 - Una cola en memoria limita por proceso las consultas activas y en espera. El flujo indica la espera y devuelve un error recuperable si la cola se llena o la espera se agota. No limita ingestas ni comparte capacidad entre procesos.
-- Una carga sintética con 12 preguntas y cuatro PDF terminó correctamente tras corregir un cierre del proceso dentro de PDFium. La causa del error histórico sin traza sigue sin demostrarse. La validación de versión continúa en curso; aún no hay tag nuevo.
+- Una carga sintética con 12 preguntas y cuatro PDF terminó correctamente tras corregir un cierre del proceso dentro de PDFium. Con la cola activada, seis consultas terminaron verificadas y seis recibieron `queue_full`; los cuatro PDF se indexaron. La causa del error histórico sin traza sigue sin demostrarse.
+- `mise run check` pasó con 322 pruebas del servicio, 35 live omitidas y 26 pruebas de scripts. Para el build se amplió temporalmente la raíz de Turbopack y se reutilizaron dependencias existentes; falta comprobar el entorno instalado localmente. Tres pasadas de navegador con axe dieron 182 aprobadas y cuatro live omitidas cada una.
 
 ## v0.15.0 · 2026-11-01
 

@@ -7,7 +7,7 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 
 "Fiabilidad real" dice qué prueba lo respalda. Una prueba con datos sintéticos o simulados no sustituye a la evaluación con un conjunto aprobado, que aún no existe.
 
-## Trabajo sin publicar
+## Resumen v0.15.1
 
 - Mejoran la concurrencia entre PDF y consultas, la admisión acotada y la explicación de errores del modelo en chat y Sistema.
 - Pendientes: carga sostenida y equidad de la cola, evaluación representativa, gold aprobado y plataformas no probadas. El fallo histórico carece de traza.

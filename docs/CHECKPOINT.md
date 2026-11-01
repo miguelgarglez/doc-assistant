@@ -288,3 +288,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - `mise run check` pasó con `PYTHONPATH` apuntando al servicio actual: 322 pruebas del servicio y 26 de scripts, 35 live omitidas, Ruff, mypy, ESLint, tipos, contrato sin deriva y build. El build usó la raíz temporal ampliada para resolver dependencias existentes; después se retiró la adaptación.
 - Se repiten las pasadas de navegador con el build final. La autorización de dependencias locales sigue en decisiones pendientes.
 
+## 01-Nov 03:21 CET · Cierre de verificaciones v0.15.1
+- Tres pasadas del build final dieron 182 aprobadas y 4 live omitidas por pasada, con axe en las vistas cubiertas. Cerrado por PID el servidor propio; puertos propios libres. Los enlaces de dependencias y la configuración temporal se movieron a `_trash/`.
+- Mejoran la concurrencia PDF, la admisión de consultas y los mensajes de error. Pendientes la evaluación sintética, los percentiles, la equidad de la cola y el check en un entorno local de dependencias. Recuento: 18 cumplidas, 10 parciales y 3 no.
+
