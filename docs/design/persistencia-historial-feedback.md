@@ -118,6 +118,7 @@ La traza se copia en `feedback`. Si una política de retención borra la petici�
 - Qué se envía: `POST /feedback {request_id, kind, comment}`. El servidor busca la petición y copia la traza completa. El cliente no la sube: así no se puede falsear, no pesa en la red y no depende de lo que el cliente haya conservado.
 - Confirmación: aviso de Sonner con el identificador del feedback. Sin animación de entrada propia.
 - Estado: `nuevo`, `revisado`, `convertido a caso` y `descartado`. El comando interno `python -m doc_assistant.feedback_export RUTA_DB --conversation-id ID` escribe en stdout los borradores revisados con respuesta esperada. La salida incluye la traza y puede contener datos confidenciales; protege cualquier archivo al que la redirijas. La base debe existir y el comando puede aplicar migraciones del almacén. De ahí salen los casos del gold, con el mismo formato que usará la evaluación.
+- Revisión local: `python -m doc_assistant.feedback_review RUTA_DB --conversation-id ID --feedback-id ID` lee la respuesta esperada desde stdin y guarda esa respuesta y el estado `revisado` en una sola transacción. La entrada puede contener información confidencial; usa un archivo protegido si se redirige. El comando exige una base existente y puede aplicar migraciones. La revisión no aprueba el gold.
 - Una petición con `error` o rechazo también admite feedback (por ejemplo, «debería haber respondido»).
 
 ## 8. Privacidad y retención

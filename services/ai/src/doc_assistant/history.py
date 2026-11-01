@@ -211,6 +211,18 @@ class HistoryStore:
             )
             return cursor.rowcount == 1
 
+    def review_feedback(self, conversation_id: str, feedback_id: str, answer: str) -> bool:
+        """Atomically save an expected answer and mark a feedback item reviewed."""
+        if not answer.strip():
+            raise ValueError("expected answer must not be empty")
+        with self._connect() as db:
+            cursor = db.execute(
+                "UPDATE feedback SET expected_answer = ?, status = 'revisado' "
+                "WHERE conversation_id = ? AND feedback_id = ?",
+                (answer, conversation_id, feedback_id),
+            )
+            return cursor.rowcount == 1
+
     def export_reviewed(self, conversation_id: str) -> Iterator[str]:
         """Yield JSONL drafts with an expected answer, never approved gold cases."""
         with self._connect() as db:
