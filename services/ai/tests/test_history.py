@@ -13,10 +13,12 @@ def test_history_is_separate_and_feedback_copies_server_trace(tmp_path):
     trace = {"question": "¿Cuánto?", "citations": [{"quote": "12 €"}]}
     store.record("r1", "c1", "2026-01-01T00:00:00Z", trace)
     store.record("r2", "c2", "2026-01-02T00:00:00Z", {"question": "otra"})
-    assert store.get("missing") is None
+    assert store.get("c1", "missing") is None
+    assert store.get("c2", "r1") is None
     assert store.list_page("c1")[0] == [trace]
-    assert not store.add_feedback("f0", "missing", "now", "otro", None)
-    assert store.add_feedback("f1", "r1", "now", "incorrecta", "revisar")
+    assert not store.add_feedback("f0", "c1", "missing", "now", "otro", None)
+    assert not store.add_feedback("wrong", "c2", "r1", "now", "otro", None)
+    assert store.add_feedback("f1", "c1", "r1", "now", "incorrecta", "revisar")
     with sqlite3.connect(path) as db:
         db.execute("DELETE FROM requests WHERE request_id = 'r1'")
         saved = db.execute("SELECT trace_json FROM feedback WHERE feedback_id = 'f1'").fetchone()
@@ -29,7 +31,7 @@ def test_duplicate_request_is_not_overwritten(tmp_path):
     store.record("r", "c", "now", {"answer": "original"})
     with pytest.raises(sqlite3.IntegrityError):
         store.record("r", "c", "now", {"answer": "changed"})
-    assert store.get("r") == {"answer": "original"}
+    assert store.get("c", "r") == {"answer": "original"}
 
 
 def test_concurrent_writers_preserve_all_records(tmp_path):

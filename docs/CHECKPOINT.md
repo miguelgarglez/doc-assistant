@@ -393,3 +393,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:22 CET · Límite único de paginación
 - Retirado el listado interno anterior, que aceptaba límites sin validar, y migrados sus usos de prueba a la paginación acotada. La prueba rechaza límites negativos, cero y superiores a 100.
 - Pasan cuatro pruebas del almacén, Ruff y mypy. El almacén sigue aislado.
+
+## 01-Nov 07:22 CET · Acceso por conversación al almacén
+- La lectura directa y la copia de traza para feedback requieren que coincidan la conversación y la petición. Una prueba rechaza ambas operaciones cuando la conversación no coincide.
+- Cuatro pruebas, Ruff y mypy pasan. El identificador de conversación no es autenticación; el almacén sigue aislado de los endpoints.

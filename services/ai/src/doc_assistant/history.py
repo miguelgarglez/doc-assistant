@@ -52,10 +52,11 @@ class HistoryStore:
                 (request_id, conversation_id, created_at, json.dumps(trace, ensure_ascii=False)),
             )
 
-    def get(self, request_id: str) -> dict[str, Any] | None:
+    def get(self, conversation_id: str, request_id: str) -> dict[str, Any] | None:
         with self._connect() as db:
             row = db.execute(
-                "SELECT trace_json FROM requests WHERE request_id = ?", (request_id,)
+                "SELECT trace_json FROM requests WHERE conversation_id = ? AND request_id = ?",
+                (conversation_id, request_id),
             ).fetchone()
         return json.loads(row[0]) if row else None
 
@@ -85,6 +86,7 @@ class HistoryStore:
     def add_feedback(
         self,
         feedback_id: str,
+        conversation_id: str,
         request_id: str,
         created_at: str,
         kind: str,
@@ -93,7 +95,7 @@ class HistoryStore:
         with self._connect() as db:
             cursor = db.execute(
                 "INSERT INTO feedback SELECT ?, request_id, ?, ?, ?, trace_json "
-                "FROM requests WHERE request_id = ?",
-                (feedback_id, created_at, kind, comment, request_id),
+                "FROM requests WHERE conversation_id = ? AND request_id = ?",
+                (feedback_id, created_at, kind, comment, conversation_id, request_id),
             )
             return cursor.rowcount == 1
