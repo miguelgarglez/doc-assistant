@@ -259,6 +259,42 @@ class HistoryStore:
         cursor = (page[-1][2], page[-1][0]) if len(rows) > limit else None
         return [self._feedback_row(row) for row in page], cursor
 
+    def feedback_by_status(
+        self, status: str, *, limit: int = 50, offset: int = 0
+    ) -> list[dict[str, Any]]:
+        """List local review items in stable newest-first order."""
+        if status not in {"nuevo", "revisado", "convertido a caso", "descartado"}:
+            raise ValueError("invalid feedback status")
+        if not 1 <= limit <= 100 or offset < 0:
+            raise ValueError("invalid pagination")
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT feedback_id, request_id, created_at, kind, comment, trace_json, status, "
+                "expected_answer, conversation_id FROM feedback WHERE status = ? "
+                "ORDER BY created_at DESC, feedback_id DESC LIMIT ? OFFSET ?",
+                (status, limit, offset),
+            ).fetchall()
+        return [dict(self._feedback_row(row), conversation_id=row[8]) for row in rows]
+
+    def export_all_reviewed(self) -> Iterator[str]:
+        """Export only reviewed feedback with a nonempty expected answer."""
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT feedback_id, request_id, created_at, kind, comment, trace_json, status, "
+                "expected_answer, conversation_id FROM feedback "
+                "WHERE status = 'revisado' AND expected_answer IS NOT NULL "
+                "ORDER BY created_at, feedback_id"
+            )
+            for row in rows:
+                if row[7].strip():
+                    yield (
+                        json.dumps(
+                            dict(self._feedback_row(row), conversation_id=row[8]),
+                            ensure_ascii=False,
+                        )
+                        + "\n"
+                    )
+
     @staticmethod
     def _feedback_row(row: tuple[Any, ...]) -> dict[str, Any]:
         return {

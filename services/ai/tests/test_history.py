@@ -309,3 +309,17 @@ def test_conversation_pages_search_and_delete(tmp_path):
     assert store.get_feedback("c2", "f") is None
     assert store.delete_all() == 1
     assert store.conversations_page() == []
+
+
+def test_global_review_queue_and_export_only_reviewed(tmp_path):
+    store = HistoryStore(tmp_path / "history.db")
+    for i in range(3):
+        store.record(f"r{i}", f"c{i}", f"2026-01-0{i + 1}", {"question": str(i)})
+        assert store.add_private_feedback(f"f{i}", f"c{i}", f"r{i}", f"2026-01-0{i + 1}", None)
+    assert store.review_feedback("c1", "f1", "correct answer")
+    assert [item["feedback_id"] for item in store.feedback_by_status("nuevo", limit=1)] == ["f2"]
+    assert [
+        item["feedback_id"] for item in store.feedback_by_status("nuevo", limit=1, offset=1)
+    ] == ["f0"]
+    exported = [json.loads(line) for line in store.export_all_reviewed()]
+    assert [(item["feedback_id"], item["conversation_id"]) for item in exported] == [("f1", "c1")]
