@@ -387,3 +387,9 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 - La cola muestra pendientes, revisados y descartados; la página presenta la petición original, citas y traza, ayuda de teclado, campos de redacción y vista previa. La exportación usa solo la copia confirmada, y los cambios de filtro o una escritura fallida no deben mezclar avisos.
 - La revisión sintética se comprobó con API real y JSONL sin los datos originales; cinco pruebas de navegador cubren flujo, axe, 101 avisos, fallo de detalle y de guardado. Faltan verificaciones completas y revisión visual final de todos los estados.
+
+## 01-Nov 15:33 CET · Verificación v0.17.1
+
+- `mise run check` pasó con 399 pruebas del servicio, 35 live omitidas y 26 de scripts; lint, tipos, contrato y build correctos. Se reutilizaron entornos existentes sin instalar dependencias. La comparación recursiva del OpenAPI con v0.17.0 no detectó eliminaciones ni cambios en elementos anteriores.
+- Tres pasadas completas de Playwright dieron 206 aprobadas y 4 live omitidas cada una. Incluyen axe en historial, Sistema y revisión para cuatro modos, paginación, errores y flujo de redacción. Las ejecuciones interrumpidas por cambios no cuentan.
+- El humo con modelos locales y datos sintéticos produjo una respuesta documental y otra de factura con citas, una aclaración y un rechazo; se guardaron las cuatro peticiones y se revisó y exportó un aviso. No mide precisión general. La cola de guardado sigue siendo volátil y la aplicación no proporciona aislamiento multiusuario.
