@@ -413,3 +413,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:24 CET · Aislamiento de la verificación
 - Las citas y detalles de verificación también se copian: el resultado bruto puede compartir objetos con el verificador. La regresión modifica la cita bruta y comprueba que la verificación registrada no cambia.
 - Nueve pruebas de consulta y Ruff pasan. No se activa persistencia.
+
+## 01-Nov 07:25 CET · Código de transporte al rechazar la cola
+- Las trazas de cola llena y tiempo de espera registran el código también como error de transporte, igual que los errores del stream. Las pruebas cubren ambos casos.
+- Pasan 42 pruebas de cola y streaming y Ruff. El colector sigue sin activar en los endpoints.

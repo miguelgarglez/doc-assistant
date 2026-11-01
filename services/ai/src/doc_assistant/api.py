@@ -495,6 +495,7 @@ def queued_ask_stream(
             trace["transport_status"] = status
             if code is not None:
                 trace["error_code"] = code
+                trace["transport_error_code"] = code
 
     def queue_step(step: StepEvent) -> str:
         if trace is not None:

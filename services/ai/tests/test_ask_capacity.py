@@ -35,6 +35,7 @@ def test_queue_waits_rejects_overflow_and_releases_on_disconnect(monkeypatch):
     assert overflow_trace["transport_status"] == "error"
     assert overflow_trace["status"] == "error"
     assert overflow_trace["error_code"] == "queue_full"
+    assert overflow_trace["transport_error_code"] == "queue_full"
     waiting.close()
     assert interrupted_trace["status"] == "interrupted"
     assert interrupted_trace["queue_steps"][0]["label"] == data["label"]
@@ -72,6 +73,7 @@ def test_wait_timeout_is_recoverable_and_releases_admission(monkeypatch):
     assert event(next(stream))[1]["code"] == "queue_timeout"
     assert trace["status"] == "error"
     assert trace["error_code"] == "queue_timeout"
+    assert trace["transport_error_code"] == "queue_timeout"
     assert trace["queue_steps"][0]["status"] == "running"
     assert trace["finished_at"] >= trace["started_at"]
     assert list(stream) == []
