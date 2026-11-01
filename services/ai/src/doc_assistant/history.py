@@ -68,6 +68,32 @@ class HistoryStore:
             ).fetchall()
         return [json.loads(row[0]) for row in rows]
 
+    def list_page(
+        self,
+        conversation_id: str,
+        *,
+        limit: int = 50,
+        before: tuple[str, str] | None = None,
+    ) -> tuple[list[dict[str, Any]], tuple[str, str] | None]:
+        """Return a stable page and the position for the next page, if any."""
+        if not 1 <= limit <= 100:
+            raise ValueError("limit must be between 1 and 100")
+        query = (
+            "SELECT created_at, request_id, trace_json FROM requests "
+            "WHERE conversation_id = ?"
+        )
+        params: list[Any] = [conversation_id]
+        if before is not None:
+            query += " AND (created_at, request_id) < (?, ?)"
+            params.extend(before)
+        query += " ORDER BY created_at DESC, request_id DESC LIMIT ?"
+        params.append(limit + 1)
+        with self._connect() as db:
+            rows = db.execute(query, params).fetchall()
+        page = rows[:limit]
+        cursor = (page[-1][0], page[-1][1]) if len(rows) > limit else None
+        return [json.loads(row[2]) for row in page], cursor
+
     def add_feedback(
         self,
         feedback_id: str,

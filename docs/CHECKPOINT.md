@@ -347,3 +347,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:11 CET · Versiones parciales en la traza
 - El colector en memoria registra el SHA256 del archivo de configuración, el de los prompts de respuesta y los nombres configurados de los cuatro modelos. Estos nombres no acreditan los archivos cargados.
 - Siete pruebas de consulta y Ruff pasan. Faltan hashes de modelos cargados, revisión del índice y conexión al historial. No se activa la persistencia.
+
+## 01-Nov 07:12 CET · Paginación del almacén aislado
+- El almacén ofrece páginas por fecha e identificador, con un límite de 100 registros. El cursor evita duplicados o saltos cuando llegan consultas más recientes y deshace los empates de fecha. Aún no hay endpoint conectado.
+- Cuatro pruebas del almacén y Ruff pasan. La persistencia sigue desactivada.

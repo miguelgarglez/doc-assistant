@@ -41,3 +41,18 @@ def test_concurrent_writers_preserve_all_records(tmp_path):
     with ThreadPoolExecutor(max_workers=4) as executor:
         list(executor.map(write, range(20)))
     assert [item["id"] for item in store.list("c", 20)] == list(reversed(range(20)))
+
+
+def test_pages_are_stable_when_timestamps_tie_and_new_requests_arrive(tmp_path):
+    store = HistoryStore(tmp_path / "history.db")
+    for request_id in ("a", "b", "c", "d", "e"):
+        store.record(request_id, "c", "2026-01-01", {"id": request_id})
+    store.record("other", "different", "2026-01-01", {"id": "other"})
+    first, cursor = store.list_page("c", limit=2)
+    store.record("new", "c", "2026-01-02", {"id": "new"})
+    second, cursor = store.list_page("c", limit=2, before=cursor)
+    third, cursor = store.list_page("c", limit=2, before=cursor)
+    assert [x["id"] for x in first + second + third] == ["e", "d", "c", "b", "a"]
+    assert cursor is None
+    with pytest.raises(ValueError):
+        store.list_page("c", limit=0)
