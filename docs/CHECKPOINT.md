@@ -393,3 +393,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - `mise run check` pasó con 399 pruebas del servicio, 35 live omitidas y 26 de scripts; lint, tipos, contrato y build correctos. Se reutilizaron entornos existentes sin instalar dependencias. La comparación recursiva del OpenAPI con v0.17.0 no detectó eliminaciones ni cambios en elementos anteriores.
 - Tres pasadas completas de Playwright dieron 206 aprobadas y 4 live omitidas cada una. Incluyen axe en historial, Sistema y revisión para cuatro modos, paginación, errores y flujo de redacción. Las ejecuciones interrumpidas por cambios no cuentan.
 - El humo con modelos locales y datos sintéticos produjo una respuesta documental y otra de factura con citas, una aclaración y un rechazo; se guardaron las cuatro peticiones y se revisó y exportó un aviso. No mide precisión general. La cola de guardado sigue siendo volátil y la aplicación no proporciona aislamiento multiusuario.
+
+## 01-Nov 15:40 CET · Cobertura final de revisión
+
+- Tras ampliar las comprobaciones de carga, vacío, error y atajos de revisión y ajustar el resaltado, tres pasadas completas dieron 207 aprobadas y 4 live omitidas cada una. El check completo se repitió con 399 pruebas del servicio, 35 live omitidas y 26 de scripts; lint, tipos, contrato y build pasaron.
