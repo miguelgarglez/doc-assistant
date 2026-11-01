@@ -55,6 +55,15 @@ class ReviewInput(BaseModel):
     confirmed_error: Literal[True]
 
 
+@router.get("/requests")
+def requests_page(
+    store: Store,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> list[dict[str, Any]]:
+    return store.requests_page(limit=limit, offset=offset)
+
+
 @router.get("/conversations")
 def conversations(
     store: Store,

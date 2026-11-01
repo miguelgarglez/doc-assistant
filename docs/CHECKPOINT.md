@@ -367,3 +367,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - `mise run check` terminó correctamente con 395 pruebas del servicio, 35 live omitidas y 26 pruebas de scripts; lint, tipos, contrato generado y build correctos. El build reutilizó dependencias existentes y una raíz de Turbopack ampliada temporalmente.
 - Tres pasadas Playwright con axe dieron 199 aprobadas y cuatro live omitidas cada una. Cubren las vistas de historial y revisión, la paginación de 101 elementos, restauración de resultados sintéticos reales y contraste del botón en hover en cuatro temas y modos.
 - El humo con modelos locales comprobó en una sola ejecución una respuesta documental y otra de factura con citas, aclaración y rechazo, las cuatro consultas guardadas y un aviso revisado y exportado. Son datos sintéticos, no una medida de precisión general.
+
+## 01-Nov 15:07 CET · Consulta de peticiones recientes
+
+- La API ofrece una consulta paginada y local de metadatos de peticiones; no incluye pregunta, respuesta ni citas. El contrato se amplía sin eliminar rutas. Las pruebas cubren orden, paginación, límites y autorización.
+- Pendiente conectar la vista de Sistema y completar la revisión y las verificaciones de v0.17.1.

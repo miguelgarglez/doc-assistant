@@ -9,6 +9,23 @@ import pytest
 from doc_assistant.history import HistoryStore
 
 
+def test_recent_requests_are_paginated_without_response_contents(tmp_path):
+    store = HistoryStore(tmp_path / "history.db")
+    store.record("a", "c", "2026-01-01", {"question": "privada", "kind": "answer"})
+    store.record("b", "c", "2026-01-01", {
+        "kind": "error", "transport_status": "error", "elapsed_s": 1.25,
+        "result": {"answer": "privada"},
+    })
+    assert store.requests_page(limit=1) == [{
+        "request_id": "b", "conversation_id": "c", "created_at": "2026-01-01",
+        "kind": "error", "status": "error", "elapsed_s": 1.25,
+    }]
+    assert store.requests_page(limit=1, offset=1)[0]["request_id"] == "a"
+    assert store.requests_page(limit=1, offset=2) == []
+    with pytest.raises(ValueError):
+        store.requests_page(limit=101)
+
+
 def test_purge_removes_expired_requests_and_feedback_independently(tmp_path):
     store = HistoryStore(tmp_path / "history.db")
     store.record("old", "c", "2026-01-01T00:00:00Z", {"question": "old"})

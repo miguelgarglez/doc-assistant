@@ -54,6 +54,18 @@ def test_history_api_accepts_an_alternative_store(tmp_path):
     assert response.json() == [{"conversation_id": "alternative", "count": 2, "question": "demo"}]
 
 
+def test_recent_requests_endpoint_requires_token_and_pages(tmp_path):
+    client, store = client_for(tmp_path)
+    for request_id in ("a", "b"):
+        store.record(request_id, "c", "2026-01-01", {"kind": "answer"})
+    assert client.get("/history/requests").status_code == 403
+    headers = {"x-history-token": "secret"}
+    response = client.get("/history/requests?limit=1&offset=1", headers=headers)
+    assert response.status_code == 200
+    assert [item["request_id"] for item in response.json()] == ["a"]
+    assert client.get("/history/requests?limit=101", headers=headers).status_code == 422
+
+
 def test_review_export_requires_human_confirmations_and_excludes_pending(tmp_path):
     client, store = client_for(tmp_path)
     headers = {"x-history-token": "secret"}

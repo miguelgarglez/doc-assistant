@@ -128,6 +128,29 @@ class HistoryStore:
             for row in rows
         ]
 
+    def requests_page(self, *, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
+        """Return local request metadata in a stable order without exposing response content."""
+        if not 1 <= limit <= 100 or offset < 0:
+            raise ValueError("invalid pagination")
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT request_id, conversation_id, created_at, trace_json FROM requests "
+                "WHERE owner = 'local' ORDER BY created_at DESC, request_id DESC LIMIT ? OFFSET ?",
+                (limit, offset),
+            ).fetchall()
+        result = []
+        for request_id, conversation_id, created_at, raw_trace in rows:
+            trace = json.loads(raw_trace)
+            result.append({
+                "request_id": request_id,
+                "conversation_id": conversation_id,
+                "created_at": created_at,
+                "kind": trace.get("kind"),
+                "status": trace.get("transport_status"),
+                "elapsed_s": trace.get("elapsed_s"),
+            })
+        return result
+
     def delete_conversation(self, conversation_id: str, *, owner: str = "local") -> int:
         with self._connect() as db:
             if owner == "local":

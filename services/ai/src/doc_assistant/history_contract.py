@@ -7,6 +7,8 @@ from doc_assistant.history_outbox import HistoryWriter
 
 
 class HistoryRepository(HistoryWriter, Protocol):
+    def requests_page(self, *, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]: ...
+
     def conversations_page(
         self, *, owner: str = "local", limit: int = 50, offset: int = 0, search: str = ""
     ) -> list[dict[str, Any]]: ...
