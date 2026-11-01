@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Literal
 
-from doc_assistant.invoice_index import fold, parse_amount
+from doc_assistant.domain.invoices.values import fold, parse_amount
 
 Kind = Literal["text", "date", "amount", "percent"]
 

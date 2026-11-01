@@ -22,7 +22,7 @@ from typing import Any
 
 from doc_assistant.application.ports.models import AdapterBusy, AdapterError, AdapterTimeout
 from doc_assistant.chunking import invoice_doc_id
-from doc_assistant.invoice_fields import (
+from doc_assistant.domain.invoices.fields import (
     FIELD_SPECS,
     asks_for,
     display_value,
@@ -31,15 +31,17 @@ from doc_assistant.invoice_fields import (
     noun_phrase,
     prune_unasked,
 )
-from doc_assistant.invoice_index import (
-    AMOUNT_COLS,
-    DATE_COLS,
+from doc_assistant.domain.invoices.values import (
     NIF_RE,
-    Party,
     fold,
     norm_key,
     parse_amount,
     parse_date_range,
+)
+from doc_assistant.invoice_index import (
+    AMOUNT_COLS,
+    DATE_COLS,
+    Party,
     party_tokens,
     resolve_nif,
     resolve_number,

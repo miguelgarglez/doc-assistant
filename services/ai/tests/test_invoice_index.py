@@ -3,8 +3,9 @@ from decimal import Decimal
 
 import pytest
 
+from doc_assistant.domain.invoices.values import fold, norm_key, parse_amount, parse_date_range
 from doc_assistant.infra.storage.chunks import SCHEMA_VERSION
-from doc_assistant.invoice_index import fold, norm_key, parse_amount, parse_date_range, sync_derived
+from doc_assistant.invoice_index import sync_derived
 from doc_assistant.invoice_query import FIELDS
 from doc_assistant.invoices import InvoiceDB
 

@@ -17,11 +17,12 @@ from doc_assistant.application.ports.models import LLM, Embedder, OcrPort
 from doc_assistant.chunking import chunk_invoice, invoice_doc_id
 from doc_assistant.config import load_config
 from doc_assistant.domain.answers.answer_markup import AnswerBuilder, md_escape
+from doc_assistant.domain.invoices.blocks import build_blocks, follow_ups
+from doc_assistant.domain.invoices.fields import display_value
+from doc_assistant.domain.invoices.values import norm_key
 from doc_assistant.infra.storage.chunks import SCHEMA_VERSION, ChunkStore, ensure_schema
-from doc_assistant.invoice_blocks import build_blocks, follow_ups
 from doc_assistant.invoice_extract import extract_invoice
-from doc_assistant.invoice_fields import display_value
-from doc_assistant.invoice_index import norm_key, sync_derived
+from doc_assistant.invoice_index import sync_derived
 from doc_assistant.invoice_query import (
     FIELDS,
     followup_question,

@@ -17,8 +17,8 @@ from typing import Any
 import pytest
 
 from doc_assistant.config import load_config
+from doc_assistant.domain.invoices.fields import format_eur
 from doc_assistant.infra.models.http import HttpLLM
-from doc_assistant.invoice_fields import format_eur
 from doc_assistant.invoices import InvoiceDB, ask_invoices
 from doc_assistant.model_fakes import FakeLLM
 
@@ -462,7 +462,7 @@ def assert_blocks_grounded(result: dict[str, Any]) -> None:
 
 
 def assert_asked_fields_only(question: str, result: dict[str, Any]) -> None:
-    from doc_assistant.invoice_fields import asks_for
+    from doc_assistant.domain.invoices.fields import asks_for
 
     q = question.lower()
     for citation in result["citations"]:
@@ -665,7 +665,7 @@ def test_comparison_numbers_are_not_duplicated(battery_config):
 
 
 def test_general_key_data_is_stable_even_with_an_overbroad_plan(battery_config):
-    from doc_assistant.invoice_fields import FIELD_SPECS
+    from doc_assistant.domain.invoices.fields import FIELD_SPECS
 
     result = blocks_of(
         battery_config,

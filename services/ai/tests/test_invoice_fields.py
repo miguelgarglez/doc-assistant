@@ -2,7 +2,7 @@
 
 import pytest
 
-from doc_assistant.invoice_fields import (
+from doc_assistant.domain.invoices.fields import (
     FIELD_SPECS,
     asks_for,
     display_value,

@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from doc_assistant.invoice_fields import FIELD_SPECS, display_value
+from doc_assistant.domain.invoices.fields import FIELD_SPECS, display_value
 
 Cite = Callable[[str, str, Any], int | None]
 
