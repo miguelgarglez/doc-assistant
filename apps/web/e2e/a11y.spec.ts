@@ -34,6 +34,19 @@ for (const theme of ["industrial", "neutral"] as const) {
       await expectNoSeriousViolations(page)
     })
 
+    test(`feedback con botón en hover (${label})`, async ({ page }) => {
+      await mockBackend(page)
+      await themed(page, theme, dark)
+      await page.goto("/")
+      await ask(page, "¿Carga útil?")
+      await expect(page.getByTestId("assistant-message")).toHaveAttribute("data-kind", "answer")
+      await page.getByRole("button", { name: "Respuesta incorrecta" }).click()
+      const submit = page.getByRole("button", { name: "Enviar para revisión" })
+      await submit.hover()
+      await submit.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)))
+      expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([])
+    })
+
     test(`chat con respuesta, citas y visor abierto (${label})`, async ({ page }) => {
       await mockBackend(page)
       await themed(page, theme, dark)
