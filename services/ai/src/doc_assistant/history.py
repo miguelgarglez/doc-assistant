@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import builtins
 import json
 import sqlite3
 from collections.abc import Iterator
@@ -60,30 +59,18 @@ class HistoryStore:
             ).fetchone()
         return json.loads(row[0]) if row else None
 
-    def list(self, conversation_id: str, limit: int = 50) -> list[dict[str, Any]]:
-        with self._connect() as db:
-            rows = db.execute(
-                "SELECT trace_json FROM requests WHERE conversation_id = ? "
-                "ORDER BY created_at DESC, request_id DESC LIMIT ?",
-                (conversation_id, limit),
-            ).fetchall()
-        return [json.loads(row[0]) for row in rows]
-
     def list_page(
         self,
         conversation_id: str,
         *,
         limit: int = 50,
         before: tuple[str, str] | None = None,
-    ) -> tuple[builtins.list[dict[str, Any]], tuple[str, str] | None]:
+    ) -> tuple[list[dict[str, Any]], tuple[str, str] | None]:
         """Return a stable page and the position for the next page, if any."""
         if not 1 <= limit <= 100:
             raise ValueError("limit must be between 1 and 100")
-        query = (
-            "SELECT created_at, request_id, trace_json FROM requests "
-            "WHERE conversation_id = ?"
-        )
-        params: builtins.list[Any] = [conversation_id]
+        query = "SELECT created_at, request_id, trace_json FROM requests WHERE conversation_id = ?"
+        params: list[Any] = [conversation_id]
         if before is not None:
             query += " AND (created_at, request_id) < (?, ?)"
             params.extend(before)

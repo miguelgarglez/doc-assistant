@@ -14,7 +14,7 @@ def test_history_is_separate_and_feedback_copies_server_trace(tmp_path):
     store.record("r1", "c1", "2026-01-01T00:00:00Z", trace)
     store.record("r2", "c2", "2026-01-02T00:00:00Z", {"question": "otra"})
     assert store.get("missing") is None
-    assert store.list("c1") == [trace]
+    assert store.list_page("c1")[0] == [trace]
     assert not store.add_feedback("f0", "missing", "now", "otro", None)
     assert store.add_feedback("f1", "r1", "now", "incorrecta", "revisar")
     with sqlite3.connect(path) as db:
@@ -40,7 +40,7 @@ def test_concurrent_writers_preserve_all_records(tmp_path):
 
     with ThreadPoolExecutor(max_workers=4) as executor:
         list(executor.map(write, range(20)))
-    assert [item["id"] for item in store.list("c", 20)] == list(reversed(range(20)))
+    assert [item["id"] for item in store.list_page("c", limit=20)[0]] == list(reversed(range(20)))
 
 
 def test_pages_are_stable_when_timestamps_tie_and_new_requests_arrive(tmp_path):
@@ -54,5 +54,6 @@ def test_pages_are_stable_when_timestamps_tie_and_new_requests_arrive(tmp_path):
     third, cursor = store.list_page("c", limit=2, before=cursor)
     assert [x["id"] for x in first + second + third] == ["e", "d", "c", "b", "a"]
     assert cursor is None
-    with pytest.raises(ValueError):
-        store.list_page("c", limit=0)
+    for invalid_limit in (0, -1, 101):
+        with pytest.raises(ValueError):
+            store.list_page("c", limit=invalid_limit)

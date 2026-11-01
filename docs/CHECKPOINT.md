@@ -389,3 +389,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:21 CET · Código de error del transporte en la traza
 - La traza opcional conserva el código público de un error de transporte en `transport_error_code`, separado del estado del pipeline. Una regresión fuerza un fallo al traducir un evento y comprueba que no se copia el contenido privado de la excepción.
 - Pasan 42 pruebas de streaming y cola y Ruff. La traza sigue sin persistirse ni exponerse por los endpoints.
+
+## 01-Nov 07:22 CET · Límite único de paginación
+- Retirado el listado interno anterior, que aceptaba límites sin validar, y migrados sus usos de prueba a la paginación acotada. La prueba rechaza límites negativos, cero y superiores a 100.
+- Pasan cuatro pruebas del almacén, Ruff y mypy. El almacén sigue aislado.
