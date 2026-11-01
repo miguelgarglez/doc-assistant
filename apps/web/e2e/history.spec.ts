@@ -22,7 +22,7 @@ test("abre una conversación, la continúa y confirma el borrado", async ({ page
     await route.fulfill({ contentType: "text/event-stream", body: sse(answerEvents()) })
   })
   await page.goto("/")
-  await page.keyboard.press("Alt+h")
+  await page.getByRole("button", { name: "Historial" }).click()
   const sheet = page.getByRole("dialog", { name: "Historial" })
   await expect(sheet.getByText("Pregunta guardada")).toBeVisible()
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([])
