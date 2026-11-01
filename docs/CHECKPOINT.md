@@ -256,3 +256,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Una carga de consultas e ingestas terminó el proceso dentro de PDFium. El servicio ahora serializa la creación, uso y cierre de objetos PDFium entre ingesta, validación y localización de citas.
 - Una prueba fuerza el solapamiento entre ingesta y localización y comprueba la exclusión. En la repetición con modelos locales, 12 consultas dieron respuestas verificadas con citas y 4 PDF se indexaron. La muestra no demuestra ausencia de otras carreras.
 
+## 01-Nov 03:09 CET · Código de error en Sistema
+- La última traza conserva el código de un fallo incluso si ocurre antes del primer paso. Sin pasos, el botón de reproducción queda desactivado.
+- Pasaron 13 pruebas del transporte. `mise run check` pasó con dependencias ya existentes y una raíz temporal ampliada para Turbopack; la primera ejecución con la configuración original falló en build por los enlaces externos. Pendientes pruebas visuales de este cambio y check en un entorno de dependencias local al worktree.
+

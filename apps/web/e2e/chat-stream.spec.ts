@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test"
 import { ChunkMapper, type AskChunk } from "../src/lib/chat/chunks"
 import { readSse } from "../src/lib/chat/sse"
 import type { AskMessage, StreamEvent } from "../src/lib/chat/types"
-import { viewOfAssistant } from "../src/lib/chat/view"
+import { lastTrace, viewOfAssistant } from "../src/lib/chat/view"
 
 const citation = {
   chunk_id: "c1",
@@ -184,6 +184,13 @@ test.describe("transport: SSE a mensajes del AI SDK", () => {
   test("un stream cortado sin done es un error, no una respuesta", async () => {
     const message = await finalMessage([ev({ event: "token", text: "parcial" })], false)
     expect(viewOfAssistant(message, false).kind).toBe("failed")
+  })
+
+  test("Sistema conserva el código de error incluso sin pasos", async () => {
+    const message = await finalMessage([
+      ev({ event: "error", code: "model_busy", message: "El modelo está ocupado." }),
+    ])
+    expect(lastTrace([message])?.code).toBe("model_busy")
   })
 
   test("sin resultado y sin generación en curso se muestra como detenida", async () => {

@@ -38,7 +38,7 @@ export function TracePanel({ trace, activeId, replaying, onSelect, onReplay }: T
             </p>
           ) : null}
         </div>
-        <Button data-testid="replay-trace" disabled={!trace || replaying} onClick={onReplay} size="sm" type="button" variant="outline">
+        <Button data-testid="replay-trace" disabled={!trace?.steps.length || replaying} onClick={onReplay} size="sm" type="button" variant="outline">
           <PlayIcon data-icon="inline-start" />
           Reproducir
         </Button>

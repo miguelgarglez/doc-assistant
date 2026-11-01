@@ -83,7 +83,7 @@ export function lastQuestion(messages: AskMessage[]): string | null {
   return null
 }
 
-/** The most recent assistant message that produced step events: the "last request" of the system page. `code` is the internal reason of a refusal or clarification, shown there and nowhere else. */
+/** The most recent assistant trace, including a failure before any step was emitted. */
 export type Trace = { question: string | null; steps: StepData[]; total: number | null; code: string | null }
 
 export function lastTrace(messages: AskMessage[]): Trace | null {
@@ -91,13 +91,13 @@ export function lastTrace(messages: AskMessage[]): Trace | null {
     const message = messages[i]
     if (message?.role !== "assistant") continue
     const view = viewOfAssistant(message, false)
-    if (view.steps.length === 0) continue
+    if (view.steps.length === 0 && view.kind !== "failed") continue
     const result = view.kind === "answer" ? view.result : null
     return {
       question: lastQuestion(messages.slice(0, i)),
       steps: view.steps,
       total: result?.timings.total ?? null,
-      code: view.kind === "refusal" ? view.refusal.reason : view.kind === "clarification" ? view.clarification.reason : null,
+      code: view.kind === "refusal" ? view.refusal.reason : view.kind === "clarification" ? view.clarification.reason : view.kind === "failed" ? view.code : null,
     }
   }
   return null
