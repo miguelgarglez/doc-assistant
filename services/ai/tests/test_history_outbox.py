@@ -1,7 +1,7 @@
 import threading
 import time
 
-from doc_assistant.history_outbox import HistoryOutbox
+from doc_assistant.application.history.outbox import HistoryOutbox
 
 
 def test_outbox_retries_failure_without_blocking_submit(caplog):

@@ -6,10 +6,10 @@ from contextlib import closing
 from pathlib import Path
 from typing import Any
 
-from doc_assistant.ask_capacity import AskCapacity
+from doc_assistant.application.ask.capacity import AskCapacity
+from doc_assistant.application.history.outbox import HistoryOutbox
 from doc_assistant.ask_stream import queued_ask_stream
 from doc_assistant.history import HistoryStore
-from doc_assistant.history_outbox import HistoryOutbox
 
 
 def recorded_ask_stream(

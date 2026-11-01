@@ -3,9 +3,9 @@ import json
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from doc_assistant.application.history.outbox import HistoryOutbox
 from doc_assistant.history import HistoryStore
 from doc_assistant.history_api import router
-from doc_assistant.history_outbox import HistoryOutbox
 
 
 def client_for(tmp_path, host="127.0.0.1"):

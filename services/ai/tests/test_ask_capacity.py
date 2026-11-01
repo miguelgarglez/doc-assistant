@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from doc_assistant import api
 from doc_assistant import ask_stream as stream_module
-from doc_assistant.ask_capacity import AskCapacity
+from doc_assistant.application.ask.capacity import AskCapacity
 
 
 def event(frame: str) -> tuple[str, dict]:

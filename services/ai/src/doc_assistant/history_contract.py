@@ -3,7 +3,7 @@
 from collections.abc import Iterator
 from typing import Any, Protocol
 
-from doc_assistant.history_outbox import HistoryWriter
+from doc_assistant.application.history.outbox import HistoryWriter
 
 
 class HistoryRepository(HistoryWriter, Protocol):

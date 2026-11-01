@@ -20,9 +20,10 @@ from fastapi import Path as PathParam
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
+from doc_assistant.application.ask.capacity import AskCapacity
+from doc_assistant.application.ingest.jobs import IngestJobs, Progress, Stage
 from doc_assistant.application.ports.models import AdapterError
 from doc_assistant.ask import ask
-from doc_assistant.ask_capacity import AskCapacity
 from doc_assistant.ask_schemas import AskRequest, AskResponse
 from doc_assistant.ask_stream import STREAM_SCHEMA, queued_ask_stream
 from doc_assistant.chunking import invoice_doc_id, pdf_doc_id
@@ -30,7 +31,6 @@ from doc_assistant.config import load_config
 from doc_assistant.health import ComponentsHealth, check_components
 from doc_assistant.highlight import locate
 from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
-from doc_assistant.ingest_jobs import IngestJobs, Progress, Stage
 from doc_assistant.invoices import InvoiceDB, invoice_image, upload_invoice
 from doc_assistant.pdf_lock import pdf_lock
 from doc_assistant.sources import find_source, list_sources, remove_source
@@ -263,9 +263,9 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         app.state.history_initialization_error = None
         purge_task = None
         if os.environ.get("DOC_ASSISTANT_HISTORY_ENABLED", "1") != "0":
+            from doc_assistant.application.history.outbox import HistoryOutbox
             from doc_assistant.history import HistoryStore
             from doc_assistant.history_contract import HistoryRepository
-            from doc_assistant.history_outbox import HistoryOutbox
 
             store_lock = threading.Lock()
 

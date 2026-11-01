@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from doc_assistant.ask_capacity import AskCapacity
+from doc_assistant.application.ask.capacity import AskCapacity
 from doc_assistant.history import HistoryStore
 from doc_assistant.history_stream import recorded_ask_stream
 
@@ -74,7 +74,7 @@ def test_outbox_failure_does_not_change_done_stream(config_path):
 
 
 def test_enqueue_failure_is_visible_in_outbox_without_changing_done(config_path, monkeypatch):
-    from doc_assistant.history_outbox import HistoryOutbox
+    from doc_assistant.application.history.outbox import HistoryOutbox
     from doc_assistant.history_stream import outbox_ask_stream
 
     class Store:
