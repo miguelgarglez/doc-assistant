@@ -1,6 +1,6 @@
-"""CI local: lint, tipos, tests y drift del contrato OpenAPI -> cliente TS.
+"""CI local: lint, tipos, tests, enlaces y drift del contrato OpenAPI -> cliente TS.
 
-Uso: python scripts/check.py [--only {test,build,gen-client}]
+Uso: python scripts/check.py [--only TAREA]
 """
 
 from __future__ import annotations
@@ -15,6 +15,13 @@ from _common import ROOT
 
 AI = ROOT / "services" / "ai"
 CONTRACT = ["services/ai/openapi.json", "apps/web/src/lib/api/schema.d.ts"]
+TESTS = {
+    "test": ["tests/unit", "tests/integration"],
+    "test-unit": ["tests/unit"],
+    "test-integration": ["tests/integration"],
+    "test-live": ["tests/live"],
+    "test-architecture": ["tests/unit/test_architecture.py"],
+}
 
 
 def tool(name: str) -> str:
@@ -38,14 +45,23 @@ def gen_client() -> None:
     step("gen cliente TS", [tool("pnpm"), "--filter", "web", "gen:api"], ROOT)
 
 
+def service_tests(scope: str = "test") -> None:
+    step(scope, [sys.executable, "-m", "pytest", "-q", *TESTS[scope]], AI)
+
+
 def python_checks() -> None:
     py = [sys.executable, "-m"]
     step("ruff", [*py, "ruff", "check", ".", "../../scripts"], AI)
     step("ruff format", [*py, "ruff", "format", "--check", ".", "../../scripts"], AI)
     step("mypy", [*py, "mypy", "src"], AI)
     step("mypy scripts", [*py, "mypy", "--strict", "."], ROOT / "scripts")
-    step("pytest", [*py, "pytest", "-q"], AI)
+    service_tests()
     step("pytest scripts", [*py, "pytest", "-q", "tests"], ROOT / "scripts")
+    step(
+        "enlaces Markdown",
+        [sys.executable, str(ROOT / "scripts" / "check_links.py")],
+        ROOT,
+    )
 
 
 def web_checks() -> None:
@@ -60,10 +76,10 @@ def build() -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--only", choices=["test", "build", "gen-client"])
+    ap.add_argument("--only", choices=[*TESTS, "build", "gen-client"])
     a = ap.parse_args()
-    if a.only == "test":
-        step("pytest", [sys.executable, "-m", "pytest", "-q"], AI)
+    if a.only in TESTS:
+        service_tests(a.only)
     elif a.only == "build":
         build()
     elif a.only == "gen-client":
@@ -71,7 +87,11 @@ def main() -> int:
     else:
         python_checks()
         gen_client()
-        step("sin drift del contrato", [tool("git"), "diff", "--exit-code", "--", *CONTRACT], ROOT)
+        step(
+            "sin drift del contrato",
+            [tool("git"), "diff", "--exit-code", "--", *CONTRACT],
+            ROOT,
+        )
         web_checks()
         build()
         print("[check] OK", flush=True)

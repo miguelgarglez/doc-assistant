@@ -18,14 +18,25 @@ run = "uv run --project services/ai python scripts/dev.py"
 description = "Igual que start, con next dev"
 run = "uv run --project services/ai python scripts/dev.py --dev"
 [tasks.check]
-description = "Lint, tipos, tests, drift del contrato y build"
+description = "Lint, tipos, tests, enlaces, drift del contrato y build"
 run = "uv run --project services/ai python scripts/check.py"
 [tasks.test]
 run = "uv run --project services/ai python scripts/check.py --only test"
+[tasks.test-unit]
+run = "uv run --project services/ai python scripts/check.py --only test-unit"
+[tasks.test-integration]
+run = "uv run --project services/ai python scripts/check.py --only test-integration"
+[tasks.test-live]
+description = "Batería con modelo real; requiere DOC_ASSISTANT_LIVE_LLM"
+run = "uv run --project services/ai python scripts/check.py --only test-live"
+[tasks.test-architecture]
+run = "uv run --project services/ai python scripts/check.py --only test-architecture"
 [tasks.build]
 run = "uv run --project services/ai python scripts/check.py --only build"
 [tasks.gen-client]
 run = "uv run --project services/ai python scripts/check.py --only gen-client"
+[tasks.check-links]
+run = "uv run --project services/ai python scripts/check_links.py"
 [tasks.package]
 description = "ZIP64 de entrega (código, docs, evidence, modelos, binarios) y prueba en limpio"
 run = "uv run --project services/ai python scripts/package.py"

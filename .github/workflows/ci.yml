@@ -17,7 +17,8 @@ jobs:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v5
       - run: mise run setup -- --no-model
-      - run: mise run check
+      - name: Control local, incluidos límites de imports y enlaces
+        run: mise run check
       - run: pnpm --filter web exec playwright install --with-deps chromium
       - run: CI=1 pnpm --filter web e2e
       - if: failure()
