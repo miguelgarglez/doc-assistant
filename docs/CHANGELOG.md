@@ -6,6 +6,7 @@
 - Trazas optativas en memoria con candidatos, verificación, huellas de configuración, selección de facturas y estado final del transporte. Un stream sin resultado termina con `internal_error`.
 - Almacén SQLite aislado con paginación estable, migraciones concurrentes, WAL y permisos 0600 para bases nuevas. Feedback con copia de traza, revisión local y exportación de borradores JSONL.
 - Historial y feedback no están conectados a la API ni a la interfaz. No se guarda ninguna consulta automáticamente. Privacidad, retención, autorización y comunicación de errores de escritura siguen pendientes.
+- Validación local desde lockfiles: check completo, tres pasadas Playwright con axe y humo HTTP con modelos reales correctos. Detalles y límites en las notas de integración.
 - Mediciones sintéticas y límites en [modelos y hardware](modelos-hardware.md). Alcance y verificación de la integración en [notas v0.16.0](evolution-notes/v0.16.0.md).
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.

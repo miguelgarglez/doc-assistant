@@ -9,7 +9,7 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 
 ## Resumen v0.16.0
 
-- Mejoran la correlación de consultas y el cierre de streams incompletos; existen trazas y almacenamiento interno de historial y feedback.
+- Mejoran la correlación de consultas y el cierre de streams incompletos; existen trazas y almacenamiento interno de historial y feedback. Check completo, tres pasadas con axe y humo HTTP sintético con modelos reales correctos.
 - Pendientes: conectar historial y feedback con autorización, privacidad, retención e interfaz; medir su coste completo, evaluación representativa y gold aprobado.
 - Recuento: 31 filas, 18 cumplidas, 10 parciales y 3 no. Las piezas internas no completan nuevos requisitos de usuario.
 
