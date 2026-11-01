@@ -30,6 +30,8 @@ test("revisa con redacciones, confirma y puede descartar desde teclado", async (
   await page.getByRole("button", { name: "Marcar revisado" }).click()
   await expect.poll(() => status).toBe("revisado")
   expect(payload).toMatchObject({ redacted_comment: "Falta un dato", redacted_context: "Importe omitido", confirmed_no_sensitive_data: true })
+  await expect(page.getByText("No hay avisos en esta categoría.")).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Detalle del aviso" })).toHaveCount(0)
   await page.getByRole("tab", { name: /Revisados/ }).click()
   await expect(page.getByRole("heading", { name: "Detalle del aviso" })).toBeVisible()
   await page.locator("body").click({ position: { x: 900, y: 20 } })

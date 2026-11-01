@@ -64,7 +64,13 @@ export default function ReviewPage() {
   }, [])
   useEffect(() => { void Promise.resolve().then(() => { const id = new URLSearchParams(window.location.search).get("id"); if (id && filter === "nuevo") setSelectedId(id); void load(filter) }) }, [filter, load])
   useEffect(() => {
-    if (!selectedId) return
+    if (!selectedId) {
+      let active = true
+      void Promise.resolve().then(() => {
+        if (active) { setDetail(null); setDetailLoading(false); setDetailError(false) }
+      })
+      return () => { active = false }
+    }
     const controller = new AbortController()
     void Promise.resolve().then(() => { setDetailLoading(true); setDetail(null); setDetailError(false); setOriginal(null); setOriginalMissing(false) })
     void (async () => {
