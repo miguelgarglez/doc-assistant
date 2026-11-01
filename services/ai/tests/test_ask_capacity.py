@@ -101,6 +101,9 @@ def test_waiting_steps_survive_completed_pipeline(config_path):
     list(stream)
     assert trace["queue_steps"] == [first, second]
     assert trace["status"] == "completed"
+    assert trace["started_at"] <= trace["finished_at"]
+    assert trace["elapsed_s"] >= trace["pipeline_elapsed_s"]
+    assert trace["elapsed_s"] >= trace["queue_wait_s"]
 
 
 def test_non_streaming_endpoint_returns_recoverable_overflow(config_path):

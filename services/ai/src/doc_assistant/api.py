@@ -458,6 +458,7 @@ def queued_ask_stream(
     trace: dict[str, Any] | None = None,
 ) -> Iterator[str]:
     started = time.monotonic()
+    started_at = datetime.now(UTC).isoformat()
     request_id = request_id or str(uuid.uuid4())
     if trace is not None:
         trace.update(
@@ -467,7 +468,7 @@ def queued_ask_stream(
                 "question": question,
                 "steps": [],
                 "queue_steps": [],
-                "started_at": datetime.now(UTC).isoformat(),
+                "started_at": started_at,
                 "status": "interrupted",
             }
         )
@@ -500,6 +501,7 @@ def queued_ask_stream(
         )
         return
     acquired = False
+    pipeline_started = False
     try:
         acquired = capacity.running.acquire(blocking=False)
         if not acquired:
@@ -528,10 +530,17 @@ def queued_ask_stream(
             yield from ask_stream_events(config_path, question, request_id)
         else:
             trace["queue_wait_s"] = round(time.monotonic() - started, 4)
+            pipeline_started = True
             yield from ask_stream_events(config_path, question, request_id, trace=trace)
     finally:
-        if trace is not None and "finished_at" not in trace:
-            finish_admission("interrupted")
+        if trace is not None:
+            if "finished_at" not in trace:
+                finish_admission("interrupted")
+            elif pipeline_started:
+                trace["pipeline_elapsed_s"] = trace["elapsed_s"]
+                trace["started_at"] = started_at
+                trace["finished_at"] = datetime.now(UTC).isoformat()
+                trace["elapsed_s"] = round(time.monotonic() - started, 4)
         if acquired:
             capacity.running.release()
         capacity.admitted.release()
