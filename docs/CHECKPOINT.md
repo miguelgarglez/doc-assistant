@@ -167,3 +167,6 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 ## 01-Nov 01:51 CET · Cierre documental y auditoría preliminar
 - Auditoría en clon limpio del commit f4cd57c: TOTAL 0 en _agents/ui7/audit-pre-v0.14.0.txt; clon movido a _trash/audit-clone-pre-v0.14.0. Humo final del servicio con fuentes locales: ficha general de cinco campos, precio final específico y tabla de cinco filas, con valores contrastados contra las filas almacenadas y todas las citas correctas; solo salida privada en _agents/ui7/release-smoke.json. El informe del tag final se guarda en _agents/ui7/audit-v0.14.0.txt. No se cambia la acreditación pendiente del gold.
+
+## 01-Nov 01:53 CET · Auditoría del tag y parada por PID
+- Tag anotado v0.14.0 auditado en clon limpio sobre bb87d39: TOTAL 0 en _agents/ui7/audit-v0.14.0.txt; clon en _trash/audit-clone-v0.14.0. Este cierre documental se incorpora al último commit y la auditoría se repite sobre el tag definitivo. Parados por SIGTERM únicamente los PID propios 65810, 50708, 2292, 2312, 2322 y 2333; puertos 3170/8170/8171–8174 libres. Exportación de la versión anterior movida a _trash/. Main conserva d4eca6c y v0.13.3 conserva b962ccc. Sin push ni instalaciones en esta continuación.
