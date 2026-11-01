@@ -99,6 +99,13 @@ class HistoryStore:
             ).fetchone()
         return json.loads(row[0]) if row else None
 
+    def purge_before(self, cutoff: str) -> tuple[int, int]:
+        """Delete requests and feedback older than an ISO UTC cutoff atomically."""
+        with self._connect() as db:
+            requests = db.execute("DELETE FROM requests WHERE created_at < ?", (cutoff,)).rowcount
+            feedback = db.execute("DELETE FROM feedback WHERE created_at < ?", (cutoff,)).rowcount
+        return requests, feedback
+
     def list_page(
         self,
         conversation_id: str,

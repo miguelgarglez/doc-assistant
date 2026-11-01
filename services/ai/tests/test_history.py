@@ -9,6 +9,21 @@ import pytest
 from doc_assistant.history import HistoryStore
 
 
+def test_purge_removes_expired_requests_and_feedback_independently(tmp_path):
+    store = HistoryStore(tmp_path / "history.db")
+    store.record("old", "c", "2026-01-01T00:00:00Z", {"question": "old"})
+    store.record("new", "c", "2026-02-01T00:00:00Z", {"question": "new"})
+    assert store.add_feedback("old-f", "c", "new", "2026-01-01T00:00:00Z", "otro", None)
+    assert store.add_feedback("new-f", "c", "old", "2026-02-01T00:00:00Z", "otro", None)
+
+    assert store.purge_before("2026-02-01T00:00:00Z") == (1, 1)
+    assert store.get("c", "old") is None
+    assert store.get("c", "new") == {"question": "new"}
+    assert store.get_feedback("c", "old-f") is None
+    assert store.get_feedback("c", "new-f") is not None
+    assert store.purge_before("2026-02-01T00:00:00Z") == (0, 0)
+
+
 def test_history_is_separate_and_feedback_copies_server_trace(tmp_path):
     path = tmp_path / "history.db"
     store = HistoryStore(path)
