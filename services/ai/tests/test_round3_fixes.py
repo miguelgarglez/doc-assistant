@@ -44,7 +44,7 @@ def test_invoice_header_chunk_has_issuer_and_taxid():
 def test_ingest_survives_bad_files(tmp_path, config_path, synthetic_pdf):
     from doubles import FakeEmbedder
 
-    from doc_assistant.ingest import ingest_pdfs
+    from doc_assistant.bootstrap import ingest_pdfs
 
     (tmp_path / "duplicate.pdf").write_bytes(synthetic_pdf.read_bytes())
     (tmp_path / "roto.pdf").write_bytes(b"%PDF-1.4 garbage")

@@ -7,8 +7,8 @@ from threading import Event, Lock
 import pypdfium2
 from doubles import FakeEmbedder
 
+from doc_assistant.bootstrap import ingest_pdfs
 from doc_assistant.infra.pdf.highlight import locate
-from doc_assistant.ingest import ingest_pdfs
 
 
 def test_ingest_and_highlight_do_not_enter_pdfium_together(

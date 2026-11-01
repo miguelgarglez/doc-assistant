@@ -11,8 +11,8 @@ from fastapi.testclient import TestClient
 from markup import make_pdf
 
 from doc_assistant.api import create_app
+from doc_assistant.bootstrap import ingest_pdfs, save_and_ingest_pdf
 from doc_assistant.infra.pdf.highlight import locate, locate_on_page
-from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
 
 
 def tmp_dir_of(pdf: Path) -> Path:

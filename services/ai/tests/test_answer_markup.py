@@ -11,10 +11,9 @@ from doubles import FakeEmbedder
 from markup import SECTIONS, assert_segments_tile, assert_valid_markdown, make_pdf
 
 from doc_assistant.application.answers.meta import answer_meta, classify
-from doc_assistant.bootstrap import source_service
+from doc_assistant.bootstrap import ingest_pdfs, save_and_ingest_pdf, source_service
 from doc_assistant.config import load_config
 from doc_assistant.domain.answers.answer_markup import md_escape, section_label, split_heading
-from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
 
 
 @pytest.mark.parametrize(

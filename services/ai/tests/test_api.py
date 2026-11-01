@@ -5,10 +5,10 @@ from doubles import FakeEmbedder
 from fastapi.testclient import TestClient
 
 from doc_assistant.api import create_app
+from doc_assistant.bootstrap import ingest_pdfs
 from doc_assistant.config import load_config
 from doc_assistant.domain.documents.ids import pdf_doc_id
 from doc_assistant.infra.storage.chunks import ChunkStore
-from doc_assistant.ingest import ingest_pdfs
 
 
 def test_upload_error_reasons_and_transient_models(config_path, tmp_path, monkeypatch):

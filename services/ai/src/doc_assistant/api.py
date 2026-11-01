@@ -22,13 +22,14 @@ from doc_assistant.ask_schemas import AskRequest, AskResponse
 from doc_assistant.ask_stream import STREAM_SCHEMA, queued_ask_stream
 from doc_assistant.bootstrap import (
     component_health,
+    ingest_pdfs,
     invoice_image,
     invoice_service,
     lifespan_for,
+    save_and_ingest_pdf,
     source_service,
     upload_invoice,
 )
-from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
 
 DEFAULT_CONFIG = Path(__file__).resolve().parents[4] / "config/config.yaml"
 ASK_QUEUE_TIMEOUT_S = 60.0

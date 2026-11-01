@@ -6,10 +6,10 @@ from pathlib import Path
 
 from doubles import FakeEmbedder
 
+from doc_assistant.bootstrap import ingest_pdfs
 from doc_assistant.config import load_config
 from doc_assistant.infra.pdf.extract import chunk_pdf
 from doc_assistant.infra.storage.chunks import ChunkStore
-from doc_assistant.ingest import ingest_pdfs
 
 
 def test_upsert_and_search(
@@ -26,6 +26,18 @@ def test_upsert_and_search(
     assert bm
     vec = store.vector_search(fake_embedder.embed(["24 V"])[0], k=5)
     assert vec
+
+
+def test_empty_ingest_initializes_index(
+    tmp_path: Path, fake_embedder: FakeEmbedder, config_path: Path
+) -> None:
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    db = load_config(config_path).db
+    assert not db.exists()
+    result = ingest_pdfs(config_path, empty, embedder=fake_embedder)
+    assert result["n_chunks"] == 0
+    assert db.exists()
 
 
 def test_ingest_idempotent(

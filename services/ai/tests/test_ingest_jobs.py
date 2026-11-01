@@ -169,7 +169,7 @@ def test_document_stages_are_reported_while_it_is_processed(
 def test_ingest_batches_embeddings_and_reports_progress(config_path: Path, tmp_path: Path) -> None:
     from reportlab.pdfgen.canvas import Canvas
 
-    from doc_assistant.ingest import ingest_pdfs
+    from doc_assistant.bootstrap import ingest_pdfs
 
     pdf = tmp_path / "many.pdf"
     canvas = Canvas(str(pdf))

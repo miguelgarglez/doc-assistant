@@ -3,6 +3,7 @@ import logging
 import os
 import secrets
 import threading
+import time
 from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from datetime import UTC, datetime, timedelta
@@ -14,6 +15,7 @@ from fastapi import FastAPI
 from doc_assistant.application.ask.capacity import AskCapacity
 from doc_assistant.application.health import check_components
 from doc_assistant.application.ingest.jobs import IngestJobs
+from doc_assistant.application.ingest.service import IngestService
 from doc_assistant.application.invoices.service import InvoiceService
 from doc_assistant.application.ports.health import ProbeResult
 from doc_assistant.application.ports.invoice_writer import InvoiceWriter
@@ -21,6 +23,8 @@ from doc_assistant.application.ports.models import LLM, Embedder, OcrPort, Reran
 from doc_assistant.application.sources import SourceService
 from doc_assistant.config import AppConfig, load_config
 from doc_assistant.infra.health.probes import probe_index, probe_llama
+from doc_assistant.infra.ingest.files import DataDirectoryPdfFiles, FileIngestReader
+from doc_assistant.infra.ingest.sqlite import SqliteIngestWriterFactory
 from doc_assistant.infra.invoices.catalog import SqliteInvoiceCatalog
 from doc_assistant.infra.invoices.writer import SqliteInvoiceWriter
 from doc_assistant.infra.models.http import HttpEmbedder, HttpLLM, HttpReranker, LlamaOCR, OllamaOCR
@@ -61,6 +65,54 @@ def component_health(cfg: AppConfig) -> list[ProbeResult]:
 
 def source_service(cfg: AppConfig) -> SourceService:
     return SourceService(SqliteSourceRepository(cfg.db, cfg.data_dir, cfg.embeddings.dim or 8))
+
+
+def ingest_service(cfg: AppConfig) -> IngestService:
+    return IngestService(
+        FileIngestReader(),
+        SqliteIngestWriterFactory(cfg.db),
+        DataDirectoryPdfFiles(cfg.data_dir),
+        cfg.embeddings.dim or 8,
+    )
+
+
+def ingest_pdfs(
+    config_path: str | Path,
+    pdf_source: str | Path,
+    *,
+    invoice_path: str | Path | list[str | Path] | tuple[str | Path, ...] | None = None,
+    image_path: str | Path | None = None,
+    embedder: Embedder | None = None,
+    progress: Callable[..., None] | None = None,
+) -> dict[str, Any]:
+    started = time.perf_counter()
+    cfg = load_config(config_path)
+    if embedder is None:
+        embedder, _, _ = build_adapters(cfg)
+    _ = image_path
+    return ingest_service(cfg).ingest(
+        pdf_source,
+        started=started,
+        invoice_path=invoice_path,
+        embedder=embedder,
+        progress=progress,
+    )
+
+
+def save_and_ingest_pdf(
+    config_path: str | Path,
+    data: bytes,
+    filename: str,
+    *,
+    embedder: Embedder | None = None,
+    progress: Callable[..., None] | None = None,
+) -> dict[str, Any]:
+    cfg = load_config(config_path)
+    return ingest_service(cfg).save_and_ingest(
+        data,
+        filename,
+        ingest=lambda path: ingest_pdfs(config_path, path, embedder=embedder, progress=progress),
+    )
 
 
 def invoice_service(cfg: AppConfig) -> InvoiceService:

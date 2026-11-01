@@ -24,11 +24,11 @@ from doc_assistant.api import create_app
 from doc_assistant.application.answers.meta import classify
 from doc_assistant.application.ports.models import AdapterBusy, AdapterError
 from doc_assistant.ask_stream import ask_stream_events
+from doc_assistant.bootstrap import save_and_ingest_pdf
 from doc_assistant.config import load_config
 from doc_assistant.domain.answers.partial_json import FieldStreamer
 from doc_assistant.infra.models.http import HttpLLM
 from doc_assistant.infra.storage.chunks import ChunkStore
-from doc_assistant.ingest import save_and_ingest_pdf
 
 ROOT = Path(__file__).resolve().parents[3]
 
