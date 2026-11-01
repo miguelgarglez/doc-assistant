@@ -249,20 +249,22 @@ def ask_events(
         return
 
     dim = getattr(embedder, "dim", None) or cfg.embeddings.dim or 8
-    store = ChunkStore(cfg.db, dim=dim)
-
     t0 = time.perf_counter()
     yield _step("retrieve", "running", "Buscando fragmentos relevantes")
     q_emb = embedder.embed([question])[0]
     latencies["embed"] = round(time.perf_counter() - t0, 4)
 
     t1 = time.perf_counter()
-    vec = store.vector_search(q_emb, k=10)
-    bm = store.bm25(question, k=10)
-    cand_ids = _union_candidates(vec, bm)
+    store = ChunkStore(cfg.db, dim=dim)
+    try:
+        vec = store.vector_search(q_emb, k=10)
+        bm = store.bm25(question, k=10)
+        cand_ids = _union_candidates(vec, bm)
+        cand_chunks = store.get_many(cand_ids)
+    finally:
+        store.db.close()
     latencies["search"] = round(time.perf_counter() - t1, 4)
 
-    cand_chunks = store.get_many(cand_ids)
     ordered = [cand_chunks[i] for i in cand_ids if i in cand_chunks]
     docs = [c["text"] for c in ordered]
     yield _step(
@@ -381,7 +383,7 @@ def ask_events(
 
     enriched = []
     for cit in citations:
-        meta = store.get(cit["chunk_id"]) or {}
+        meta = cand_chunks.get(cit["chunk_id"]) or {}
         enriched.append(
             {
                 "chunk_id": cit["chunk_id"],

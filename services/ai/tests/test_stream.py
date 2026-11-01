@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 import socket
 import subprocess
 import sys
@@ -16,7 +17,7 @@ from fastapi.testclient import TestClient
 
 from doc_assistant import ask as ask_module
 from doc_assistant.adapters import AdapterError, FakeEmbedder, FakeLLM, FakeReranker, HttpLLM
-from doc_assistant.api import create_app
+from doc_assistant.api import ask_stream_events, create_app
 from doc_assistant.config import load_config
 from doc_assistant.ingest import save_and_ingest_pdf
 from doc_assistant.meta import classify
@@ -427,3 +428,25 @@ def test_stream_answer_without_blocks_sends_no_blocks_event(
     evs = stream(config_path, "¿cuántas facturas hay?")
     assert "blocks" not in [k for k, _ in evs]
     assert evs[-1][1]["blocks"] == [] and evs[-1][1]["follow_ups"] == []
+
+
+def test_stream_survives_worker_thread_changes(
+    config_path: Path, synthetic_pdf: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seed(config_path, synthetic_pdf)
+    chunk = chunk_for(config_path, "1")
+    use_fakes(monkeypatch, FakeLLM({
+        "answerable": True, "answer": "El robot opera a 24 V.",
+        "citations": [{"chunk_id": chunk["chunk_id"], "quote": "24 V"}],
+    }))
+    iterator = ask_stream_events(config_path, "¿A qué voltaje opera el robot?")
+    frames = []
+    with ThreadPoolExecutor(max_workers=1) as a, ThreadPoolExecutor(max_workers=1) as b:
+        for i in range(100):
+            frame = (a if i % 2 == 0 else b).submit(next, iterator, None).result()
+            if frame is None:
+                break
+            frames.append(frame)
+    evs = events("".join(frames))
+    assert evs[-1][0] == "done", evs[-1]
+    assert evs[-1][1]["ok"] is True
