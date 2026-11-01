@@ -142,3 +142,6 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 ## 01-Nov 01:37 CET · Verificación inicial y comparación de números
 - `mise run check` completo correcto con 309 tests del servicio y 26 de scripts, eslint, tipos, build y contrato sin deriva. La revisión independiente adicional detectó columna número duplicada en comparativas de números; eliminada en la vista tabular y añadida regresión sintética. No altera valores ni extracción.
+
+## 01-Nov 01:39 CET · Corrección de expectativa del lector SSE
+- La primera suite completa dio 179 pasadas, 1 fallo y 4 omitidas. El fallo era una expectativa del test de tramas crudas: se había añadido blocks_version al sobre SSE en vez de a su JSON. Corregida solo la expectativa; la trama cruda no lleva ese campo. Se repetirán tres pasadas completas tras esta corrección.

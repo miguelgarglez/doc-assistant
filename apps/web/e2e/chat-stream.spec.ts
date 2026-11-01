@@ -210,7 +210,7 @@ test.describe("lector SSE", () => {
     const out = await frames(['event: token\r\ndata: {"te', 'xt":"hola"}\r\n\r\nevent: done\ndata: {"ok":true}\n\n'])
     expect(out).toEqual([
       { event: "token", data: '{"text":"hola"}' },
-      { event: "done", blocks_version: 1, data: '{"ok":true}' },
+      { event: "done", data: '{"ok":true}' },
     ])
   })
 
