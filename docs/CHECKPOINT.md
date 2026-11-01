@@ -463,4 +463,4 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 ## 01-Nov 11:05 CET · Identidad de la traza guardada
 - El almacén rechaza una traza cuyo `request_id` presente difiere del identificador de la petición. La comprobación impide guardar y asociar feedback a esa combinación; las trazas sin identificador siguen admitidas por ahora.
-- Diez pruebas de historial, Ruff y mypy pasan. El almacén continúa aislado de la API y no autentica usuarios.
+- Diez pruebas de historial, Ruff y mypy pasan. La suite del servicio pasa con 349 pruebas y 35 live omitidas. El almacén continúa aislado de la API y no autentica usuarios.
