@@ -53,7 +53,7 @@ test.describe("transport: SSE a mensajes del AI SDK", () => {
       steps("verify", "done"),
       ev({ event: "citations", citations: [citation] }),
       ev({
-        event: "done", blocks_version: 1,
+        event: "done", request_id: "test-request", blocks_version: 1,
         ok: true,
         answer: "El alcance es 4 m.",
         citations: [citation],
@@ -103,7 +103,7 @@ test.describe("transport: SSE a mensajes del AI SDK", () => {
         suggestions: [{ doc: "sensor-demo", doc_id: "pdf-1", section: "2", heading: "Especificaciones", pages: [1] }],
       }),
       ev({
-        event: "done", blocks_version: 1,
+        event: "done", request_id: "test-request", blocks_version: 1,
         ok: false,
         answer: "No dispongo de esa información en los documentos",
         citations: [],
@@ -126,7 +126,7 @@ test.describe("transport: SSE a mensajes del AI SDK", () => {
   test("un rechazo sin texto previo no necesita retirar nada", async () => {
     const message = await finalMessage([
       ev({ event: "refusal", answer: "No dispongo de esa información", reason: "llm_unanswerable", retract: false, suggestions: [] }),
-      ev({ event: "done", blocks_version: 1, ok: false, answer: "No dispongo de esa información", citations: [], reason: "llm_unanswerable", suggestions: [], inline: "none", clarification: null, timings: {} }),
+      ev({ event: "done", request_id: "test-request", blocks_version: 1, ok: false, answer: "No dispongo de esa información", citations: [], reason: "llm_unanswerable", suggestions: [], inline: "none", clarification: null, timings: {} }),
     ])
     expect(viewOfAssistant(message, false).kind).toBe("refusal")
   })
@@ -141,7 +141,7 @@ test.describe("transport: SSE a mensajes del AI SDK", () => {
     const message = await finalMessage([
       steps("retrieve", "done"),
       ev({ event: "clarification", reason: "invoice:aclaracion", clarification }),
-      ev({ event: "done", blocks_version: 1, ok: false, answer: "¿De qué factura?", citations: [], reason: "invoice:aclaracion", suggestions: [], inline: "none", clarification, timings: {} }),
+      ev({ event: "done", request_id: "test-request", blocks_version: 1, ok: false, answer: "¿De qué factura?", citations: [], reason: "invoice:aclaracion", suggestions: [], inline: "none", clarification, timings: {} }),
     ])
     const view = viewOfAssistant(message, false)
     expect(view.kind).toBe("clarification")
@@ -155,7 +155,7 @@ test.describe("transport: SSE a mensajes del AI SDK", () => {
   test("un done con aclaración, sin evento previo (servicio sin streaming), también es aclaración", async () => {
     const clarification = { prompt: "¿De qué factura?", detail: null, total: 0, candidates: [] }
     const message = await finalMessage([
-      ev({ event: "done", blocks_version: 1, ok: false, answer: "¿De qué factura?", citations: [], reason: "invoice:aclaracion", suggestions: [], inline: "none", clarification, timings: {} }),
+      ev({ event: "done", request_id: "test-request", blocks_version: 1, ok: false, answer: "¿De qué factura?", citations: [], reason: "invoice:aclaracion", suggestions: [], inline: "none", clarification, timings: {} }),
     ])
     expect(viewOfAssistant(message, false).kind).toBe("clarification")
   })
@@ -163,7 +163,7 @@ test.describe("transport: SSE a mensajes del AI SDK", () => {
   test("un rechazo de factura sin candidatas sigue siendo rechazo", async () => {
     const message = await finalMessage([
       ev({ event: "refusal", answer: "No hay ninguna factura con número X-1.", reason: "invoice:factura_no_encontrada", retract: false, suggestions: [] }),
-      ev({ event: "done", blocks_version: 1, ok: false, answer: "No hay ninguna factura con número X-1.", citations: [], reason: "invoice:factura_no_encontrada", suggestions: [], inline: "none", clarification: null, timings: {} }),
+      ev({ event: "done", request_id: "test-request", blocks_version: 1, ok: false, answer: "No hay ninguna factura con número X-1.", citations: [], reason: "invoice:factura_no_encontrada", suggestions: [], inline: "none", clarification: null, timings: {} }),
     ])
     expect(viewOfAssistant(message, false).kind).toBe("refusal")
   })
@@ -217,7 +217,7 @@ test.describe("lector SSE", () => {
     const out = await frames(['event: token\r\ndata: {"te', 'xt":"hola"}\r\n\r\nevent: done\ndata: {"ok":true}\n\n'])
     expect(out).toEqual([
       { event: "token", data: '{"text":"hola"}' },
-      { event: "done", data: '{"ok":true}' },
+      { event: "done", request_id: "test-request", data: '{"ok":true}' },
     ])
   })
 

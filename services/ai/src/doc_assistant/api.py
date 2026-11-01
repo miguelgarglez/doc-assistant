@@ -3,8 +3,10 @@
 import copy
 import json
 import time
-from collections.abc import AsyncIterator, Callable, Iterator
-from contextlib import asynccontextmanager
+import uuid
+from collections.abc import AsyncIterator, Callable, Generator, Iterator
+from contextlib import asynccontextmanager, closing
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -252,6 +254,7 @@ class ClarificationEvent(BaseModel):
 class DoneEvent(AskResponse):
     event: Literal["done"] = "done"
     timings: dict[str, float]
+    request_id: str
 
 
 class ErrorEvent(BaseModel):
@@ -392,50 +395,125 @@ def sse(event: BaseModel) -> str:
     return f"event: {name}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
-def ask_stream_events(config_path: Path, question: str) -> Iterator[str]:
+def ask_stream_events(
+    config_path: Path,
+    question: str,
+    request_id: str | None = None,
+    *,
+    trace: dict[str, Any] | None = None,
+) -> Iterator[str]:
     """Translate pipeline events into the SSE contract (see docs/streaming.md)."""
-    emitted = False
+    request_id = request_id or str(uuid.uuid4())
+    if trace is not None:
+        trace["request_id"] = request_id
+        trace["transport_status"] = "interrupted"
     try:
-        for kind, data in ask_events(config_path, question, stream=True):
-            if kind == "step":
-                yield sse(StepEvent.model_validate(data))
-            elif kind == "token":
-                emitted = True
-                yield sse(TokenEvent(text=data["text"]))
-            else:
-                response = AskResponse.model_validate(data)
-                if response.ok:
-                    yield sse(CitationsEvent(citations=response.citations))
-                    if response.blocks or response.follow_ups:
-                        yield sse(
-                            BlocksEvent(blocks=response.blocks, follow_ups=response.follow_ups)
-                        )
-                elif response.clarification:
-                    yield sse(
-                        ClarificationEvent(
-                            reason=response.reason, clarification=response.clarification
-                        )
-                    )
-                else:
-                    yield sse(
-                        RefusalEvent(
-                            answer=response.answer,
-                            reason=response.reason,
-                            retract=emitted,
-                            suggestions=response.suggestions,
-                        )
-                    )
-                timings = dict(data.get("latencies") or {})
-                timings["total"] = round(sum(timings.values()), 4)
-                yield sse(DoneEvent(**response.model_dump(), timings=timings))
+        with closing(ask_events(config_path, question, stream=True, trace=trace)) as events:
+            yield from _translate_ask_events(events, request_id, trace=trace)
+        if trace is not None:
+            trace["transport_status"] = "completed"
     except AdapterError as exc:
+        if trace is not None:
+            trace["transport_status"] = "error"
+            trace["transport_error_code"] = exc.code
         yield sse(ErrorEvent(code=exc.code, message=exc.public_message))
     except Exception:  # noqa: BLE001 - the stream must always end with done or error
+        if trace is not None:
+            trace["transport_status"] = "error"
+            trace["transport_error_code"] = "internal_error"
         yield sse(ErrorEvent(code="internal_error", message="Error interno al responder"))
 
 
-def queued_ask_stream(capacity: AskCapacity, config_path: Path, question: str) -> Iterator[str]:
+def _translate_ask_events(
+    events: Iterator[tuple[str, dict[str, Any]]],
+    request_id: str,
+    *,
+    trace: dict[str, Any] | None = None,
+) -> Iterator[str]:
+    emitted = False
+    completed = False
+    for kind, data in events:
+        if kind == "step":
+            yield sse(StepEvent.model_validate(data))
+        elif kind == "token":
+            emitted = True
+            yield sse(TokenEvent(text=data["text"]))
+        else:
+            response = AskResponse.model_validate(data)
+            if response.ok:
+                yield sse(CitationsEvent(citations=response.citations))
+                if response.blocks or response.follow_ups:
+                    yield sse(BlocksEvent(blocks=response.blocks, follow_ups=response.follow_ups))
+            elif response.clarification:
+                yield sse(
+                    ClarificationEvent(reason=response.reason, clarification=response.clarification)
+                )
+            else:
+                yield sse(
+                    RefusalEvent(
+                        answer=response.answer,
+                        reason=response.reason,
+                        retract=emitted,
+                        suggestions=response.suggestions,
+                    )
+                )
+            timings = dict(data.get("latencies") or {})
+            timings["total"] = round(sum(timings.values()), 4)
+            frame = sse(DoneEvent(**response.model_dump(), timings=timings, request_id=request_id))
+            if trace is not None:
+                trace["transport_status"] = "completed"
+            completed = True
+            yield frame
+    if not completed:
+        raise RuntimeError("pipeline ended without a result")
+
+
+def queued_ask_stream(
+    capacity: AskCapacity,
+    config_path: Path,
+    question: str,
+    request_id: str | None = None,
+    *,
+    trace: dict[str, Any] | None = None,
+) -> Generator[str, None, None]:
+    started = time.monotonic()
+    started_at = datetime.now(UTC).isoformat()
+    request_id = request_id or str(uuid.uuid4())
+    if trace is not None:
+        trace.update(
+            {
+                "trace_schema_version": 1,
+                "request_id": request_id,
+                "question": question,
+                "steps": [],
+                "queue_steps": [],
+                "started_at": started_at,
+                "status": "interrupted",
+            }
+        )
+
+    def finish_admission(status: str, code: str | None = None) -> None:
+        if trace is not None:
+            trace.update(
+                {
+                    "status": status,
+                    "finished_at": datetime.now(UTC).isoformat(),
+                    "elapsed_s": round(time.monotonic() - started, 4),
+                }
+            )
+            trace["kind"] = "error"
+            trace["transport_status"] = status
+            if code is not None:
+                trace["error_code"] = code
+                trace["transport_error_code"] = code
+
+    def queue_step(step: StepEvent) -> str:
+        if trace is not None:
+            trace["queue_steps"].append(step.model_dump(mode="json", exclude={"event"}))
+        return sse(step)
+
     if not capacity.admitted.acquire(blocking=False):
+        finish_admission("error", "queue_full")
         yield sse(
             ErrorEvent(
                 code="queue_full",
@@ -444,15 +522,16 @@ def queued_ask_stream(capacity: AskCapacity, config_path: Path, question: str) -
         )
         return
     acquired = False
+    pipeline_started = False
     try:
         acquired = capacity.running.acquire(blocking=False)
         if not acquired:
-            started = time.monotonic()
-            yield sse(
+            yield queue_step(
                 StepEvent(id="route", status="running", label="Esperando turno para responder")
             )
             acquired = capacity.running.acquire(timeout=ASK_QUEUE_TIMEOUT_S)
             if not acquired:
+                finish_admission("error", "queue_timeout")
                 yield sse(
                     ErrorEvent(
                         code="queue_timeout",
@@ -460,7 +539,7 @@ def queued_ask_stream(capacity: AskCapacity, config_path: Path, question: str) -
                     )
                 )
                 return
-            yield sse(
+            yield queue_step(
                 StepEvent(
                     id="route",
                     status="done",
@@ -468,8 +547,21 @@ def queued_ask_stream(capacity: AskCapacity, config_path: Path, question: str) -
                     elapsed_s=round(time.monotonic() - started, 4),
                 )
             )
-        yield from ask_stream_events(config_path, question)
+        if trace is None:
+            yield from ask_stream_events(config_path, question, request_id)
+        else:
+            trace["queue_wait_s"] = round(time.monotonic() - started, 4)
+            pipeline_started = True
+            yield from ask_stream_events(config_path, question, request_id, trace=trace)
     finally:
+        if trace is not None:
+            if "finished_at" not in trace:
+                finish_admission("interrupted")
+            elif pipeline_started:
+                trace["pipeline_elapsed_s"] = trace["elapsed_s"]
+                trace["started_at"] = started_at
+                trace["finished_at"] = datetime.now(UTC).isoformat()
+                trace["elapsed_s"] = round(time.monotonic() - started, 4)
         if acquired:
             capacity.running.release()
         capacity.admitted.release()
@@ -563,6 +655,9 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         return JSONResponse(
             status_code=502,
             content=ErrorBody(code=exc.code, message=exc.public_message).model_dump(),
+            headers={"x-request-id": request.state.request_id}
+            if hasattr(request.state, "request_id")
+            else None,
         )
 
     @app.get("/health")
@@ -665,21 +760,28 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         response_model=AskResponse,
         responses={502: {"model": ErrorBody}, 503: {"model": ErrorBody}},
     )
-    def query(payload: AskRequest, request: Request) -> Any:
+    def query(payload: AskRequest, request: Request, response: Response) -> Any:
+        request_id = str(uuid.uuid4())
+        response.headers["x-request-id"] = request_id
+        request.state.request_id = request_id
         capacity = request.app.state.ask_capacity
         if not capacity.admitted.acquire(blocking=False):
-            return upload_error(
+            error = upload_error(
                 "queue_full",
                 "Hay demasiadas consultas pendientes. Inténtalo de nuevo en unos segundos.",
                 503,
             )
+            error.headers["x-request-id"] = request_id
+            return error
         acquired = False
         try:
             acquired = capacity.running.acquire(timeout=ASK_QUEUE_TIMEOUT_S)
             if not acquired:
-                return upload_error(
+                error = upload_error(
                     "queue_timeout", "La espera ha sido demasiado larga. Inténtalo de nuevo.", 503
                 )
+                error.headers["x-request-id"] = request_id
+                return error
             return ask(config_path, payload.question)
         finally:
             if acquired:
@@ -700,10 +802,17 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         },
     )
     def query_stream(payload: AskRequest, request: Request) -> StreamingResponse:
+        request_id = str(uuid.uuid4())
         return StreamingResponse(
-            queued_ask_stream(request.app.state.ask_capacity, config_path, payload.question),
+            queued_ask_stream(
+                request.app.state.ask_capacity, config_path, payload.question, request_id
+            ),
             media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+                "x-request-id": request_id,
+            },
         )
 
     @app.get("/sources", response_model=list[Source])

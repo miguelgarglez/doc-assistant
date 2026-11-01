@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.16.0 · Identidad de petición y base interna de historial
+
+- `x-request-id` identifica las respuestas de consulta; `done.request_id` conserva la identidad en SSE y en el fallback web. No cambia la presentación del chat.
+- Trazas optativas en memoria con candidatos, verificación, huellas de configuración, selección de facturas y estado final del transporte. Un stream sin resultado termina con `internal_error`.
+- Almacén SQLite aislado con paginación estable, migraciones concurrentes, WAL y permisos 0600 para bases nuevas. Feedback con copia de traza, revisión local y exportación de borradores JSONL.
+- Historial y feedback no están conectados a la API ni a la interfaz. No se guarda ninguna consulta automáticamente. Privacidad, retención, autorización y comunicación de errores de escritura siguen pendientes.
+- Mediciones sintéticas y límites en [modelos y hardware](modelos-hardware.md). Alcance y verificación de la integración en [notas v0.16.0](evolution-notes/v0.16.0.md).
+
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
 ## v0.15.3 · 2026-11-01

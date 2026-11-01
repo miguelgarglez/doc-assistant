@@ -914,6 +914,8 @@ export interface components {
             timings: {
                 [key: string]: number;
             };
+            /** Request Id */
+            request_id: string;
         };
         /** ErrorEvent */
         ErrorEvent: {

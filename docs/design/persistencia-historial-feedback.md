@@ -1,6 +1,6 @@
 # Persistencia del historial de peticiones y feedback con traza
 
-Estado: propuesta, sin implementar. La propuesta multiusuario y sus límites de seguridad están en [arquitectura multiusuario](arquitectura-multiusuario.md). ADR-014 ya corresponde a respuestas enriquecidas; una decisión futura sobre historial necesita otro identificador.
+Estado: implementación parcial interna, sin persistencia conectada ni interfaz de historial. La propuesta multiusuario y sus límites de seguridad están en [arquitectura multiusuario](arquitectura-multiusuario.md). ADR-014 ya corresponde a respuestas enriquecidas; una decisión futura sobre historial necesita otro identificador.
 
 Dos peticiones del backlog dependen de lo mismo: guardar cada petición con su traza.
 1. Un historial de consultas en Sistema, no solo la última.
@@ -13,13 +13,29 @@ Dos peticiones del backlog dependen de lo mismo: guardar cada petición con su t
 | Preguntas anteriores | `sessionStorage` del navegador (`use-question-history.ts`), 40 como máximo | Solo el texto de la pregunta, por pestaña. Se pierde al cerrar. |
 | Traza de la última consulta | Memoria del cliente (`lastTrace` en `chat-provider.tsx`), reconstruida de los eventos `step` | Solo la última. Sin fragmentos ni puntuaciones. |
 | Conversación | Estado de `useChat` | Se pierde al recargar. |
-| Petición en el servicio | No se guarda nada | No hay identificador de petición. |
+| Petición en el servicio | `x-request-id` en la respuesta y `request_id` en `done` | El servicio no guarda la petición. |
 | Tiempos | `done.timings` (por etapa y total) | Solo llegan al cliente. |
 | Etapa `rerank` | `data.top`: documento y sección de cada fragmento seleccionado | No incluye `chunk_id`, puntuación vectorial, BM25 ni del reranker. |
 | Versiones | `config.yaml` guarda el nombre de cada modelo; `PRAGMA user_version` guarda el esquema del índice | Sin hash del modelo cargado, sin versión del prompt ni revisión del índice. |
 | Usuarios | No existen (`open-gaps.md`, `scaling-deployment.md`) | El BFF de Next es hoy solo un proxy. |
 
 Conclusión: una traza útil para diagnosticar exige capturar más datos en el servicio. El cliente no tiene las puntuaciones y no se le debe confiar la traza.
+
+## Avance de la traza interna
+
+El servicio dispone de un colector opcional en memoria y de un almacén SQLite aislado. Ningún endpoint activa el colector ni escribe en el almacén. El colector registra el identificador de petición en el stream, el estado y los errores de cola, los pasos, las puntuaciones y el orden de candidatos, el resultado y los detalles de verificación. En consultas de facturas también recoge el plan, el SQL parametrizado y las filas seleccionadas.
+
+El almacén limita el listado, la lectura de una petición y la copia de su traza a la conversación indicada por el llamador. Esto evita asociar por error una petición a otra conversación, pero el identificador de conversación no autentica al llamador ni garantiza aislamiento entre usuarios. La autorización debe comprobarse antes de exponer estas operaciones.
+
+La huella `chunk_index_sha256` cubre las filas de fragmentos documentales en la misma transacción de lectura que la búsqueda. No cubre vectores, facturas ni archivos de origen. Calcularla recorre todos los fragmentos: falta medir su coste con índices representativos antes de conectar la persistencia. Los nombres de modelos son los de configuración, no una prueba de qué archivos están cargados. La traza todavía no contiene todas las versiones ni la selección entre aclaraciones.
+
+Una prueba exploratoria ejecutó el mismo recorrido y serialización de la huella sobre SQLite en memoria, con fragmentos sintéticos de texto repetido. Tras una pasada de calentamiento, diez mediciones dieron p50/p95 de 5,23/5,40 ms para 1.000 filas, 55,40/56,64 ms para 10.000 y 561,73/565,47 ms para 100.000. El coste creció aproximadamente con el número de filas en esta muestra. No incluye lectura desde disco, búsquedas, concurrencia ni una petición completa; tampoco representa la distribución de textos de un índice real. El script y las muestras están en `_agents/night2/`. Antes de activar la traza hay que medir índices representativos y decidir cómo evitar un recorrido completo por petición si el coste resulta excesivo.
+
+El adaptador interno `recorded_ask_stream` cierra el generador antes de guardar su traza, también si el consumidor se desconecta. No lo usa ningún endpoint. Un error al guardar se propaga después de que pueda haberse emitido `done`, por lo que aún falta decidir cómo comunicar un fallo de persistencia sin prometer al cliente que se guardó. Una petición cuyo generador nunca se inicia no produce registro.
+
+El almacén y el colector son piezas aisladas. Antes de activar la persistencia faltan la política de privacidad y retención, el tratamiento de errores y desconexiones de extremo a extremo, los endpoints, la interfaz y la medición del coste sobre una petición completa.
+
+La huella `config_sha256` identifica los bytes del YAML que se leyeron para esa petición, aunque el archivo cambie después. No identifica los valores de variables de entorno expandidas ni demuestra qué archivos de modelo están cargados.
 
 ## 2. Qué debe guardar una petición
 
@@ -105,7 +121,8 @@ La traza se copia en `feedback`. Si una política de retención borra la petici�
 - Dónde: en la barra de acciones del mensaje del asistente, junto a copiar y regenerar. Un solo botón abre un menú con las cuatro razones y un comentario opcional. No se adjunta nada del navegador salvo el `request_id`, el motivo y el comentario.
 - Qué se envía: `POST /feedback {request_id, kind, comment}`. El servidor busca la petición y copia la traza completa. El cliente no la sube: así no se puede falsear, no pesa en la red y no depende de lo que el cliente haya conservado.
 - Confirmación: aviso de Sonner con el identificador del feedback. Sin animación de entrada propia.
-- Estado: `nuevo`, `revisado`, `convertido a caso` y `descartado`. Un comando (`mise run feedback export`) vuelca los casos como JSONL, con la pregunta, la traza y la respuesta esperada que escriba quien revise. De ahí salen los casos del gold, con el mismo formato que usará la evaluación.
+- Estado: `nuevo`, `revisado`, `convertido a caso` y `descartado`. El comando interno `python -m doc_assistant.feedback_export RUTA_DB --conversation-id ID` escribe en stdout los borradores revisados con respuesta esperada. La salida incluye la traza y puede contener datos confidenciales; protege cualquier archivo al que la redirijas. La base debe existir y el comando puede aplicar migraciones del almacén. De ahí salen los casos del gold, con el mismo formato que usará la evaluación.
+- Revisión local: `python -m doc_assistant.feedback_review RUTA_DB --conversation-id ID --feedback-id ID` lee la respuesta esperada desde stdin y guarda esa respuesta y el estado `revisado` en una sola transacción. La entrada puede contener información confidencial; usa un archivo protegido si se redirige. El comando exige una base existente y puede aplicar migraciones. La revisión no aprueba el gold.
 - Una petición con `error` o rechazo también admite feedback (por ejemplo, «debería haber respondido»).
 
 ## 8. Privacidad y retención
@@ -139,6 +156,8 @@ El historial de preguntas de `sessionStorage` no se migra. Queda como recuerdo c
 - Contrato: `request_id` presente en `done` y en la cabecera; OpenAPI sin deriva.
 - Web: el menú de feedback se maneja con teclado y pasa axe en cuatro temas y modos.
 - Rendimiento: medir el coste de escribir la traza sobre la latencia de una petición. No hay medida todavía. Hay que tomarla antes de aceptar la fase 1.
+
+Una medición exploratoria local de `HistoryStore.record` usó 100 escrituras consecutivas de una traza sintética con 40 candidatos y sin texto de fragmentos. La traza JSON ocupó 8.524 bytes; cada operación abrió la conexión, serializó y confirmó una fila. La mediana fue 0,54 ms y el p95 interpolado 0,73 ms, con un rango de 0,40 a 1,08 ms. Las 100 filas se leyeron después. Es una sola serie, sin carga concurrente ni perfilado, y no mide el coste en una petición completa. No permite aceptar la fase 1 ni estimar el tamaño con fragmentos literales. El script y las muestras están en `_agents/night2/`.
 
 ## 11. Decisiones abiertas
 

@@ -263,6 +263,7 @@ def ask_invoices(
     question: str,
     *,
     llm: LLM,
+    trace: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     """Invoice questions go to the structured path and stay there (no RAG fallback).
     Returns None only when the question is not about invoices."""
@@ -271,7 +272,7 @@ def ask_invoices(
     try:
         if not is_invoice_question(question, db.con):
             return None
-        result, raws = plan_and_run(db.con, question, llm.chat)
+        result, raws = plan_and_run(db.con, question, llm.chat, trace)
     finally:
         db.con.close()
     if result is None:

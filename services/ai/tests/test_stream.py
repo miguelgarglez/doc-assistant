@@ -7,6 +7,7 @@ import socket
 import subprocess
 import sys
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
@@ -485,3 +486,77 @@ def test_stream_survives_worker_thread_changes(
     evs = events("".join(frames))
     assert evs[-1][0] == "done", evs[-1]
     assert evs[-1][1]["ok"] is True
+
+
+def test_request_id_matches_stream_and_is_unique(config_path: Path) -> None:
+    with TestClient(create_app(config_path)) as client:
+        streamed = client.post("/ask/stream", json={"question": "¿Qué documentos tienes?"})
+        plain = client.post("/ask", json={"question": "¿Qué documentos tienes?"})
+    stream_id = streamed.headers["x-request-id"]
+    assert str(uuid.UUID(stream_id)) == stream_id
+    assert events(streamed.text)[-1][1]["request_id"] == stream_id
+    assert str(uuid.UUID(plain.headers["x-request-id"])) == plain.headers["x-request-id"]
+    assert plain.headers["x-request-id"] != stream_id
+
+
+def test_stream_close_finalizes_optional_trace(config_path: Path) -> None:
+    trace: dict = {}
+    iterator = ask_stream_events(config_path, "¿Qué documentos tienes?", trace=trace)
+    next(iterator)
+    iterator.close()
+    assert trace["status"] == "interrupted"
+    assert trace["transport_status"] == "interrupted"
+    assert trace["finished_at"] >= trace["started_at"]
+
+
+def test_stream_can_interrupt_after_pipeline_result(config_path: Path) -> None:
+    trace: dict = {}
+    iterator = ask_stream_events(config_path, "", trace=trace)
+    assert events(next(iterator))[0][0] == "refusal"
+    iterator.close()
+    assert trace["status"] == "completed"
+    assert trace["transport_status"] == "interrupted"
+
+
+def test_stream_close_after_done_keeps_transport_completed(config_path: Path) -> None:
+    trace: dict = {}
+    iterator = ask_stream_events(config_path, "", trace=trace)
+    assert events(next(iterator))[0][0] == "refusal"
+    assert events(next(iterator))[0][0] == "done"
+    iterator.close()
+    assert trace["status"] == "completed"
+    assert trace["transport_status"] == "completed"
+
+
+def test_stream_trace_records_translation_failure_without_exception_details(
+    config_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from doc_assistant import api
+
+    def invalid_events(*args, **kwargs):
+        yield "step", {"private": "secret"}
+
+    monkeypatch.setattr(api, "ask_events", invalid_events)
+    trace: dict = {}
+    frames = list(ask_stream_events(config_path, "pregunta", trace=trace))
+    assert events("".join(frames))[-1][1]["code"] == "internal_error"
+    assert trace["transport_status"] == "error"
+    assert trace["transport_error_code"] == "internal_error"
+    assert "secret" not in str(trace)
+
+
+def test_stream_without_pipeline_result_ends_with_error(
+    config_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from doc_assistant import api
+
+    def incomplete_events(*args, **kwargs):
+        yield "token", {"text": "Respuesta incompleta"}
+
+    monkeypatch.setattr(api, "ask_events", incomplete_events)
+    trace: dict = {}
+    frames = list(ask_stream_events(config_path, "pregunta", trace=trace))
+    parsed = events("".join(frames))
+    assert [event[0] for event in parsed] == ["token", "error"]
+    assert parsed[-1][1]["code"] == "internal_error"
+    assert trace["transport_status"] == "error"

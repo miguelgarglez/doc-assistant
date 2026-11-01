@@ -7,6 +7,12 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 
 "Fiabilidad real" dice qué prueba lo respalda. Una prueba con datos sintéticos o simulados no sustituye a la evaluación con un conjunto aprobado, que aún no existe.
 
+## Resumen v0.16.0
+
+- Mejoran la correlación de consultas y el cierre de streams incompletos; existen trazas y almacenamiento interno de historial y feedback.
+- Pendientes: conectar historial y feedback con autorización, privacidad, retención e interfaz; medir su coste completo, evaluación representativa y gold aprobado.
+- Recuento: 31 filas, 18 cumplidas, 10 parciales y 3 no. Las piezas internas no completan nuevos requisitos de usuario.
+
 ## Resumen v0.15.2
 
 - Mejoran la concurrencia, la admisión acotada, los errores y la extracción de importes con dos puntos en una muestra sintética.

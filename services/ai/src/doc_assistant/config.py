@@ -1,5 +1,6 @@
 """Validated configuration loaded at the application boundary."""
 
+import hashlib
 import os
 import re
 from pathlib import Path
@@ -7,7 +8,7 @@ from typing import Any, Literal
 from urllib.parse import urlparse
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
 LLAMA_OCR_PORT_ENV = "DOC_ASSISTANT_OCR_PORT"
 OLLAMA_URL = "http://127.0.0.1:11434"
@@ -84,6 +85,7 @@ class OcrConfig(BaseModel):
 
 class AppConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    _source_sha256: str = PrivateAttr(default="")
     db: Path
     docs: Path
     data_dir: Path
@@ -104,11 +106,13 @@ class AppConfig(BaseModel):
 
 def load_config(path: str | Path) -> AppConfig:
     path = Path(path).resolve()
-    raw = expand_env(yaml.safe_load(path.read_text(encoding="utf-8")))
+    source = path.read_bytes()
+    raw = expand_env(yaml.safe_load(source.decode("utf-8")))
     if not isinstance(raw, dict):
         raise TypeError("Configuration must be a mapping")
     raw["path"] = path
     cfg = AppConfig.model_validate(raw)
+    cfg._source_sha256 = hashlib.sha256(source).hexdigest()
     # Relative paths are anchored to the configuration file, not the process cwd.
     cfg.db = (path.parent / cfg.db).resolve()
     cfg.docs = (path.parent / cfg.docs).resolve()

@@ -582,3 +582,82 @@ def test_only_ambiguity_is_a_clarification_not_absence(config_path):
     )
     assert result["reason"] == "invoice:factura_no_encontrada"
     assert result["clarification"] is None
+
+
+def test_invoice_trace_captures_validated_plan_and_parameterized_selection(config_path):
+    from doc_assistant.config import load_config
+    from doc_assistant.invoices import ask_invoices
+
+    db = InvoiceDB(str(load_config(config_path).db))
+    try:
+        db.upsert(LUCIA)
+        db.upsert(TECNO)
+    finally:
+        db.con.close()
+    trace = {}
+    result = ask_invoices(
+        config_path,
+        "importe de factura FAC-2026-0042",
+        llm=FakeLLM({"intent": "valor", "numero": "FAC-2026-0042", "campos": ["importe_total"]}),
+        trace=trace,
+    )
+    assert result is not None and result["ok"]
+    from hashlib import sha256
+
+    from doc_assistant.invoice_query import PLAN_PROMPT
+
+    assert trace["plan_prompt_sha256"] == sha256(PLAN_PROMPT.encode()).hexdigest()
+    assert trace["plan"]["numero"] == "FAC-2026-0042"
+    assert "?" in trace["sql"] and "FAC-2026-0042" not in trace["sql"]
+    assert trace["params"] == ["FAC-2026-0042"]
+    assert [row["numero"] for row in trace["rows"]] == ["FAC-2026-0042"]
+    assert "sql" not in result
+
+
+def test_invoice_trace_records_clarification_candidates(config_path):
+    from doc_assistant.config import load_config
+    from doc_assistant.invoices import ask_invoices
+
+    db = InvoiceDB(str(load_config(config_path).db))
+    try:
+        db.upsert(LUCIA)
+        db.upsert(TECNO)
+    finally:
+        db.con.close()
+    trace = {}
+    result = ask_invoices(
+        config_path,
+        "¿cuál es el importe total de la factura?",
+        llm=FakeLLM({"intent": "valor", "campos": ["importe_total"]}),
+        trace=trace,
+    )
+    assert result is not None and result["clarification"]
+    selection = trace["selection"]
+    assert selection["stop_reason"] == "aclaracion"
+    assert {c["numero"] for c in selection["clarification"]["candidates"]} == {
+        "FAC-2026-0042",
+        "2026/0317",
+    }
+    assert {row["numero"] for row in trace["rows"]} == {"2026/0317", "FAC-2026-0042"}
+
+
+def test_invoice_selection_trace_is_independent_of_result(config_path):
+    from doc_assistant.config import load_config
+    from doc_assistant.invoice_query import Plan, execute
+
+    db = InvoiceDB(str(load_config(config_path).db))
+    try:
+        db.upsert(LUCIA)
+        db.upsert(TECNO)
+        trace = {}
+        result = execute(
+            db.con,
+            Plan(intent="valor", campos=["importe_total"]),
+            "¿cuál es el importe total de la factura?",
+            trace,
+        )
+        original = trace["selection"]["clarification"]["candidates"][0]["numero"]
+        result["clarification"]["candidates"][0]["numero"] = "modificada"
+        assert trace["selection"]["clarification"]["candidates"][0]["numero"] == original
+    finally:
+        db.con.close()

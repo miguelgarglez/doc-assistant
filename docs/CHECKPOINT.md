@@ -1,9 +1,9 @@
 # CHECKPOINT
-(Horas reales de los commits, Europe/Madrid, tomadas de `git log`.)
 
 ## Estado de un vistazo
 
-- Referencia de comportamiento: v0.15.2; este cierre v0.15.3 es documental.
+- Candidato v0.16.0 desde main v0.15.3: identificadores de petición, trazas opcionales y almacén interno.
+- Entrega pendiente de check completo, tres pasadas e2e con axe, humo y auditoría.
 - Cobertura: 18 cumplidas, 10 parciales y 3 no, según `requirements-coverage.md`.
 - ADR-014 implementa bloques con evidencia y alternativa Markdown.
 - Consultas limitadas por proceso a dos activas y cuatro en espera, hasta 60 segundos.
@@ -12,7 +12,8 @@
 - Falta gold aprobado y evaluación representativa; no hay una tasa general de error acreditada.
 - Faltan carga sostenida, equidad de cola y causa demostrada del error histórico sin traza.
 - Linux y Windows no están probados; el check registrado usó dependencias existentes y raíz temporal ampliada.
-- Historial persistente y multiusuario siguen como propuestas; el diario inferior conserva estados anteriores.
+- Historial y feedback tienen piezas internas probadas en la rama de origen, desconectadas de la API y de la interfaz. Multiusuario sigue como propuesta.
+- No hay persistencia automática; faltan privacidad, retención, autorización y comunicación de errores de escritura.
 
 ## Hitos
 - **01-Nov 02:51 · Suite del servicio.** 314 pruebas pasan y 35 live se omiten con el entorno Python existente. La regresión se ha ajustado a Ruff. No sustituye `mise run check` ni las tres pasadas e2e.

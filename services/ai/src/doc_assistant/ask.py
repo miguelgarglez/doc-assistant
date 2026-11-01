@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
-from collections.abc import Iterator
+from collections.abc import Generator
+from copy import deepcopy
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -153,7 +156,7 @@ def _chunked(text: str, size: int = 24) -> list[str]:
     return [text[i : i + size] for i in range(0, len(text), size)]
 
 
-def ask_events(
+def _ask_events(
     config_path: str | Path,
     question: str,
     *,
@@ -161,7 +164,8 @@ def ask_events(
     reranker: Reranker | None = None,
     llm: LLM | None = None,
     stream: bool = False,
-) -> Iterator[Event]:
+    trace: dict[str, Any] | None = None,
+) -> Generator[Event, None, None]:
     """Run the pipeline as a sequence of events; the last one is ("result", dict).
 
     `step` and `token` events are progress only. The result is the single source
@@ -179,6 +183,19 @@ def ask_events(
         return
     question = q
     cfg = load_config(config_path)
+    if trace is not None:
+        trace["versions"] = {
+            "config_sha256": cfg._source_sha256,
+            "models_configured": {
+                "llm": cfg.llm.model,
+                "embeddings": cfg.embeddings.model,
+                "reranker": cfg.reranker.model,
+                "ocr": cfg.ocr.model,
+            },
+            "answer_prompts_sha256": hashlib.sha256(
+                (SYSTEM_PROMPT + "\0" + EVIDENCE_FIRST_PROMPT + "\0" + SEGMENTS_PROMPT).encode()
+            ).hexdigest(),
+        }
     latencies: dict[str, float] = {}
 
     t = time.perf_counter()
@@ -220,7 +237,10 @@ def ask_events(
     if any(s["kind"] == "invoice" for s in sources):
         t = time.perf_counter()
         yield _step("invoices", "running", "Comprobando si es una consulta de facturas")
-        invoice_result = ask_invoices(config_path, question, llm=llm)
+        invoice_trace: dict[str, Any] | None = {} if trace is not None else None
+        if trace is not None:
+            trace["invoice"] = invoice_trace
+        invoice_result = ask_invoices(config_path, question, llm=llm, trace=invoice_trace)
         latencies["invoices"] = round(time.perf_counter() - t, 4)
         yield _step(
             "invoices",
@@ -257,6 +277,19 @@ def ask_events(
     t1 = time.perf_counter()
     store = ChunkStore(cfg.db, dim=dim)
     try:
+        if trace is not None:
+            store.db.execute("BEGIN")
+            digest = hashlib.sha256()
+            for row in store.db.execute(
+                "SELECT chunk_id, doc, display_doc, section, heading, title, pages, body, text "
+                "FROM chunks ORDER BY chunk_id"
+            ):
+                digest.update(json.dumps(list(row), ensure_ascii=False).encode("utf-8"))
+                digest.update(b"\n")
+            trace["versions"]["chunk_index_sha256"] = digest.hexdigest()
+            trace["versions"]["index_schema_version"] = store.db.execute(
+                "PRAGMA user_version"
+            ).fetchone()[0]
         vec = store.vector_search(q_emb, k=10)
         bm = store.bm25(question, k=10)
         cand_ids = _union_candidates(vec, bm)
@@ -267,6 +300,22 @@ def ask_events(
 
     ordered = [cand_chunks[i] for i in cand_ids if i in cand_chunks]
     docs = [c["text"] for c in ordered]
+    if trace is not None:
+        vector_scores = dict(vec)
+        bm25_scores = dict(bm)
+        trace["candidates"] = [
+            {
+                "chunk_id": chunk["chunk_id"],
+                "text_sha256": hashlib.sha256(chunk["text"].encode("utf-8")).hexdigest(),
+                "position": position,
+                "vector_score": vector_scores.get(chunk["chunk_id"]),
+                "bm25_score": bm25_scores.get(chunk["chunk_id"]),
+                "rerank_score": None,
+                "rerank_position": None,
+                "selected": False,
+            }
+            for position, chunk in enumerate(ordered)
+        ]
     yield _step(
         "retrieve",
         "done",
@@ -283,6 +332,16 @@ def ask_events(
         top_chunks = [ordered[i] for i in top_idx if i < len(ordered)]
     else:
         top_chunks = []
+        ranked = []
+    if trace is not None:
+        candidates = trace["candidates"]
+        for position, (index, score) in enumerate(ranked):
+            if 0 <= index < len(candidates):
+                candidates[index]["rerank_score"] = score
+                candidates[index]["rerank_position"] = position
+        for index in top_idx if docs else []:
+            if 0 <= index < len(candidates):
+                candidates[index]["selected"] = True
     latencies["rerank"] = round(time.perf_counter() - t2, 4)
     yield _step(
         "rerank",
@@ -356,6 +415,13 @@ def ask_events(
     citations = raw.get("citations") or []
     answer = raw.get("answer")
     checked = verify(answer, citations, retrieved_text)
+    if trace is not None:
+        trace["verification"] = {
+            "citations": deepcopy(citations),
+            "ok": checked.ok,
+            "reason": checked.reason,
+            "details": deepcopy(checked.details),
+        }
     latencies["verify"] = round(time.perf_counter() - t4, 4)
 
     if not checked.ok:
@@ -416,6 +482,63 @@ def ask_events(
     )
 
 
+def ask_events(
+    config_path: str | Path,
+    question: str,
+    *,
+    embedder: Embedder | None = None,
+    reranker: Reranker | None = None,
+    llm: LLM | None = None,
+    stream: bool = False,
+    trace: dict[str, Any] | None = None,
+) -> Generator[Event, None, None]:
+    """Yield the pipeline unchanged and optionally collect its final state in memory."""
+    events = _ask_events(
+        config_path,
+        question,
+        embedder=embedder,
+        reranker=reranker,
+        llm=llm,
+        stream=stream,
+        trace=trace,
+    )
+    if trace is None:
+        yield from events
+        return
+    trace.update({"trace_schema_version": 1, "question": question, "steps": []})
+    started = time.perf_counter()
+    trace["started_at"] = datetime.now(UTC).isoformat()
+    trace["status"] = "interrupted"
+    try:
+        for kind, data in events:
+            if kind == "step":
+                trace["steps"].append(deepcopy(data))
+            elif kind == "result":
+                trace["result"] = deepcopy(data)
+                trace["kind"] = (
+                    "answer"
+                    if data.get("ok")
+                    else "clarification"
+                    if data.get("clarification")
+                    else "refusal"
+                )
+                trace["status"] = "completed"
+            yield kind, data
+        if trace["status"] != "completed":
+            raise RuntimeError("pipeline ended without a result")
+    except Exception as exc:
+        trace["status"] = "error"
+        trace["kind"] = "error"
+        trace["error_code"] = exc.code if isinstance(exc, AdapterError) else "internal_error"
+        raise
+    finally:
+        events.close()
+        if trace["status"] == "interrupted":
+            trace["kind"] = "error"
+        trace["finished_at"] = datetime.now(UTC).isoformat()
+        trace["elapsed_s"] = round(time.perf_counter() - started, 4)
+
+
 def place_inline_citations(
     mode: str, answer: str, citations: list[dict[str, Any]], raw_segments: Any
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], str]:
@@ -440,10 +563,11 @@ def ask(
     embedder: Embedder | None = None,
     reranker: Reranker | None = None,
     llm: LLM | None = None,
+    trace: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for kind, data in ask_events(
-        config_path, question, embedder=embedder, reranker=reranker, llm=llm
+        config_path, question, embedder=embedder, reranker=reranker, llm=llm, trace=trace
     ):
         if kind == "result":
             result = data

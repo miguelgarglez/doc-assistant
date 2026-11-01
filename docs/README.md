@@ -67,6 +67,8 @@ Para desarrollar:
 
 ## Notas por versión
 
+- [v0.16.0](evolution-notes/v0.16.0.md): identidad de petición y piezas internas de historial y feedback.
+
 - [v0.14.0](evolution-notes/v0.14.0.md): bloques de respuesta y evidencia versionada.
 - [v0.15.0](evolution-notes/v0.15.0.md): recorrido del ZIP, hardware y límites de portabilidad.
 - [v0.15.1](evolution-notes/v0.15.1.md): concurrencia, cola y errores recuperables.
