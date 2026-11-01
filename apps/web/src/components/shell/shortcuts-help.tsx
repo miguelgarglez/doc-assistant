@@ -14,6 +14,12 @@ export function ShortcutsHelp({ open, onClose }: { open: boolean; onClose: () =>
         <ShortcutList items={SHORTCUTS} />
         <h3 className="mt-1 font-heading text-sm font-semibold">Visor de fuentes</h3>
         <ShortcutList items={VIEWER_SHORTCUTS} />
+        <h3 className="mt-1 font-heading text-sm font-semibold">Revisión de avisos</h3>
+        <ShortcutList items={[
+          { keys: "j / k", action: "Aviso siguiente / anterior" },
+          { keys: "a", action: "Marcar revisado cuando esté confirmado" },
+          { keys: "d", action: "Descartar aviso" },
+        ]} />
       </DialogContent>
     </Dialog>
   )
