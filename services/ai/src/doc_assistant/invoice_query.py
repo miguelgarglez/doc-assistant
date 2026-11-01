@@ -581,6 +581,15 @@ def execute(
     if trace is not None:
         trace["plan"] = asdict(plan)
     sel = select(con, plan, question)
+    if trace is not None:
+        trace["selection"] = {
+            "numeros": sel.numeros,
+            "rol": sel.rol,
+            "label": sel.label,
+            "selector_fields": sel.selector_fields,
+            "stop_reason": sel.stop.get("reason") if sel.stop else None,
+            "clarification": sel.stop.get("clarification") if sel.stop else None,
+        }
     if sel.stop:
         return sel.stop
     has_selector = sel.numeros is not None or bool(
@@ -590,6 +599,9 @@ def execute(
     if trace is not None:
         trace["rows"] = _rows(con, numeros)
     result = _shape(con, plan, sel, numeros, has_selector, question)
+    if trace is not None and result.get("clarification"):
+        trace["selection"]["stop_reason"] = result.get("reason")
+        trace["selection"]["clarification"] = result["clarification"]
     result["selected"] = numeros
     return result
 

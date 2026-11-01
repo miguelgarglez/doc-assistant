@@ -401,3 +401,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:23 CET · Estado del diseño de historial
 - Corregida la tabla del diseño para reflejar el identificador de petición existente. El texto distingue el filtro por conversación de una comprobación de autorización.
 - Revisión del diseño frente a la API y al almacén; sin persistencia conectada.
+
+## 01-Nov 07:24 CET · Selección de facturas en la traza
+- La traza opcional recoge la selección y las candidatas ofrecidas tanto si la aclaración surge al resolver como al formar la respuesta. No enlaza todavía una elección posterior ni activa persistencia.
+- 59 pruebas de facturas, Ruff y mypy pasan.

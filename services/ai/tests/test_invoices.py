@@ -607,3 +607,30 @@ def test_invoice_trace_captures_validated_plan_and_parameterized_selection(confi
     assert trace["params"] == ["FAC-2026-0042"]
     assert [row["numero"] for row in trace["rows"]] == ["FAC-2026-0042"]
     assert "sql" not in result
+
+
+def test_invoice_trace_records_clarification_candidates(config_path):
+    from doc_assistant.config import load_config
+    from doc_assistant.invoices import ask_invoices
+
+    db = InvoiceDB(str(load_config(config_path).db))
+    try:
+        db.upsert(LUCIA)
+        db.upsert(TECNO)
+    finally:
+        db.con.close()
+    trace = {}
+    result = ask_invoices(
+        config_path,
+        "¿cuál es el importe total de la factura?",
+        llm=FakeLLM({"intent": "valor", "campos": ["importe_total"]}),
+        trace=trace,
+    )
+    assert result is not None and result["clarification"]
+    selection = trace["selection"]
+    assert selection["stop_reason"] == "aclaracion"
+    assert {c["numero"] for c in selection["clarification"]["candidates"]} == {
+        "FAC-2026-0042",
+        "2026/0317",
+    }
+    assert {row["numero"] for row in trace["rows"]} == {"2026/0317", "FAC-2026-0042"}
