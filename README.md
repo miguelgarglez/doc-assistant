@@ -41,6 +41,8 @@ Si un puerto está ocupado, `start` no arranca nada y sale con código 2. El men
 ## Probado en
 macOS 26.6.2 (build 25G83), Apple M4, CPU de 10 núcleos, GPU de 10 núcleos y 16 GiB de memoria unificada. Datos consultados con `sysctl -n machdep.cpu.brand_string hw.physicalcpu hw.logicalcpu hw.memsize`, `sw_vers` y `system_profiler SPDisplaysDataType` el 1 de noviembre de 2026. La memoria unificada es compartida; no se ha medido la memoria ocupada por los modelos. Windows y Linux no se han probado en este equipo ni se ha ejecutado todavía el workflow `cross-platform.yml`. Limitación: `sqlite-vec` no publica wheel para Windows ARM.
 
+La [revisión de portabilidad](docs/portabilidad.md) recoge los sistemas y arquitecturas aún sin probar, y los límites de los scripts.
+
 ## Huecos del enunciado
 Decisiones sobre lo que el enunciado deja abierto: [docs/open-gaps.md](docs/open-gaps.md). Cobertura requisito a requisito: [docs/requirements-coverage.md](docs/requirements-coverage.md).
 

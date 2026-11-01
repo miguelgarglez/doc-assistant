@@ -220,3 +220,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Clon limpio de `feat/core-v0.15` en 7801718: `audit-preliminar.txt` informa TOTAL 0. El clon propio se movió a `_trash/audit-night-preliminar-*`.
 - Es una auditoría previa, no sustituye la auditoría del tag definitivo. No hay tag nuevo.
 
+
+## 01-Nov 02:02 CET · Revisión estática de portabilidad
+- Documentados plataformas empaquetadas, rutas, procesos y límites de la matriz. Detectada incompatibilidad entre la regla de esta sesión de usar solo PID y el cierre por grupo de `dev.py` y `package.py`; no se ejecutaron esos scripts. El ZIP no incluye binarios para todas las arquitecturas de `assets.json`.
+- Revisión estática y `git diff --check`; no sustituye pruebas en macOS, Windows o Linux.
+
