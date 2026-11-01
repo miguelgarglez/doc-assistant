@@ -18,7 +18,7 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 | R1.5 | Decir explícitamente "no dispongo" | `RefusalNotice` + `reason`; rechazos con `suggestions` (fuentes cercanas reales) y `empty_index` (ADR-009). Desde v0.13.1 una ambigüedad de factura ya no se muestra como rechazo (ADR-013) | Cumplido | e2e "rechazo"; capturas `chat-rechazo-*` (simuladas desde v0.13.3); `e2e/live.spec.ts` contra el stack; e2e y tests de servicio de que una aclaración no es un rechazo. |
 | R1.7 | Acreditar la ausencia de alucinaciones | `evidence/` | **No** | El gold está en borrador y no aprobado; las cifras antiguas no valen. Hoy solo hay pruebas de humo. |
 | A1 | Ingesta y troceado propios | `ingest.py`, `chunking.py` (por sección, `chunk_id` determinista) | Cumplido | Tests de chunking (secciones, pie de página fuera); ingesta real: 44 fragmentos en 1,8 s. |
-| A2 | Justificar el troceado y medirlo | `architecture.md` (solo describe) | **No** | No hay una comparación medida de estrategias de troceado en este repo. |
+| A2 | Justificar el troceado y medirlo | `architecture.md`, `evidence/chunking/` | Parcial | Comparación reproducible en dos PDF sintéticos: secciones conserva 6/6 hechos literales completos y ventanas fijas de 64 caracteres conservan 2/6. No mide recuperación ni generaliza a documentos sin encabezados o secciones largas. |
 
 ## Facturas
 
@@ -66,7 +66,7 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 **Trabajo sin publicar.**
 - Mejoran C3 con hardware consultado en el equipo, C4/C5/E-C1 con inventario aún incompleto, y S1–S3 con una propuesta multiusuario detallada.
 - Pendientes: gold aprobado, comparación de troceado y modelos, memoria en ejecución, portabilidad y comprobaciones completas; el workflow no se ha ejecutado.
-- Recuento de 31 filas: 18 cumplidas, 9 parciales y 4 no. C3 cambia de parcial a cumplido.
+- Recuento de 31 filas: 18 cumplidas, 10 parciales y 3 no. C3 cambia de parcial a cumplido y A2 de no a parcial.
 
 **v0.14.0.**
 - Mejoran B3, B4, B5 y E-A3/E-A4 con fichas y tablas derivadas de evidencia, contrato versionado, copia fiel y degradación; E-B3 incorpora comparación y galería. 180 e2e ×3 y batería propia de 35 casos live sin respuestas falsas.
@@ -93,4 +93,4 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 - Pendientes: B5 sigue parcial hasta tener un gold aprobado; E-B1 sigue en "no".
 - Recuento final de 31 filas: 17 cumplidas, 10 parciales y 4 no.
 
-**Estado de trabajo sin tag (31 filas; algunas agrupan varios requisitos): 18 cumplidas, 9 parciales, 4 no (R1.7, A2, C4/C5/E-C1, E-B1).** Los cuatro "no" son de acreditación y justificación, no de funcionalidad. Se cierran con el conjunto de evaluación aprobado, una medida del troceado y la justificación de los modelos frente al hardware.
+**Estado de trabajo sin tag (31 filas; algunas agrupan varios requisitos): 18 cumplidas, 10 parciales, 3 no (R1.7, C4/C5/E-C1, E-B1).** A2 sigue parcial: la comparación sintética no mide recuperación. Los tres "no" requieren acreditación o justificación de modelos frente al hardware.

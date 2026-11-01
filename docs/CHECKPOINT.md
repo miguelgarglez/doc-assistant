@@ -2,6 +2,7 @@
 (Horas reales de los commits, Europe/Madrid, tomadas de `git log`.)
 
 ## Hitos
+- **01-nov 02:22 · Comparación exploratoria de troceado.** Dos PDF sintéticos y seis hechos literales: secciones 6/6 íntegros, ventanas fijas de 64 caracteres 2/6. `evidence/chunking/` contiene el método y el comando; no mide recuperación ni acredita resultados generales. A2 pasa de no a parcial.
 - **31-oct 12:11 · Estructura creada** (commit 2ed6516). Monorepo con dos piezas: servicio de IA en Python y web en Next.js.
   - Qué se probó: `uv`, `node`, `pnpm`, `llama-server` presentes (`which` + versiones) → OK, sin instalar nada.
   - Decisión clave y por qué: dos servicios separados por un contrato OpenAPI; la IA puede cambiar o escalar sin tocar la web (ADR-001).

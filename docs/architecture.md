@@ -22,6 +22,8 @@ Todo escucha en `127.0.0.1`. Nada sale de la máquina.
   - Facturas (ADR-012): el LLM solo propone un plan JSON validado por esquema (intención valor/lista/contar/sumar, número, persona, campos, filtros, fechas). El código resuelve la persona (sin tildes ni mayúsculas, trigramas FTS5, erratas, NIF normalizado) y el número (exacto, normalizado, parcial, sin ceros), genera el SQL sobre una lista cerrada de columnas tipadas (`facturas_q`: fechas ISO, importes en céntimos) y da forma a la respuesta: un valor si se pide un valor, una lista solo si se pide una lista. Varias candidatas → aclaración estructurada (`clarification`, ADR-013) con las facturas candidatas y la pregunta que reenvía cada una; plan inválido → un reintento y después aclaración, sin caer al RAG. Solo se citan las facturas seleccionadas.
 - **Factura (imagen):** OCR → reglas deterministas para importes (Decimal) → LLM solo para campos de texto → puertas de coherencia (suma e IVA). Si no cuadra → "revisar". Campos ausentes = `null`.
 
+La comparación reproducible en `evidence/chunking/` muestra que las secciones mantienen íntegros seis hechos sintéticos que una ventana fija de 64 caracteres parte en cuatro casos. Es una prueba exploratoria de integridad literal, no de calidad de recuperación; no justifica generalizar a documentos sin encabezados o secciones largas.
+
 ## Modularidad (puertos y adaptadores)
 LLM, embeddings, reranker y OCR son `Protocol`s; los adaptadores HTTP se eligen en `config/config.yaml` (validada con Pydantic al arrancar). Cambiar de modelo = cambiar config o el modelo que sirve llama-server.
 
