@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from decimal import Decimal
 from typing import Any
 
@@ -466,7 +466,9 @@ def _rows(con: sqlite3.Connection, numeros: list[str]) -> list[dict[str, Any]]:
     return [dict(zip(names, r)) for r in cur.fetchall()]
 
 
-def query_numeros(con: sqlite3.Connection, plan: Plan, sel: Selection) -> list[str]:
+def query_numeros(
+    con: sqlite3.Connection, plan: Plan, sel: Selection, trace: dict[str, Any] | None = None
+) -> list[str]:
     """Builds the WHERE from whitelisted columns only; every value is a parameter."""
     where, params = [], []
     if sel.numeros is not None:
@@ -496,6 +498,9 @@ def query_numeros(con: sqlite3.Connection, plan: Plan, sel: Selection) -> list[s
         + (" WHERE " + " AND ".join(where) if where else "")
         + " ORDER BY q.fecha_emision_iso, q.numero"
     )
+    if trace is not None:
+        trace["sql"] = sql
+        trace["params"] = params.copy()
     return [r[0] for r in con.execute(sql, params)]
 
 
@@ -569,15 +574,21 @@ def fix_years(plan: Plan, question: str) -> None:
         plan.sin_anio = True
 
 
-def execute(con: sqlite3.Connection, plan: Plan, question: str) -> dict[str, Any]:
+def execute(
+    con: sqlite3.Connection, plan: Plan, question: str, trace: dict[str, Any] | None = None
+) -> dict[str, Any]:
     fix_years(plan, question)
+    if trace is not None:
+        trace["plan"] = asdict(plan)
     sel = select(con, plan, question)
     if sel.stop:
         return sel.stop
     has_selector = sel.numeros is not None or bool(
         plan.filtros or plan.desde or plan.hasta or plan.tiene
     )
-    numeros = query_numeros(con, plan, sel)
+    numeros = query_numeros(con, plan, sel, trace)
+    if trace is not None:
+        trace["rows"] = _rows(con, numeros)
     result = _shape(con, plan, sel, numeros, has_selector, question)
     result["selected"] = numeros
     return result
@@ -841,7 +852,7 @@ def check_grounding(result: dict[str, Any]) -> dict[str, Any]:
 
 
 def plan_and_run(
-    con: sqlite3.Connection, question: str, chat: Any
+    con: sqlite3.Connection, question: str, chat: Any, trace: dict[str, Any] | None = None
 ) -> tuple[dict[str, Any] | None, list[Any]]:
     """Returns (result or None for 'documentos', raw plans). One retry on invalid plans."""
     messages = [{"role": "system", "content": PLAN_PROMPT}, {"role": "user", "content": question}]
@@ -862,7 +873,7 @@ def plan_and_run(
         if plan is not None:
             if plan.intent == "documentos":
                 return None, raws
-            result = execute(con, plan, question)
+            result = execute(con, plan, question, trace)
             return check_grounding(result), raws
         if attempt == 0:
             messages += [

@@ -582,3 +582,28 @@ def test_only_ambiguity_is_a_clarification_not_absence(config_path):
     )
     assert result["reason"] == "invoice:factura_no_encontrada"
     assert result["clarification"] is None
+
+
+def test_invoice_trace_captures_validated_plan_and_parameterized_selection(config_path):
+    from doc_assistant.config import load_config
+    from doc_assistant.invoices import ask_invoices
+
+    db = InvoiceDB(str(load_config(config_path).db))
+    try:
+        db.upsert(LUCIA)
+        db.upsert(TECNO)
+    finally:
+        db.con.close()
+    trace = {}
+    result = ask_invoices(
+        config_path,
+        "importe de factura FAC-2026-0042",
+        llm=FakeLLM({"intent": "valor", "numero": "FAC-2026-0042", "campos": ["importe_total"]}),
+        trace=trace,
+    )
+    assert result is not None and result["ok"]
+    assert trace["plan"]["numero"] == "FAC-2026-0042"
+    assert "?" in trace["sql"] and "FAC-2026-0042" not in trace["sql"]
+    assert trace["params"] == ["FAC-2026-0042"]
+    assert [row["numero"] for row in trace["rows"]] == ["FAC-2026-0042"]
+    assert "sql" not in result

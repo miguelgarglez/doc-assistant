@@ -335,3 +335,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - El pipeline admite un colector opcional en memoria para candidatos, puntuaciones vectoriales, BM25 y reranking, selección y verificación de citas. No se envía en el stream ni se almacena por sí solo; aún faltan datos de facturas, versiones y conexión con el almacén.
 - Pasan 38 pruebas de consulta y streaming, Ruff y mypy. No se han ejecutado todavía las verificaciones de entrega de v0.16.0.
 - Suite completa del servicio tras ambas piezas: 328 pasadas y 35 live omitidas. No sustituye `mise run check` ni la prueba de navegador.
+
+## 01-Nov 07:10 CET · Traza interna de facturas
+- El colector opcional registra el plan validado, el SQL de selección con sus parámetros y las filas seleccionadas. Los datos permanecen en memoria y no se añaden a la respuesta ni se persisten.
+- Pasan 329 pruebas del servicio y 35 live se omiten. Ruff pasa. Faltan versiones, interrupciones y conexión al historial; no hay tag v0.16.0.
