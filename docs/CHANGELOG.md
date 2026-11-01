@@ -2,6 +2,12 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
+## Sin publicar · robustez
+
+- La consulta libera SQLite antes de emitir eventos. PDFium se utiliza bajo un bloqueo compartido para que las ingestas y el visor no lo ejecuten a la vez en distintos hilos.
+- Los errores de modelo ocupado o sin respuesta tienen códigos y mensajes para reintentar. Sistema conserva el código incluso cuando el fallo ocurre antes del primer paso. [Capturas sintéticas](../evidence/comparison-v0.15.1/README.md).
+- Una carga sintética con 12 preguntas y cuatro PDF terminó correctamente tras corregir un cierre del proceso dentro de PDFium. La causa del error histórico sin traza sigue sin demostrarse. La validación de versión continúa en curso; aún no hay tag nuevo.
+
 ## v0.15.0 · 2026-11-01
 
 - ZIP probado en macOS ARM64 con b12020 y cinco modelos verificados por SHA256. Se indexaron cuatro documentos y cinco facturas; una respuesta con cita, el visor, una aclaración y un rechazo funcionaron en una prueba de humo. Una primera consulta documental durante otra petición mostró un error interno; una repetición posterior funcionó. La causa no se ha determinado.

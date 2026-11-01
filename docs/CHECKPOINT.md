@@ -263,3 +263,6 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 03:12 CET · Prueba visual del error
 - La prueba de navegador confirma el mensaje en chat y el código en Sistema para un fallo antes de cualquier paso. Las capturas sintéticas antes y después están en `evidence/comparison-v0.15.1/` y se inspeccionaron. La primera ejecución focalizada usó un directorio de trabajo incorrecto y no llegó a ejecutar la prueba; repetida desde `apps/web` pasó.
 
+## 01-Nov 03:13 CET · Documentación de trabajo sin publicar
+- CHANGELOG y cobertura registran los cambios de robustez y sus límites. El recuento de requisitos no cambia; la serie de navegador y la fase siguen abiertas.
+

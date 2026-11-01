@@ -7,6 +7,12 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 
 "Fiabilidad real" dice qué prueba lo respalda. Una prueba con datos sintéticos o simulados no sustituye a la evaluación con un conjunto aprobado, que aún no existe.
 
+## Trabajo sin publicar
+
+- Mejoran la concurrencia entre PDF y consultas, y la explicación de errores del modelo en chat y Sistema.
+- Pendientes: verificar la cola y la saturación, evaluación representativa, gold aprobado y plataformas no probadas. El fallo histórico carece de traza.
+- Recuento: 31 filas, 18 cumplidas, 10 parciales y 3 no. La carga nueva no cambia el estado de ninguna fila.
+
 ## Resumen v0.15.0
 
 - Mejoran C3, A2 y la evidencia de portabilidad en macOS; el diseño multiusuario sigue siendo una propuesta.
