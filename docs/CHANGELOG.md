@@ -4,6 +4,9 @@ Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`g
 
 ## Sin publicar
 
+- Comparados dos troceados sobre seis hechos sintéticos: 6/6 íntegros por secciones frente a 2/6 con ventanas fijas. La comparación no mide recuperación.
+- Muestras RSS de cuatro modelos cargados y una inferencia sintética con llama.cpp 11960; no son picos ni prueban el ZIP. `mise run check` correcto y tres pasadas Playwright con 180 aprobadas y cuatro live omitidas en cada una.
+
 - Registrados el hardware medido, el inventario de modelos y sus límites, y las decisiones pendientes de aprobación.
 - Propuesta multiusuario con permisos por documento, ingesta durable y fases de despliegue. No está implementada.
 - La matriz multiplataforma configura puertos aislados. Su workflow no se ha ejecutado.

@@ -36,8 +36,8 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 |---|---|---|---|---|
 | C1 / N1 | 100 % local, sin APIs de terceros | llama-server en 127.0.0.1 (Ollama opcional) | Cumplido | Todos los adaptadores apuntan a localhost (`config.yaml`). Internet solo en la instalación. |
 | C2 | Modelos elegidos para la máquina disponible | `config.yaml`, `assets.json` | Parcial | Funciona en un M4 de 16 GB (humo real). |
-| C3 | Especificar el hardware | README "Probado en" | Cumplido | `sysctl`, `sw_vers` y `system_profiler` identifican CPU y GPU de 10 núcleos, 16 GiB de memoria unificada y macOS 26.6.2. El consumo de memoria durante la inferencia sigue sin medir (E-B2). |
-| C4 / C5 / E-C1 | Justificar cada modelo frente al hardware, con su cuantización y las alternativas descartadas | `docs/modelos-hardware.md` | **No** | Están inventariados los archivos y sus cuantizaciones. Faltan mediciones de memoria y una comparación reproducible de alternativas. |
+| C3 | Especificar el hardware | README "Probado en" | Cumplido | `sysctl`, `sw_vers` y `system_profiler` identifican CPU y GPU de 10 núcleos, 16 GiB de memoria unificada y macOS 26.6.2. Hay una muestra RSS durante una consulta sintética; faltan picos y carga representativa (E-B2). |
+| C4 / C5 / E-C1 | Justificar cada modelo frente al hardware, con su cuantización y las alternativas descartadas | `docs/modelos-hardware.md` | **No** | Están inventariados los archivos y sus cuantizaciones. Hay instantáneas RSS de carga y consulta sintética con otra compilación; faltan picos y una comparación reproducible de alternativas. |
 
 ## Escalado
 
@@ -64,8 +64,8 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 | N5 | ZIP con código, README y arquitectura | `mise run package` | Parcial | Solo se ha probado el smoke falso, sin modelos. El paquete completo con smoke real está pendiente. |
 
 **Trabajo sin publicar.**
-- Mejoran C3 con hardware consultado en el equipo, C4/C5/E-C1 con inventario aún incompleto, y S1–S3 con una propuesta multiusuario detallada.
-- Pendientes: gold aprobado, comparación de troceado y modelos, memoria en ejecución, portabilidad y comprobaciones completas; el workflow no se ha ejecutado.
+- Mejoran C3 con hardware consultado, A2 con comparación exploratoria sintética, E-B2 con muestras RSS y S1–S3 con una propuesta multiusuario detallada.
+- Pendientes: gold aprobado, evaluación de recuperación y comparación de modelos, picos de memoria, recorrido del ZIP y comprobaciones completas; el workflow no se ha ejecutado.
 - Recuento de 31 filas: 18 cumplidas, 10 parciales y 3 no. C3 cambia de parcial a cumplido y A2 de no a parcial.
 
 **v0.14.0.**

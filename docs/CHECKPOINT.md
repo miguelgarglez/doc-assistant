@@ -2,6 +2,7 @@
 (Horas reales de los commits, Europe/Madrid, tomadas de `git log`.)
 
 ## Hitos
+- **01-nov 02:27 · Documentación de continuación.** CHANGELOG y cobertura reflejan la comparación sintética, las muestras de memoria y los límites de las verificaciones, sin declarar una versión cerrada.
 - **01-nov 02:27 · Memoria de modelos.** Cuatro servidores con compilación 11960 y modelos fijados: dos muestras RSS antes/después de una inferencia sintética. Detalle y límites en `modelos-hardware.md`; no mide pico ni equivale a GPU separada. Procesos cerrados por PID y puertos libres.
 - **01-nov 02:26 · Playwright y axe.** Tres pasadas con 180 aprobadas y 4 live omitidas cada una, en el puerto 3180. Se usó Node 26 del sistema para Playwright; el check de proyecto utilizó las versiones fijadas por mise.
 - **01-nov 02:25 · Auditoría preliminar.** Clon limpio del commit `e634a11`: TOTAL 0. No sustituye la auditoría del tag, que aún no existe.
