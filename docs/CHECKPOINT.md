@@ -139,3 +139,6 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 ## 01-Nov 01:36 CET · Bloques y microinteracciones de lectura
 - Ficha y tabla con citas junto a cada valor; validación de estructura y correspondencia de documento/campo/valor, conjunto atómico y versión desconocida con alternativa Markdown. Copia TSV alineada y con notas, atajos fuera del editor, skeleton y streaming breve. Movimiento reducido también desactiva el scroll programático suave. Revisión independiente de servicio y UI aplicada. Primera pasada de bloques: 30/30 con axe; ampliada después para cubrir el pegado y Option.
+
+## 01-Nov 01:37 CET · Verificación inicial y comparación de números
+- `mise run check` completo correcto con 309 tests del servicio y 26 de scripts, eslint, tipos, build y contrato sin deriva. La revisión independiente adicional detectó columna número duplicada en comparativas de números; eliminada en la vista tabular y añadida regresión sintética. No altera valores ni extracción.

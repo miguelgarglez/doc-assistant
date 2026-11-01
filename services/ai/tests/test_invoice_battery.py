@@ -632,3 +632,12 @@ def test_listing_numbers_alone_still_has_a_cited_table(battery_config):
         {"intent": "lista", "parte": "Talleres Sur"},
     )
     assert [column["key"] for column in result["blocks"][0]["columns"]] == ["numero"]
+
+
+def test_comparison_numbers_are_not_duplicated(battery_config):
+    result = blocks_of(
+        battery_config,
+        "Números de las facturas de Talleres Sur",
+        {"intent": "valor", "parte": "Talleres Sur", "campos": ["numero"]},
+    )
+    assert [column["key"] for column in result["blocks"][0]["columns"]] == ["numero"]

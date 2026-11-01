@@ -609,6 +609,7 @@ def _table_view(
     total: dict[str, str] | None = None,
     truncated: str | None = None,
 ) -> dict[str, Any]:
+    fields = [field for field in fields if field != "numero"]
     return {
         "kind": "table",
         "title": title,
