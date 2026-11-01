@@ -1,5 +1,7 @@
 # Escalado y despliegue (descrito, no implementado)
 
+La propuesta ampliada de aislamiento, permisos, colas, operación y fases está en [arquitectura multiusuario](design/arquitectura-multiusuario.md). Cuando este resumen y esa propuesta difieran, prevalece la propuesta ampliada.
+
 ## Hoy
 Un portátil (M4, 16 GB): 5 procesos locales, SQLite en un fichero. Pensado para un usuario.
 
@@ -19,7 +21,7 @@ Un portátil (M4, 16 GB): 5 procesos locales, SQLite en un fichero. Pensado para
 - Datos sensibles (facturas): cifrado en reposo y despliegue on-premise si el cliente lo exige; los modelos ya son locales.
 
 ## Riesgos al escalar
-- Más usuarios ⇒ el LLM es el cuello de botella; la cola y las réplicas lo resuelven, no la web.
+- Más usuarios pueden saturar el LLM u otra etapa. Medir cada etapa antes de dimensionar colas y réplicas.
 - Un modelo mayor cambia la tasa de rechazos y aciertos: hay que reevaluar con el mismo conjunto antes de cambiarlo.
 
 ## Herramienta para toda la ingeniería
@@ -38,9 +40,9 @@ Un portátil (M4, 16 GB): 5 procesos locales, SQLite en un fichero. Pensado para
 - **Evaluación continua** [no implementado]: el gold aprobado se ejecuta en CI y en cada cambio de modelo o de config. Si sube la tasa de respuestas sin evidencia, el cambio se bloquea. `mise run evidence --live` es el embrión [preparado].
 - **Almacenamiento** [preparado a medias]:
   - Hoy: SQLite + sqlite-vec detrás de `ChunkStore`, con el esquema versionado (`PRAGMA user_version`).
-  - Para cambiar: pgvector (si ya hay Postgres y menos de unos 10 M de fragmentos) o Qdrant (filtros por colección y escala horizontal). Hace falta extraer de `ChunkStore` una interfaz explícita; ver "Costuras" más abajo.
-- **Despliegue en servidor GPU** [no implementado]: los modelos y la config ya son intercambiables por `config.yaml` [preparado]. Una GPU de 24–48 GB permite un LLM de 8–14B con varias réplicas, o vLLM con batching. Embeddings y reranker van en una GPU pequeña o en CPU. On-premise por planta, o centralizado con réplicas por región si la latencia lo exige.
-- **Coste** [no implementado]: el coste dominante es la GPU del LLM. Por orden de palanca: cachear preguntas repetidas por colección, usar el modelo pequeño para el enrutado o plan y el grande solo para responder, y apagar réplicas fuera de horario. No hay coste por token: todo es local.
+  - Para cambiar: pgvector o Qdrant, sujetos a pruebas de recall filtrado, aislamiento, latencia y coste. Hace falta extraer de `ChunkStore` una interfaz explícita; ver "Costuras" más abajo.
+- **Despliegue en servidor GPU** [no implementado]: los modelos y la config ya son intercambiables por `config.yaml` [preparado]. El tamaño de GPU, la cantidad de réplicas y el batching requieren pruebas con los modelos y la carga previstos. Embeddings y reranker van en una GPU pequeña o en CPU. On-premise por planta, o centralizado con réplicas por región si la latencia lo exige.
+- **Coste** [no implementado]: el coste dominante es la GPU del LLM. Por orden de palanca: cachear preguntas repetidas por colección, usar el modelo pequeño para el enrutado o plan y el grande solo para responder, y apagar réplicas fuera de horario. La operación local también tiene costes de hardware, energía y personal.
 
 ### Costuras baratas (propuestas; no aplicadas aún)
 1. **Factoría `open_store(cfg)`**: hoy `ChunkStore(...)` se construye en 4 sitios con `dim` por defecto distinto (`dim` frente a `dim or 8`). Unificarlo en un punto es mecánico y deja un único sitio para cambiar a pgvector o Qdrant. No se ha aplicado porque unificar ese `dim` cambia el comportamiento y hay que probarlo aparte.

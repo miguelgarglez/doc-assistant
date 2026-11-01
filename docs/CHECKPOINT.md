@@ -195,3 +195,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Ejecutados los tests del worktree con el intérprete ya existente de ui7 y `PYTHONPATH=services/ai/src`: 313 pasados y 35 omitidos en servicio; 26 pasados en scripts. Un aviso de deprecación de Starlette. No equivale a `mise run check` ni a las pruebas live.
 - No se instaló nada ni se arrancaron servidores. Pendiente autorización para instalar dependencias locales y completar los checks exigidos.
 
+
+## 01-Nov 01:58 CET · Propuesta multiusuario
+- Añadida arquitectura para cientos de usuarios registrados: SSO, inquilinos y ACL por documento, recuperación autorizada, colas, almacenamiento, caché, observabilidad, despliegue y costes. La capacidad simultánea queda pendiente de medición.
+- Corregidas afirmaciones no medidas sobre GPU y coste, la cabecera de identidad como confianza suficiente y la colisión con ADR-014. Revisión documental y `git diff --check`; fase aún sin cierre ni tag.
+

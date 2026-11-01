@@ -1,6 +1,6 @@
 # Persistencia del historial de peticiones y feedback con traza
 
-Estado: propuesta, sin implementar. Si se acepta, pasa a ADR-014.
+Estado: propuesta, sin implementar. La propuesta multiusuario y sus límites de seguridad están en [arquitectura multiusuario](arquitectura-multiusuario.md). ADR-014 ya corresponde a respuestas enriquecidas; una decisión futura sobre historial necesita otro identificador.
 
 Dos peticiones del backlog dependen de lo mismo: guardar cada petición con su traza.
 1. Un historial de consultas en Sistema, no solo la última.
@@ -42,7 +42,7 @@ Formato: un JSON de traza con `trace_schema_version`, más columnas indexables (
 - `request_id`: cabecera `x-request-id` en `/ask`, `/ask/stream` y en `done`. Un cliente anterior lo ignora.
 - Las etapas `retrieve` y `rerank` añaden `chunk_id` y las puntuaciones, solo en la traza guardada. A la web le sigue llegando lo que le llega hoy, para no ensanchar el stream ni mostrar puntuaciones sin diseño.
 - Endpoints nuevos: `GET /history?conversation_id=&cursor=`, `GET /history/{request_id}`, `POST /feedback`.
-- La identidad entra por cabecera `x-user-id` que pone el BFF. El servicio no autentica: confía en el BFF y debe escuchar solo en el bucle local o en red privada.
+- Para un prototipo local se había propuesto una cabecera `x-user-id`. Una instalación multiusuario necesita identidad verificada y autenticación entre servicios; una cabecera arbitraria y una red privada no bastan. Ver la propuesta multiusuario.
 
 ## 4. Opciones de persistencia
 
