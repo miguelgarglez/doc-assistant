@@ -32,6 +32,7 @@ test("revisa con redacciones, confirma y puede descartar desde teclado", async (
   expect(payload).toMatchObject({ redacted_comment: "Falta un dato", redacted_context: "Importe omitido", confirmed_no_sensitive_data: true })
   await expect(page.getByText("No hay avisos en esta categoría.")).toBeVisible()
   await expect(page.getByRole("heading", { name: "Detalle del aviso" })).toHaveCount(0)
+  expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([])
   await page.getByRole("tab", { name: /Revisados/ }).click()
   await expect(page.getByRole("heading", { name: "Detalle del aviso" })).toBeVisible()
   await page.locator("body").click({ position: { x: 900, y: 20 } })
@@ -53,6 +54,7 @@ test("permite reintentar el detalle y conserva el aviso si falla el guardado", a
   })
   await page.goto("/revision")
   await expect(page.getByRole("alert").filter({ hasText: "No se pudo cargar el aviso" })).toBeVisible()
+  expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([])
   await page.getByRole("button", { name: "Reintentar detalle" }).click()
   await expect(page.getByRole("heading", { name: "Detalle del aviso" })).toBeVisible()
   await page.getByRole("button", { name: "Descartar" }).click()
@@ -91,3 +93,36 @@ for (const theme of ["industrial", "neutral"]) {
     })
   }
 }
+
+test("muestra carga accesible y navega y aprueba con el teclado", async ({ page }) => {
+  await mockBackend(page)
+  let release = () => {}
+  const gate = new Promise<void>((resolve) => { release = resolve })
+  let saved = ""
+  const rows = ["primero", "segundo"].map((id) => ({ feedback_id: id, request_id: `r-${id}`, conversation_id: "c", created_at: "2026-11-01T10:00:00Z", kind: "incorrecta", comment: `Aviso ${id}`, status: "nuevo", expected_answer: null, trace: {} }))
+  await page.route("**/api/history/feedback**", async (route) => {
+    const url = new URL(route.request().url())
+    if (url.pathname.endsWith("/counts")) return route.fulfill({ json: { nuevo: rows.length } })
+    if (url.pathname.endsWith("/decision")) { saved = route.request().postDataJSON().status; return route.fulfill({ json: { saved: true } }) }
+    if (url.pathname.endsWith("/original")) return route.fulfill({ status: 404, json: {} })
+    if (url.pathname.endsWith("/feedback")) { await gate; return route.fulfill({ json: rows }) }
+    return route.fulfill({ json: rows.find((item) => url.pathname.endsWith(`/${item.feedback_id}`)) })
+  })
+  await page.goto("/revision")
+  await expect(page.getByRole("status").filter({ hasText: "Cargando avisos" })).toBeVisible()
+  expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([])
+  release()
+  await expect(page.getByText("Petición: r-primero", { exact: false })).toBeVisible()
+  await page.keyboard.press("j")
+  await expect(page.getByText("Petición: r-segundo", { exact: false })).toBeVisible()
+  await page.keyboard.press("k")
+  await expect(page.getByText("Petición: r-primero", { exact: false })).toBeVisible()
+  await page.getByLabel("Respuesta esperada").fill("Respuesta revisada")
+  await page.getByRole("checkbox", { name: "He comprobado que hay un fallo real." }).check()
+  await page.getByRole("checkbox", { name: "He revisado toda la vista previa y quitado los datos sensibles." }).check()
+  await page.getByRole("heading", { name: "Detalle del aviso" }).click()
+  await page.keyboard.press("a")
+  await expect.poll(() => saved).toBe("revisado")
+  await page.keyboard.press("?")
+  await expect(page.getByRole("dialog", { name: "Atajos de teclado" }).getByText("Aviso siguiente / anterior")).toBeVisible()
+})
