@@ -4,8 +4,7 @@ import pytest
 from doubles import FakeEmbedder
 from fastapi.testclient import TestClient
 
-from doc_assistant.api import create_app
-from doc_assistant.bootstrap import ingest_pdfs
+from doc_assistant.bootstrap import create_app, ingest_pdfs
 from doc_assistant.config import load_config
 from doc_assistant.domain.documents.ids import pdf_doc_id
 from doc_assistant.infra.storage.chunks import ChunkStore
@@ -53,7 +52,7 @@ def test_upload_error_reasons_and_transient_models(config_path, tmp_path, monkey
             def fail(*args, exc=exc, **kwargs):
                 raise exc
 
-            monkeypatch.setattr("doc_assistant.api.save_and_ingest_pdf", fail)
+            monkeypatch.setattr("doc_assistant.bootstrap.save_and_ingest_pdf", fail)
             response = upload("x.pdf", plain)
             assert response.json()["code"] == code
             assert "private" not in response.text
@@ -166,7 +165,7 @@ def test_ingest_confines_paths(
     (data / "escape").symlink_to(tmp_path, target_is_directory=True)
     calls = []
     monkeypatch.setattr(
-        "doc_assistant.api.ingest_pdfs",
+        "doc_assistant.bootstrap.ingest_pdfs",
         lambda _cfg, path: (
             calls.append(path) or {"n_chunks": 0, "chunk_ids": [], "warnings": [], "timings": {}}
         ),

@@ -124,7 +124,7 @@ def test_api_returns_segments_and_inline_source(
 ) -> None:
     from fastapi.testclient import TestClient
 
-    from doc_assistant.api import create_app
+    from doc_assistant.bootstrap import create_app
 
     with TestClient(create_app(indexed)) as client:
         body = client.post("/ask", json={"question": "¿Qué documentos tienes?"}).json()

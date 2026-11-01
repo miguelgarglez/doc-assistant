@@ -6,8 +6,8 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from doc_assistant import api
-from doc_assistant import ask_stream as stream_module
+from doc_assistant import bootstrap as api
+from doc_assistant.api import streaming as stream_module
 from doc_assistant.application.ask.capacity import AskCapacity
 from doc_assistant.bootstrap import ask_events
 

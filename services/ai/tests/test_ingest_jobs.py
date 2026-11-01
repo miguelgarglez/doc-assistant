@@ -12,8 +12,8 @@ import pytest
 from doubles import FakeEmbedder
 from fastapi.testclient import TestClient
 
-from doc_assistant.api import create_app
 from doc_assistant.application.ingest.jobs import IngestJobs
+from doc_assistant.bootstrap import create_app
 
 JOB = "job-0123456789"
 

@@ -3,8 +3,8 @@ import json
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from doc_assistant.api.history import router
 from doc_assistant.application.history.outbox import HistoryOutbox
-from doc_assistant.history_api import router
 from doc_assistant.infra.history.sqlite import HistoryStore
 
 
@@ -166,7 +166,7 @@ def test_conversation_cursor_and_deletion_cancel_old_stream(tmp_path):
 def test_application_records_stream_and_purges_expired(config_path, tmp_path, monkeypatch):
     import time
 
-    from doc_assistant.api import create_app
+    from doc_assistant.bootstrap import create_app
 
     monkeypatch.setenv("DOC_ASSISTANT_HISTORY_TOKEN", "secret")
     store = HistoryStore(tmp_path / "history.db")
@@ -195,7 +195,7 @@ def test_application_records_stream_and_purges_expired(config_path, tmp_path, mo
 def test_history_start_failure_retries_without_changing_stream(config_path, monkeypatch, caplog):
     import time
 
-    from doc_assistant.api import create_app
+    from doc_assistant.bootstrap import create_app
 
     original_init = HistoryStore.__init__
     available = False
@@ -242,7 +242,7 @@ def test_history_start_failure_retries_without_changing_stream(config_path, monk
 
 
 def test_history_can_be_disabled_by_administrator(config_path, monkeypatch):
-    from doc_assistant.api import create_app
+    from doc_assistant.bootstrap import create_app
 
     monkeypatch.setenv("DOC_ASSISTANT_HISTORY_TOKEN", "secret")
     monkeypatch.setenv("DOC_ASSISTANT_HISTORY_ENABLED", "0")
@@ -256,7 +256,7 @@ def test_history_can_be_disabled_by_administrator(config_path, monkeypatch):
 def test_storage_write_failure_is_reported_without_changing_stream(config_path, monkeypatch):
     import time
 
-    from doc_assistant.api import create_app
+    from doc_assistant.bootstrap import create_app
 
     monkeypatch.setenv("DOC_ASSISTANT_HISTORY_TOKEN", "secret")
     with TestClient(create_app(config_path), client=("127.0.0.1", 1234)) as client:

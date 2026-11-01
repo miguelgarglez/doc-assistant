@@ -12,6 +12,8 @@ from typing import Any
 
 from fastapi import FastAPI
 
+from doc_assistant.api.routes import register_routes
+from doc_assistant.api.settings import ApiSettings
 from doc_assistant.application.ask import pipeline
 from doc_assistant.application.ask.capacity import AskCapacity
 from doc_assistant.application.ask.dependencies import AskContext, AskSettings
@@ -242,6 +244,13 @@ def lifespan_for(config_path: Path) -> Callable[[FastAPI], AbstractAsyncContextM
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.config = load_config(config_path)
+        cfg = app.state.config
+        app.state.api_settings = ApiSettings(
+            data_dir=cfg.data_dir,
+            upload_pdf_max_bytes=cfg.upload_pdf_max_bytes,
+            upload_pdf_max_pages=cfg.upload_pdf_max_pages,
+            upload_image_max_bytes=cfg.upload_image_max_bytes,
+        )
         app.state.jobs = IngestJobs()
         app.state.pdf = PdfService()
         app.state.ask_capacity = AskCapacity()
@@ -325,3 +334,27 @@ def lifespan_for(config_path: Path) -> Callable[[FastAPI], AbstractAsyncContextM
                 app.state.history_outbox.close()
 
     return lifespan
+
+
+DEFAULT_CONFIG = Path(__file__).resolve().parents[4] / "config/config.yaml"
+
+
+def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
+    app = FastAPI(title="Doc Assistant AI", version="0.1.0", lifespan=lifespan_for(config_path))
+    register_routes(
+        app,
+        config_path,
+        ask=lambda *args, **kwargs: ask(*args, **kwargs),
+        ask_events=lambda *args, **kwargs: ask_events(*args, **kwargs),
+        component_health=lambda: component_health(app.state.config),
+        ingest_pdfs=lambda *args, **kwargs: ingest_pdfs(*args, **kwargs),
+        invoice_image=lambda *args, **kwargs: invoice_image(*args, **kwargs),
+        invoice_service=lambda: invoice_service(app.state.config),
+        save_and_ingest_pdf=lambda *args, **kwargs: save_and_ingest_pdf(*args, **kwargs),
+        source_service=lambda: source_service(app.state.config),
+        upload_invoice=lambda *args, **kwargs: upload_invoice(*args, **kwargs),
+    )
+    return app
+
+
+app = create_app()

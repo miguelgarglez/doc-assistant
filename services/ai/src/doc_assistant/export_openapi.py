@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from doc_assistant.api import app
+from doc_assistant.bootstrap import app
 
 
 def main() -> None:

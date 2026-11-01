@@ -9,9 +9,7 @@ from typing import Any
 
 from pydantic import BaseModel, TypeAdapter
 
-from doc_assistant.application.ask.capacity import AskCapacity
-from doc_assistant.application.ports.models import AdapterError
-from doc_assistant.ask_schemas import (
+from doc_assistant.api.schemas import (
     AskResponse,
     BlocksEvent,
     CitationsEvent,
@@ -23,6 +21,8 @@ from doc_assistant.ask_schemas import (
     StreamEvent,
     TokenEvent,
 )
+from doc_assistant.application.ask.capacity import AskCapacity
+from doc_assistant.application.ports.models import AdapterError
 
 ASK_QUEUE_TIMEOUT_S = 60.0
 

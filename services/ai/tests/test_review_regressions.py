@@ -92,7 +92,7 @@ def test_upload_limits_and_symlink_confinement(config_path, tmp_path, synthetic_
     import yaml
     from fastapi.testclient import TestClient
 
-    from doc_assistant.api import create_app
+    from doc_assistant.bootstrap import create_app
 
     cfg = yaml.safe_load(config_path.read_text())
     cfg["upload_pdf_max_bytes"] = 100
@@ -163,7 +163,7 @@ def test_pdf_page_limit_and_sync_handlers(config_path, synthetic_pdf):
     import yaml
     from fastapi.testclient import TestClient
 
-    from doc_assistant.api import create_app
+    from doc_assistant.bootstrap import create_app
 
     cfg = yaml.safe_load(config_path.read_text())
     cfg["upload_pdf_max_pages"] = 1
@@ -209,8 +209,8 @@ def test_adapter_cardinality_and_duplicate_indices(monkeypatch):
 def test_review_status_is_exposed_and_warns(config_path):
     from fastapi.testclient import TestClient
 
-    from doc_assistant.api import create_app
     from doc_assistant.application.invoices.query import run_plan
+    from doc_assistant.bootstrap import create_app
     from doc_assistant.config import load_config
     from doc_assistant.infra.invoices.sqlite import InvoiceDB
 
@@ -233,8 +233,7 @@ def test_invoice_transaction_rolls_back_and_separates_pdf(config_path, synthetic
     from doubles import FakeEmbedder
     from fastapi.testclient import TestClient
 
-    from doc_assistant.api import create_app
-    from doc_assistant.bootstrap import ingest_pdfs
+    from doc_assistant.bootstrap import create_app, ingest_pdfs
     from doc_assistant.config import load_config
     from doc_assistant.domain.documents.ids import invoice_doc_id, pdf_doc_id
     from doc_assistant.infra.invoices.sqlite import InvoiceDB

@@ -14,25 +14,12 @@ from fastapi import Path as PathParam
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
+from doc_assistant.api.schemas import AskRequest, AskResponse
+from doc_assistant.api.streaming import STREAM_SCHEMA, queued_ask_stream
 from doc_assistant.application.ingest.jobs import IngestJobs, Progress, Stage
 from doc_assistant.application.ports.models import AdapterError
 from doc_assistant.application.ports.pdf import PdfPort
-from doc_assistant.ask_schemas import AskRequest, AskResponse
-from doc_assistant.ask_stream import STREAM_SCHEMA, queued_ask_stream
-from doc_assistant.bootstrap import (
-    ask,
-    ask_events,
-    component_health,
-    ingest_pdfs,
-    invoice_image,
-    invoice_service,
-    lifespan_for,
-    save_and_ingest_pdf,
-    source_service,
-    upload_invoice,
-)
 
-DEFAULT_CONFIG = Path(__file__).resolve().parents[4] / "config/config.yaml"
 ASK_QUEUE_TIMEOUT_S = 60.0
 
 
@@ -252,9 +239,21 @@ def ingest_event_stream(jobs: IngestJobs, job_id: str) -> Iterator[str]:
         yield f"event: stage\ndata: {json.dumps(event.model_dump(mode='json'), ensure_ascii=False)}\n\n"
 
 
-def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
-    app = FastAPI(title="Doc Assistant AI", version="0.1.0", lifespan=lifespan_for(config_path))
-    from doc_assistant.history_api import router as history_router
+def register_routes(
+    app: FastAPI,
+    config_path: Path,
+    *,
+    ask: Callable[..., Any],
+    ask_events: Callable[..., Any],
+    component_health: Callable[..., Any],
+    ingest_pdfs: Callable[..., Any],
+    invoice_image: Callable[..., Any],
+    invoice_service: Callable[..., Any],
+    save_and_ingest_pdf: Callable[..., Any],
+    source_service: Callable[..., Any],
+    upload_invoice: Callable[..., Any],
+) -> None:
+    from doc_assistant.api.history import router as history_router
 
     app.include_router(history_router)
 
@@ -293,8 +292,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
     def health_components(request: Request) -> ComponentsHealth:
         return ComponentsHealth(
             components=[
-                ComponentHealth.model_validate(asdict(result))
-                for result in component_health(request.app.state.config)
+                ComponentHealth.model_validate(asdict(result)) for result in component_health()
             ]
         )
 
@@ -304,7 +302,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         responses={400: {"model": ErrorBody}, 404: {"model": ErrorBody}, 502: {"model": ErrorBody}},
     )
     def ingest(payload: IngestRequest, request: Request) -> Any:
-        base = request.app.state.config.data_dir
+        base = request.app.state.api_settings.data_dir
         relative = Path(payload.directory)
         if relative.is_absolute() or ".." in relative.parts:
             return JSONResponse(
@@ -349,7 +347,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
                 return upload_error(
                     "invalid_file", "Only PDF uploads are accepted", 400, reason="unsupported_type"
                 )
-            cfg = request.app.state.config
+            cfg = request.app.state.api_settings
             if not safe_upload_directory(cfg.data_dir, "documents"):
                 return upload_error("invalid_directory", "Upload path escapes data_dir", 400)
             data = read_upload(file, cfg.upload_pdf_max_bytes)
@@ -446,7 +444,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
             ask_events_fn=ask_events,
         )
         if outbox is not None:
-            from doc_assistant.history_stream import outbox_ask_stream
+            from doc_assistant.api.history_stream import outbox_ask_stream
 
             conversation_id = payload.conversation_id or request_id
             ticket = outbox.ticket(conversation_id)
@@ -472,14 +470,11 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
 
     @app.get("/sources", response_model=list[Source])
     def sources(request: Request) -> Any:
-        return source_service(request.app.state.config).list_sources()
+        return source_service().list_sources()
 
     @app.get("/sources/{source_id}/chunks", response_model=list[SourceChunk])
     def source_chunks(source_id: str, request: Request) -> Any:
-        return [
-            SourceChunk.model_validate(row)
-            for row in source_service(request.app.state.config).chunks(source_id)
-        ]
+        return [SourceChunk.model_validate(row) for row in source_service().chunks(source_id)]
 
     @app.get(
         "/ingest/jobs/{job_id}/events",
@@ -516,8 +511,8 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         quote: Annotated[str, Query(min_length=1, max_length=2000)],
         request: Request,
     ) -> Any:
-        cfg = request.app.state.config
-        source = source_service(cfg).find(source_id)
+        cfg = request.app.state.api_settings
+        source = source_service().find(source_id)
         if source is None:
             return upload_error("source_not_found", "Source does not exist", 404)
         if source["kind"] != "pdf":
@@ -538,8 +533,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
 
     @app.delete("/sources/{source_id}", status_code=204, responses={404: {"model": ErrorBody}})
     def delete_source(source_id: str, request: Request) -> Response:
-        cfg = request.app.state.config
-        sources_service = source_service(cfg)
+        sources_service = source_service()
         source = sources_service.find(source_id)
         if source is None:
             return upload_error("source_not_found", "Source does not exist", 404)
@@ -552,8 +546,8 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         responses={400: {"model": ErrorBody}, 404: {"model": ErrorBody}, 502: {"model": ErrorBody}},
     )
     def reindex_source(source_id: str, request: Request) -> Any:
-        cfg = request.app.state.config
-        source = source_service(cfg).find(source_id)
+        cfg = request.app.state.api_settings
+        source = source_service().find(source_id)
         if source is None:
             return upload_error("source_not_found", "Source does not exist", 404)
         if source["kind"] != "pdf" or not source["file"]:
@@ -567,7 +561,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         responses={200: {"content": {"image/png": {}}}, 404: {"model": ErrorBody}},
     )
     def source_page(doc_id: str, n: int, request: Request) -> Response:
-        png = source_service(request.app.state.config).page(doc_id, n)
+        png = source_service().page(doc_id, n)
         if png is None:
             return JSONResponse(
                 status_code=404,
@@ -583,7 +577,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
             InvoiceListItem.model_validate(
                 {**row, "estado": "ok" if row["cuadra"] == "1" else "revisar"}
             )
-            for row in invoice_service(request.app.state.config).list_invoices()
+            for row in invoice_service().list_invoices()
         ]
 
     @app.post(
@@ -606,7 +600,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
                     400,
                     reason="unsupported_type",
                 )
-            cfg = request.app.state.config
+            cfg = request.app.state.api_settings
             if not safe_upload_directory(cfg.data_dir, "invoices"):
                 return upload_error("invalid_directory", "Upload path escapes data_dir", 400)
             data = read_upload(file, cfg.upload_image_max_bytes)
@@ -665,8 +659,3 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
             )
         media = "image/jpeg" if data.startswith(b"\xff\xd8\xff") else "image/png"
         return Response(content=data, media_type=media)
-
-    return app
-
-
-app = create_app()

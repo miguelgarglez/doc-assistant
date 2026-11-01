@@ -19,12 +19,11 @@ from doubles import FakeEmbedder, FakeLLM, FakeReranker
 from fastapi.testclient import TestClient
 
 from doc_assistant import bootstrap as bootstrap_module
-from doc_assistant.api import create_app
+from doc_assistant.api.streaming import ask_stream_events as _ask_stream_events
 from doc_assistant.application.answers.meta import classify
 from doc_assistant.application.ask import pipeline as ask_module
 from doc_assistant.application.ports.models import AdapterBusy, AdapterError
-from doc_assistant.ask_stream import ask_stream_events as _ask_stream_events
-from doc_assistant.bootstrap import ask_events, save_and_ingest_pdf
+from doc_assistant.bootstrap import ask_events, create_app, save_and_ingest_pdf
 from doc_assistant.config import load_config
 from doc_assistant.domain.answers.partial_json import FieldStreamer
 from doc_assistant.infra.models.http import HttpLLM

@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
+from doc_assistant.api.history_stream import outbox_ask_stream as _outbox_ask_stream
+from doc_assistant.api.history_stream import recorded_ask_stream as _recorded_ask_stream
 from doc_assistant.application.ask.capacity import AskCapacity
 from doc_assistant.bootstrap import ask_events
-from doc_assistant.history_stream import outbox_ask_stream as _outbox_ask_stream
-from doc_assistant.history_stream import recorded_ask_stream as _recorded_ask_stream
 from doc_assistant.infra.history.sqlite import HistoryStore
 
 recorded_ask_stream = partial(_recorded_ask_stream, ask_events_fn=ask_events)

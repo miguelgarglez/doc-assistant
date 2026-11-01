@@ -100,7 +100,7 @@ def plan(dev: bool, ports: dict[str, int], with_llm: bool) -> list[Proc]:
         sys.executable,
         "-m",
         "uvicorn",
-        "doc_assistant.api:app",
+        "doc_assistant.bootstrap:app",
         "--host",
         LOOPBACK,
         "--port",

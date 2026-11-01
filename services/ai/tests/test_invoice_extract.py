@@ -9,9 +9,8 @@ import pytest
 from doubles import FakeEmbedder, FakeLLM, FakeOCR, FakeReranker
 from fastapi.testclient import TestClient
 
-from doc_assistant.api import create_app
 from doc_assistant.application.invoices.extract import check_gates, extract_amounts, extract_invoice
-from doc_assistant.bootstrap import ask
+from doc_assistant.bootstrap import ask, create_app
 
 
 def test_amount_labels_with_colons_keep_values_and_evidence():
