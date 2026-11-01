@@ -205,3 +205,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Copia byte a byte del borrador de 44 casos y revisión de cada caso frente a los cuatro PDF. Detectados M03 (confusión de dos tareas), Z01 (citas incompletas y señales frente a alimentación) y otras ambigüedades. Informe y datos solo en `_agents/night/`. No contiene casos de facturas.
 - Preparado colector de una pasada para un gold aprobado, probado con dos casos sintéticos y transporte simulado; no califica ni se ejecutó con datos reales. El primer intento de prueba con servidor temporal quedó bloqueado y se terminó solo su PID 95809. El servicio ajeno que escucha en 8000 no se tocó. Sin evaluación final ni tag.
 
+
+## 01-Nov 02:00 CET · Puertos de la matriz multiplataforma
+- El workflow manual configura 3180, 8180 y 8181–8184 y comprueba esos puertos al cerrar. Sigue sin ejecutarse en GitHub; el OCR falso no arranca un proceso.
+- Verificación estática: YAML leído, variables comprobadas y bloque Python compilado con el entorno existente. Sin instalaciones ni servicios iniciados para esta comprobación.
+

@@ -12,6 +12,12 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # evita el rate limit de mise
       DOC_ASSISTANT_FAKE_LLAMA: "1"
+      DOC_ASSISTANT_WEB_PORT: "3180"
+      DOC_ASSISTANT_AI_PORT: "8180"
+      DOC_ASSISTANT_LLM_PORT: "8181"
+      DOC_ASSISTANT_EMBEDDINGS_PORT: "8182"
+      DOC_ASSISTANT_RERANKER_PORT: "8183"
+      DOC_ASSISTANT_OCR_PORT: "8184"
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v5
@@ -30,8 +36,8 @@ jobs:
           ok = False
           for _ in range(240):
               try:
-                  urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=2)
-                  urllib.request.urlopen("http://127.0.0.1:3000/api/health", timeout=2)
+                  urllib.request.urlopen("http://127.0.0.1:8180/health", timeout=2)
+                  urllib.request.urlopen("http://127.0.0.1:3180/api/health", timeout=2)
                   ok = True; break
               except Exception:
                   time.sleep(1)
@@ -44,7 +50,7 @@ jobs:
           def busy(port):
               with socket.socket() as s:
                   return s.connect_ex(("127.0.0.1", port)) == 0
-          ports = [x for x in (8081, 8082, 8083, 8000, 3000) if busy(x)]
+          ports = [x for x in (8181, 8182, 8183, 8184, 8180, 3180) if busy(x)]
           out = subprocess.run(["powershell", "-NoProfile", "-Command", "Get-CimInstance Win32_Process | Select-Object -ExpandProperty CommandLine"] if WIN else ["ps", "-axo", "command"], capture_output=True, text=True).stdout
           stray = [n for n in ("fake_llama", "uvicorn", "next-server", "next\\dist\\bin\\next", "next/dist/bin/next") if n in out]
           print("health:", ok, "puertos:", ports, "procesos:", stray)
