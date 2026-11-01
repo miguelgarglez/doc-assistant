@@ -312,3 +312,6 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Tres pasadas de navegador con axe dieron 182 aprobadas y cuatro live omitidas cada una. Usaron respuestas simuladas; se ejecutaron antes del cambio del extractor, que no modifica la interfaz. El servidor propio se cerró por PID y los temporales se movieron a `_trash/`.
 - Mejoran extracción de importes con dos puntos y evaluación sintética. Pendientes gold aprobado, evaluación representativa y percentiles. Recuento: 18 cumplidas, 10 parciales y 3 no.
 
+## 01-Nov 03:31 CET · Auditoría v0.15.2
+- La auditoría del tag `76aa037` en un clon limpio terminó con TOTAL 0. Igual que en la versión anterior, los archivos temporales se aislaron y el clon propio se movió a `_trash/`.
+
