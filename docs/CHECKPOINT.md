@@ -472,3 +472,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 11:07 CET · Huella del planificador de facturas
 - El colector de facturas registra SHA256 del prompt de planificación usado por el modelo. La huella identifica ese texto, no la versión completa del modelo o del código; el colector sigue sin persistir.
 - Sesenta pruebas de facturas, Ruff y mypy pasan.
+
+## 01-Nov 11:07 CET · Traza de facturas ante errores
+- El colector principal enlaza la traza de factura antes de invocar el planificador. Si este falla, conserva los datos capturados hasta ese momento. También conserva la traza de la comprobación de facturas cuando la consulta continúa por documentos.
+- Diez pruebas de consulta, Ruff y mypy pasan. La traza no se persiste ni se expone.

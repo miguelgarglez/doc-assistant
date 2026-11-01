@@ -258,3 +258,35 @@ def test_trace_distinguishes_clarification(config_path: Path, monkeypatch) -> No
     trace: dict = {}
     list(ask_events(config_path, "pregunta", trace=trace))
     assert trace["kind"] == "clarification"
+
+
+def test_invoice_trace_survives_planner_failure(config_path, fake_embedder, monkeypatch):
+    import importlib
+
+    import pytest
+
+    from doc_assistant.adapters import AdapterBusy
+
+    module = importlib.import_module("doc_assistant.ask")
+    monkeypatch.setattr(module, "list_sources", lambda cfg: [{"kind": "invoice"}])
+    monkeypatch.setattr(module, "classify", lambda question, sources: ("rag", []))
+
+    def fail(config_path, question, *, llm, trace):
+        trace["plan_prompt_sha256"] = "planner-hash"
+        raise AdapterBusy("busy")
+
+    monkeypatch.setattr(module, "ask_invoices", fail)
+    trace = {}
+    with pytest.raises(AdapterBusy):
+        list(
+            ask_events(
+                config_path,
+                "factura",
+                embedder=fake_embedder,
+                reranker=FakeReranker(),
+                llm=FakeLLM(response={}),
+                trace=trace,
+            )
+        )
+    assert trace["invoice"]["plan_prompt_sha256"] == "planner-hash"
+    assert trace["status"] == "error"

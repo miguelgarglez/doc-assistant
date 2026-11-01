@@ -238,9 +238,9 @@ def _ask_events(
         t = time.perf_counter()
         yield _step("invoices", "running", "Comprobando si es una consulta de facturas")
         invoice_trace: dict[str, Any] | None = {} if trace is not None else None
-        invoice_result = ask_invoices(config_path, question, llm=llm, trace=invoice_trace)
-        if trace is not None and invoice_result is not None:
+        if trace is not None:
             trace["invoice"] = invoice_trace
+        invoice_result = ask_invoices(config_path, question, llm=llm, trace=invoice_trace)
         latencies["invoices"] = round(time.perf_counter() - t, 4)
         yield _step(
             "invoices",
