@@ -23,8 +23,10 @@
 
 ## Estado actual
 
-- La versión de comportamiento de referencia es v0.17.1.
+- La versión de comportamiento sigue siendo v0.17.1; v0.18.0 reorganiza el código sin cambiar el contrato ni la interfaz.
 - La [cobertura](requirements-coverage.md) registra 18 cumplidas, 10 parciales y 3 no.
+- El servicio usa capas `api`, `application`, `domain` e `infra`, comprobadas con `ast`; la web agrupa seis features y ESLint protege sus APIs públicas.
+- Los tests del servicio se dividen en 126 unitarios, 280 de integración y 35 live optativos.
 - Hay respuestas con citas, aclaraciones de facturas y bloques derivados de evidencia, con Markdown como alternativa.
 - La cola acota consultas por proceso; no limita ingestas ni comparte capacidad entre procesos.
 - Faltan gold aprobado y evaluación representativa; los resultados sintéticos no acreditan precisión general.

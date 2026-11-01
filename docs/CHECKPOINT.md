@@ -2,18 +2,17 @@
 
 ## Estado de un vistazo
 
-- Candidato v0.16.0 desde main v0.15.3: identificadores de petición, trazas opcionales y almacén interno.
-- Check completo, tres pasadas e2e con axe y cuatro casos de humo HTTP con modelos reales correctos; auditoría del commit final en el registro privado de integración.
+- v0.18.0 reorganiza el código sin cambiar el comportamiento de referencia de v0.17.1, el contrato OpenAPI ni el cliente generado.
+- El servicio usa capas `api`, `application`, `domain` e `infra`; un test AST comprueba sus límites. La web agrupa seis features y ESLint protege sus entradas públicas.
+- Check completo con 406 tests normales del servicio, 28 de scripts, 48 Markdown, lint, tipos, contrato y build. Playwright pasa 215 casos y omite cuatro live.
 - Cobertura: 18 cumplidas, 10 parciales y 3 no, según `requirements-coverage.md`.
-- ADR-014 implementa bloques con evidencia y alternativa Markdown.
+- Los 441 casos del servicio se reparten en 126 unitarios, 280 de integración y 35 live optativos.
 - Consultas limitadas por proceso a dos activas y cuatro en espera, hasta 60 segundos.
 - La cola no limita ingestas ni comparte capacidad entre procesos.
-- La evaluación sintética tras corregir importes obtuvo 11 coincidencias de 12 con un oráculo limitado.
 - Falta gold aprobado y evaluación representativa; no hay una tasa general de error acreditada.
 - Faltan carga sostenida, equidad de cola y causa demostrada del error histórico sin traza.
-- Linux y Windows no están probados. El check de integración pasa en macOS ARM64 con dependencias locales desde lockfiles, sin ampliar la raíz del build.
-- Historial y feedback tienen piezas internas probadas en la rama de origen, desconectadas de la API y de la interfaz. Multiusuario sigue como propuesta.
-- No hay persistencia automática; faltan privacidad, retención, autorización y comunicación de errores de escritura.
+- Linux y Windows no están probados. El workflow multiplataforma sigue siendo manual.
+- El historial local y el feedback están conectados. La cola de guardado pierde pendientes al reiniciar y el aislamiento multiusuario sigue pendiente.
 
 ## Diario de integración v0.16.0
 

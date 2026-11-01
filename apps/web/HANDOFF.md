@@ -1,12 +1,12 @@
 # apps/web — handoff
 
-Next.js (App Router) + TypeScript strict + Tailwind v4 + shadcn/ui (**Base UI**, no Radix). Cliente tipado `openapi-fetch` → BFF `/api` → `services/ai`. Página principal: **Doc Assistant** con pestañas Base UI **Consulta** / **Facturas**. Rama `feat/web-invoices`.
+Next.js (App Router) + TypeScript strict + Tailwind v4 + shadcn/ui (**Base UI**, no Radix). Cliente tipado `openapi-fetch` → BFF `/api` → `services/ai`. La aplicación agrupa chat, fuentes, subidas, historial, visor y sistema en `src/features`.
 
 ## Versiones instaladas
 
 | Pieza | Versión |
 | --- | --- |
-| Node | 26.7.0 |
+| Node | 24.22.2 |
 | pnpm | 10.21.0 |
 | next | 16.4.3 |
 | react / react-dom | 19.3.0 |
@@ -30,22 +30,21 @@ Next.js (App Router) + TypeScript strict + Tailwind v4 + shadcn/ui (**Base UI**,
 1. **Tokens** — variables CSS en `src/app/globals.css` (`:root` / `.dark` + `@theme inline`). Incluye `--highlight` para citas. Sin colores sueltos en componentes.
 2. **Primitivos** — `src/components/ui/*` (shadcn sobre `@base-ui/react`), incl. `skeleton` y `tabs`.
 3. **API tipada** — `src/lib/api/schema.d.ts` (generado) + `client.ts` (`baseUrl: "/api"`) + `upload.ts` (multipart FormData). Tipos desde el schema; sin DTOs a mano.
-4. **Dominio** — `src/components/domain/*` reciben datos por props; hooks `use-ask`, `use-invoices`, `use-document-upload`.
-5. **Página** — `src/app/page.tsx` monta pestañas Consulta (`AskWorkspace`) / Facturas (`InvoicesWorkspace`; lazy al activar la pestaña).
+4. **Features** — `src/features/*` agrupa los componentes, hooks y estado de cada función. Cada `index.ts` es la entrada pública para otras features.
+5. **Aplicación** — `src/app/*` contiene rutas, layout, proveedores y el proxy fino.
 
-## Flujo ask (pestaña Consulta)
+## Flujo de consulta
 
-- `QuestionBox` → `api.POST("/ask")`.
-- Estados: vacío (`idle`), skeleton de carga (`AskLoadingSkeleton`), `AskErrorNotice` con **Reintentar**, `RefusalNotice`, `AnswerCard` + `CitationChips`.
-- Layout resultado: respuesta y fuente **lado a lado en `lg+`**, apilados en móvil.
-- Cita activa → `SourceViewer`: página a escala, zoom clic, fragmento resaltado, anterior/siguiente.
-- Al pie: `DocumentUploadPanel` → `POST /documents` (PDF); muestra `n_chunks` y «ya indexado» si `created=false`.
+- `ChatProvider` usa `AskTransport` para consumir `POST /ask/stream`. Si el servicio no ofrece streaming, usa `POST /ask`.
+- `ChatView` compone el estado vacío, el hilo y `Composer`. Los mensajes del asistente muestran texto provisional, rechazo, aclaración, bloques de datos, citas y errores.
+- Los marcadores de cita abren el visor con la página, el fragmento resaltado, zoom y navegación entre citas.
+- `use-question-history` conserva preguntas de la sesión. El historial persistido vive en la feature `history`.
 
-## Flujo facturas (pestaña Facturas)
+## Fuentes y subidas
 
-- `UploadDropzone` (PNG/JPG) → `POST /invoices/upload` (multipart tipado). Skeleton al subir; error `{code,message}` con reintento.
-- `InvoiceReviewCard` con `InvoiceUploadResponse`: badge `ok` / `revisar` + motivo; campos del `record` (null → `—  no encontrado`); flag `derivado`; evidencia OCR por campo (`<details>`); imagen `GET /invoices/{id}/image` con zoom. Importes es-ES desde Decimal-string (sin float).
-- Lista compacta `GET /invoices`; clic abre la ficha (reutiliza la respuesta de upload en sesión si existe).
+- `AddSourcesDialog` acepta PDF, PNG y JPEG. `UploadsProvider` mantiene la cola, el progreso, los errores recuperables y los reintentos.
+- Los PDF usan el endpoint de documentos y las imágenes usan la subida de facturas. El aviso persistente conserva el estado al navegar.
+- `SourcesView` filtra, ordena y elimina fuentes. `SourceDetail` muestra fragmentos y páginas de documentos, o los campos y la imagen de una factura.
 
 ## Comandos
 

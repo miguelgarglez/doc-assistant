@@ -13,17 +13,17 @@ rechazo, store, adapters, round3_fixes) están migrados; no había casos valioso
 
 | Test original | Estado | Test nuevo |
 |---|---|---|
-| `test_adapters.py::test_fake_embedder_dim` | migrado | `tests/test_adapters.py::test_fake_embedder_dim` |
-| `test_adapters.py::test_fake_reranker_preserves_order_scores` | migrado | `tests/test_adapters.py::test_fake_reranker_preserves_order_scores` |
-| `test_adapters.py::test_fake_llm_json_schema_shape` | migrado | `tests/test_adapters.py::test_fake_llm_json_schema_shape` |
-| `test_adapters.py::test_config_swap_changes_ports` | migrado | `tests/test_adapters.py::test_config_swap_changes_ports` |
-| `test_ask.py::test_ask_verified_answer` | migrado | `tests/test_ask.py::test_ask_verified_answer` |
-| `test_ask.py::test_ask_llm_rejects` | migrado | `tests/test_ask.py::test_ask_llm_rejects` |
-| `test_ask.py::test_ask_false_citation_rejected` | migrado | `tests/test_ask.py::test_ask_false_citation_rejected` |
-| `test_chunking.py::test_extract_pdf_text_has_sections` | migrado | `tests/test_chunking.py::test_extract_pdf_text_has_sections` |
-| `test_chunking.py::test_chunk_pdf_sections_and_ids` | migrado | `tests/test_chunking.py::test_chunk_pdf_sections_and_ids` |
-| `test_chunking.py::test_chunk_pdf_skips_footer` | migrado | `tests/test_chunking.py::test_chunk_pdf_skips_footer` |
-| `test_chunking.py::test_chunk_invoice_fields_and_lines` | migrado | `tests/test_chunking.py::test_chunk_invoice_fields_and_lines` |
+| `test_adapters.py::test_fake_embedder_dim` | migrado | `tests/unit/test_adapters.py::test_fake_embedder_dim` |
+| `test_adapters.py::test_fake_reranker_preserves_order_scores` | migrado | `tests/unit/test_adapters.py::test_fake_reranker_preserves_order_scores` |
+| `test_adapters.py::test_fake_llm_json_schema_shape` | migrado | `tests/unit/test_adapters.py::test_fake_llm_json_schema_shape` |
+| `test_adapters.py::test_config_swap_changes_ports` | migrado | `tests/integration/test_adapters.py::test_config_swap_changes_ports` |
+| `test_ask.py::test_ask_verified_answer` | migrado | `tests/integration/test_ask.py::test_ask_verified_answer` |
+| `test_ask.py::test_ask_llm_rejects` | migrado | `tests/integration/test_ask.py::test_ask_llm_rejects` |
+| `test_ask.py::test_ask_false_citation_rejected` | migrado | `tests/integration/test_ask.py::test_ask_false_citation_rejected` |
+| `test_chunking.py::test_extract_pdf_text_has_sections` | migrado | `tests/integration/test_chunking.py::test_extract_pdf_text_has_sections` |
+| `test_chunking.py::test_chunk_pdf_sections_and_ids` | migrado | `tests/integration/test_chunking.py::test_chunk_pdf_sections_and_ids` |
+| `test_chunking.py::test_chunk_pdf_skips_footer` | migrado | `tests/integration/test_chunking.py::test_chunk_pdf_skips_footer` |
+| `test_chunking.py::test_chunk_invoice_fields_and_lines` | migrado | `tests/integration/test_chunking.py::test_chunk_invoice_fields_and_lines` |
 | `test_eval.py::test_eval_metrics` | excluido a propósito (eval) | — |
 | `test_evaluation_contract.py::test_acceptance_and_reference_substrings_do_not_prove_correctness[N kg]` | excluido a propósito (eval) | — |
 | `test_evaluation_contract.py::test_acceptance_and_reference_substrings_do_not_prove_correctness[65 kg]` | excluido a propósito (eval) | — |
@@ -79,18 +79,18 @@ rechazo, store, adapters, round3_fixes) están migrados; no había casos valioso
 | `test_evaluation_contract.py::test_cli_never_reports_success_for_pending_or_failed_evaluation[counts1-False-2]` | excluido a propósito (eval) | — |
 | `test_evaluation_contract.py::test_cli_never_reports_success_for_pending_or_failed_evaluation[counts2-True-0]` | excluido a propósito (eval) | — |
 | `test_evaluation_contract.py::test_unknown_result_schema_is_not_silently_treated_as_legacy` | excluido a propósito (eval) | — |
-| `test_invoices.py::test_multi_field` | migrado | `tests/test_invoices.py::test_multi_field` |
-| `test_invoices.py::test_absent_invoice_and_field_refuse` | migrado | `tests/test_invoices.py::test_absent_invoice_and_field_refuse` |
-| `test_invoices.py::test_filter_and_sum` | migrado | `tests/test_invoices.py::test_filter_and_sum` |
-| `test_invoices.py::test_filter_value_braces_and_null_op` | migrado | `tests/test_invoices.py::test_filter_value_braces_and_null_op` |
-| `test_invoices.py::test_router` | migrado | `tests/test_invoices.py::test_router` |
-| `test_round3_fixes.py::test_degree_followed_by_word` | migrado | `tests/test_round3_fixes.py::test_degree_followed_by_word` |
-| `test_round3_fixes.py::test_bare_number_with_unit_in_chunk` | migrado | `tests/test_round3_fixes.py::test_bare_number_with_unit_in_chunk` |
-| `test_round3_fixes.py::test_unit_change_still_rejected` | migrado | `tests/test_round3_fixes.py::test_unit_change_still_rejected` |
-| `test_round3_fixes.py::test_celsius_kept` | migrado | `tests/test_round3_fixes.py::test_celsius_kept` |
-| `test_round3_fixes.py::test_absent_number_rejected` | migrado | `tests/test_round3_fixes.py::test_absent_number_rejected` |
-| `test_round3_fixes.py::test_invoice_header_chunk_has_issuer_and_taxid` | migrado | `tests/test_round3_fixes.py::test_invoice_header_chunk_has_issuer_and_taxid` |
-| `test_round3_fixes.py::test_ingest_survives_bad_files` | migrado | `tests/test_round3_fixes.py::test_ingest_survives_bad_files` |
-| `test_round3_fixes.py::test_question_guard_before_any_model` | migrado | `tests/test_round3_fixes.py::test_question_guard_before_any_model` |
-| `test_store.py::test_upsert_and_search` | migrado | `tests/test_store.py::test_upsert_and_search` |
-| `test_store.py::test_ingest_idempotent` | migrado | `tests/test_store.py::test_ingest_idempotent` |
+| `test_invoices.py::test_multi_field` | migrado | `tests/integration/test_invoices.py::test_role_picks_the_right_nif` y `test_citations_only_from_selected_invoices` |
+| `test_invoices.py::test_absent_invoice_and_field_refuse` | migrado | `tests/integration/test_invoices.py::test_short_or_wrong_numbers_do_not_match` y `test_party_from_question_when_plan_has_none` |
+| `test_invoices.py::test_filter_and_sum` | migrado | `tests/integration/test_invoices.py::test_amount_filters_accept_spanish_and_english_formats` y `test_count_sum_and_has` |
+| `test_invoices.py::test_filter_value_braces_and_null_op` | migrado | `tests/integration/test_invoices.py::test_amount_filters_accept_spanish_and_english_formats`, `test_count_sum_and_has` y `tests/unit/test_invoices.py::test_invalid_plans_are_rejected` |
+| `test_invoices.py::test_router` | migrado | `tests/integration/test_invoices.py::test_router` |
+| `test_round3_fixes.py::test_degree_followed_by_word` | migrado | `tests/unit/test_round3_fixes.py::test_degree_followed_by_word` |
+| `test_round3_fixes.py::test_bare_number_with_unit_in_chunk` | migrado | `tests/unit/test_round3_fixes.py::test_bare_number_with_unit_in_chunk` |
+| `test_round3_fixes.py::test_unit_change_still_rejected` | migrado | `tests/unit/test_round3_fixes.py::test_unit_change_still_rejected` |
+| `test_round3_fixes.py::test_celsius_kept` | migrado | `tests/unit/test_round3_fixes.py::test_celsius_kept` |
+| `test_round3_fixes.py::test_absent_number_rejected` | migrado | `tests/unit/test_round3_fixes.py::test_absent_number_rejected` |
+| `test_round3_fixes.py::test_invoice_header_chunk_has_issuer_and_taxid` | migrado | `tests/unit/test_round3_fixes.py::test_invoice_header_chunk_has_issuer_and_taxid` |
+| `test_round3_fixes.py::test_ingest_survives_bad_files` | migrado | `tests/integration/test_round3_fixes.py::test_ingest_survives_bad_files` |
+| `test_round3_fixes.py::test_question_guard_before_any_model` | migrado | `tests/unit/test_round3_fixes.py::test_question_guard_before_any_model` |
+| `test_store.py::test_upsert_and_search` | migrado | `tests/integration/test_store.py::test_upsert_and_search` |
+| `test_store.py::test_ingest_idempotent` | migrado | `tests/integration/test_store.py::test_ingest_idempotent` |

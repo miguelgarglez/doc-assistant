@@ -20,10 +20,10 @@ uv run pytest -q
 uv run ruff check .
 uv run mypy src
 uv run python -m doc_assistant.export_openapi
-uv run uvicorn doc_assistant.api:app
+uv run uvicorn doc_assistant.bootstrap:app
 ```
 
-Última comprobación: 42 tests pasan, Ruff y mypy strict sin errores; OpenAPI generado en `openapi.json`. Starlette emite un aviso de deprecación del transporte httpx de TestClient. Las pruebas emplean PDFs y facturas sintéticos y adaptadores falsos; no prueban servidores de modelos reales. Limitación: las reglas de importes asumen etiquetas regulares (techo optimista PD-8); maquetas nuevas o etiquetas raras pueden ir a `revisar`.
+Última comprobación: `mise run check` pasa con 406 tests normales del servicio y 28 de scripts. Los 35 tests live requieren un modelo y se ejecutan por separado. Starlette emite un aviso de deprecación del transporte httpx de TestClient. Las pruebas emplean PDFs y facturas sintéticos y adaptadores falsos; no prueban servidores de modelos reales. Limitación: las reglas de importes asumen etiquetas regulares (techo optimista PD-8); maquetas nuevas o etiquetas raras pueden ir a `revisar`.
 
 
 ## Revisión parcial del 31 de octubre de 2026

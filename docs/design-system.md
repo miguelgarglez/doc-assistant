@@ -1,6 +1,6 @@
 # Sistema de diseño (apps/web)
 
-Capas: **tokens semánticos** → **primitivas UI** (`components/ui`) → **componentes de dominio** (`components/domain`, `components/ai`) → **páginas**.
+Capas: **tokens semánticos** → **primitivas UI** (`components/ui`) → **componentes de feature** (`features/*/components`) → **páginas**.
 
 ## Temas
 

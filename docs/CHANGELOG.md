@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v0.18.0 · Límites comprobables y estructura por responsabilidad
+
+- El servicio se organiza en `api`, `application`, `domain` e `infra`; `bootstrap.py` compone las dependencias. El dominio no depende de FastAPI, SQLite ni HTTP, y un test con `ast` comprueba el grafo de esas cuatro capas y las entradas raíz permitidas.
+- La web agrupa chat, fuentes, subidas, historial, visor y sistema en `features/`. ESLint impide importar el interior de otra feature y permite su entrada pública.
+- Los 441 casos del servicio se clasifican en 126 unitarios, 280 de integración y 35 live. `mise` expone cada ámbito y `mise run check` valida 406 casos normales, 28 tests de scripts, enlaces Markdown, contrato, lint, tipos y build.
+- OpenAPI y el cliente generado son idénticos a `56b1967`. Playwright pasa 215 casos y omite cuatro live. La reorganización no cambia la interfaz ni el comportamiento.
+- [Estructura actual](repo-structure.md) y [cobertura](requirements-coverage.md#resumen-v0180).
+
 ## v0.17.1 · Historial contextual y revisión
 
 - Sistema incorpora peticiones recientes paginadas; el historial abre junto al chat y puede ampliarse.

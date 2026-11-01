@@ -15,6 +15,12 @@ Todo escucha en `127.0.0.1`. Nada sale de la máquina.
 ## Contrato
 `services/ai/openapi.json` es la fuente de verdad. La web solo habla con el servicio a través de tipos generados (`openapi-typescript` + `openapi-fetch`). `mise run check` falla si hay drift.
 
+## Capas del servicio
+
+`api/` traduce HTTP y SSE. `application/` coordina casos de uso y define los puertos que consume. `domain/` contiene reglas y valores sin FastAPI, SQLite, HTTP ni configuración de entorno. `infra/` implementa los puertos con SQLite, archivos, PDF y clientes HTTP. `bootstrap.py` carga la configuración, conecta las implementaciones y expone la aplicación.
+
+`tests/unit/test_architecture.py` analiza imports con `ast`. El test rechaza dependencias directas o transitivas que crucen los límites en sentido contrario, ciclos e imports dinámicos internos. También limita los módulos raíz a una lista cerrada. `api` nunca importa `infra`; solo `bootstrap.py` conecta todas las capas de la aplicación HTTP.
+
 ## Flujos
 - **Documentos:** PDF → texto por sección (pdfplumber) → fragmentos con `chunk_id` determinista → embeddings → SQLite; cada página se renderiza a PNG (pypdfium2) para el visor. Reingesta idempotente.
 - **Pregunta:** enrutador por reglas (¿factura o documentación?).
@@ -26,20 +32,20 @@ La comparación reproducible en `evidence/chunking/` muestra que las secciones m
 
 ## Bloques de respuesta (ADR-014)
 
-`invoice_blocks.py` construye fichas `key_data` y tablas `table` desde los datos seleccionados para la respuesta. El contrato añade `blocks_version: 1`, `blocks` y `follow_ups`. Los valores presentes llevan citas y las sumas referencian sus operandos. La web no calcula importes ni completa campos. `done` prevalece sobre el evento `blocks`; una versión desconocida o un bloque inválido hace que se muestre el Markdown completo. Véanse [ADR-014](decisions-log.md#adr-014-bloques-de-respuesta-derivados-de-evidencia-2026-11-01) y el [contrato](streaming.md).
+`domain/invoices/blocks.py` construye fichas `key_data` y tablas `table` desde los datos seleccionados para la respuesta. El contrato añade `blocks_version: 1`, `blocks` y `follow_ups`. Los valores presentes llevan citas y las sumas referencian sus operandos. La web no calcula importes ni completa campos. `done` prevalece sobre el evento `blocks`; una versión desconocida o un bloque inválido hace que se muestre el Markdown completo. Véanse [ADR-014](decisions-log.md#adr-014-bloques-de-respuesta-derivados-de-evidencia-2026-11-01) y el [contrato](streaming.md).
 
 ## Concurrencia y admisión de consultas
 
-`ask_capacity.py` limita por proceso a dos consultas activas y cuatro en espera. `api.py` aplica el límite a `/ask` y `/ask/stream`, con espera máxima de 60 segundos. El flujo SSE informa de la espera mediante `step`; `queue_full` y `queue_timeout` terminan el flujo con un error recuperable. En `/ask` devuelven HTTP 503. La cola no es durable, no comparte capacidad entre procesos ni limita ingestas. No se han acreditado equidad ni carga sostenida.
+`application/ask/capacity.py` limita por proceso a dos consultas activas y cuatro en espera. `api/routes.py` aplica el límite a `/ask` y `/ask/stream`, con espera máxima de 60 segundos. El flujo SSE informa de la espera mediante `step`; `queue_full` y `queue_timeout` terminan el flujo con un error recuperable. En `/ask` devuelven HTTP 503. La cola no es durable, no comparte capacidad entre procesos ni limita ingestas. No se han acreditado equidad ni carga sostenida.
 
-La recuperación cierra SQLite antes de emitir el siguiente evento. `pdf_lock.py` serializa el uso de PDFium entre ingestas y visor dentro del proceso. La carga sintética registrada en [CHANGELOG](CHANGELOG.md) no demuestra la causa del error histórico sin traza.
+La recuperación cierra SQLite antes de emitir el siguiente evento. `infra/pdf/lock.py` serializa el uso de PDFium entre ingestas y visor dentro del proceso. La carga sintética registrada en [CHANGELOG](CHANGELOG.md) no demuestra la causa del error histórico sin traza.
 
 ## Trazas disponibles
 
 Los eventos SSE `step` y `done.timings` permiten reconstruir la última consulta en Sistema. El cliente conserva esa traza en memoria. El historial local persiste en SQLite WAL y la cola en memoria guarda el resultado fuera del stream. `HistoryRepository` define el contrato de escritura, consulta, borrado, retención y revisión; SQLite es la implementación actual. Las trazas internas opcionales son independientes. Las rutas locales requieren token y el proxy lo inyecta en servidor. La cola reintenta con backoff, incluso si SQLite falla al abrirse al inicio, pero pierde pendientes al reiniciar. Sistema distingue el fallo de apertura de la desactivación administrativa. La [propuesta de persistencia](design/persistencia-historial-feedback.md) conserva el diseño anterior; la implementación y sus límites se describen en [escalado](scaling-deployment.md).
 
 ## Modularidad (puertos y adaptadores)
-LLM, embeddings, reranker y OCR son `Protocol`s; los adaptadores HTTP se eligen en `config/config.yaml` (validada con Pydantic al arrancar). Cambiar de modelo = cambiar config o el modelo que sirve llama-server.
+LLM, embeddings, reranker y OCR son `Protocol`s de `application/ports`. `infra/models/http.py` contiene los clientes HTTP y `bootstrap.py` los crea desde `config/config.yaml`, validada con Pydantic al arrancar. Cambiar de modelo exige cambiar la configuración o el modelo que sirve llama-server.
 
 ## Por qué así (resumen; detalle en decisions-log.md)
 - Python solo donde hace falta (modelos, OCR, índice); la web puede crecer sin tocar la IA.
@@ -55,7 +61,10 @@ LLM, embeddings, reranker y OCR son `Protocol`s; los adaptadores HTTP se eligen 
 `mise run start` → `scripts/dev.py` (solo stdlib): comprueba puertos, lanza cada proceso en su propio grupo, espera su health check en orden (LLM, embeddings, reranker, OCR reutilizado si ya corre, IA, web) y, con Ctrl-C, para en dos fases (amable y luego forzado a los 5 s) con `atexit` de respaldo. `DOC_ASSISTANT_FAKE_LLAMA=1` sustituye los tres llama-server por un simulador para CI y pruebas.
 
 ## Calidad y evidencia
-- `mise run check`: ruff, mypy (estricto en scripts), pytest (servicio y scripts), deriva del contrato OpenAPI→TS, eslint, typecheck y build.
+- `mise run check`: ruff, mypy (estricto en scripts), tests unitarios y de integración, tests de scripts, enlaces Markdown, deriva del contrato OpenAPI→TS, eslint, typecheck y build.
+- `mise run check-links`: destinos locales de los Markdown; no valida anclas.
+- `mise run test-live`: batería optativa contra `DOC_ASSISTANT_LIVE_LLM`.
+- `mise run test-architecture`: límites del grafo de imports de las cuatro capas e inventario de entradas raíz.
 - `mise run evidence`: capturas Playwright deterministas (API simulada con fixtures). `--live`: corrida real con documentos y facturas sintéticos → `evidence/live/results.md`.
 - Revisión independiente por otro modelo: `docs/reviews/`, triaje en ADR-006.
 

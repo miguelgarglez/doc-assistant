@@ -1,7 +1,8 @@
 # Diseño de ejecución de la reorganización v0.18
 
-Este documento fija cómo completar la estructura aprobada desde `875e277`. Complementa
-`docs/repo-structure.md`; no cambia el alcance ni el comportamiento.
+Este documento conserva el diseño seguido para completar la estructura aprobada desde
+`875e277`. La ejecución terminó sin cambiar el contrato ni el comportamiento. El estado
+actual está en `docs/repo-structure.md`.
 
 ## Decisiones
 

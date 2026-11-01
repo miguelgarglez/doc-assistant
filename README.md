@@ -55,8 +55,11 @@ No es la evaluación final: no se han usado documentos ni facturas reales.
 
 ## Desarrollo
 - `mise run dev`: next dev.
-- `mise run check`: lint, tipos, tests, deriva del contrato OpenAPI→TS y build.
-- `mise run test`.
+- `mise run check`: lint, tipos, tests normales, enlaces Markdown, deriva del contrato OpenAPI→TS y build.
+- `mise run test`, `test-unit` y `test-integration`: tests normales por ámbito.
+- `mise run test-architecture`: límites de imports del servicio.
+- `mise run test-live`: batería optativa con un modelo real.
+- `mise run check-links`: destinos locales de los Markdown.
 - `mise run gen-client`.
 - `mise run package`: ZIP de entrega, probado en limpio.
 

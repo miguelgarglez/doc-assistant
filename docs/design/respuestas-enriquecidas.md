@@ -34,7 +34,7 @@ Se reutilizan Table, Badge, Skeleton y Button de shadcn y la composición Artifa
 
 ## Implementado en 59474c0
 
-- Servicio `invoice_blocks.py`, vistas en `invoice_query.py`, formato/citas en `invoices.py`, evento SSE y modelos Pydantic en `api.py`.
+- Servicio en `domain/invoices/blocks.py` y `application/invoices/`; evento SSE y modelos Pydantic en `api/`.
 - Data part `blocks`, renderizadores de ficha y tabla, resaltado literal de cifras, skeleton, copia y atajos.
 - Fixtures sintéticas y `blocks.spec.ts`, todavía sin verificar al iniciar esta continuación.
 
