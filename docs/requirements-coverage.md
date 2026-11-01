@@ -36,7 +36,7 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 |---|---|---|---|---|
 | C1 / N1 | 100 % local, sin APIs de terceros | llama-server en 127.0.0.1 (Ollama opcional) | Cumplido | Todos los adaptadores apuntan a localhost (`config.yaml`). Internet solo en la instalación. |
 | C2 | Modelos elegidos para la máquina disponible | `config.yaml`, `assets.json` | Parcial | Funciona en un M4 de 16 GB (humo real). |
-| C3 | Especificar el hardware | README "Probado en" | Parcial | Solo dice el chip y la RAM. Faltan la CPU, la GPU/VRAM unificada y la versión del SO, medidas con un comando. |
+| C3 | Especificar el hardware | README "Probado en" | Cumplido | `sysctl`, `sw_vers` y `system_profiler` identifican CPU y GPU de 10 núcleos, 16 GiB de memoria unificada y macOS 26.6.2. El consumo de memoria durante la inferencia sigue sin medir (E-B2). |
 | C4 / C5 / E-C1 | Justificar cada modelo frente al hardware, con su cuantización y las alternativas descartadas | — | **No** | No está escrito en este repo. |
 
 ## Escalado

@@ -39,7 +39,7 @@ Si un puerto está ocupado, `start` no arranca nada y sale con código 2. El men
   - Contingencia: WSL2 con Ubuntu y los pasos de Linux.
 
 ## Probado en
-macOS (Apple Silicon, M4 16 GB). Windows: no probado en un equipo real; el workflow `cross-platform.yml` ejecuta un smoke test, pero aún no se ha lanzado. Linux: solo vía ese CI. Limitación: `sqlite-vec` no publica wheel para Windows ARM.
+macOS 26.6.2 (build 25G83), Apple M4, CPU de 10 núcleos, GPU de 10 núcleos y 16 GiB de memoria unificada. Datos consultados con `sysctl -n machdep.cpu.brand_string hw.physicalcpu hw.logicalcpu hw.memsize`, `sw_vers` y `system_profiler SPDisplaysDataType` el 1 de noviembre de 2026. La memoria unificada es compartida; no se ha medido la memoria ocupada por los modelos. Windows y Linux no se han probado en este equipo ni se ha ejecutado todavía el workflow `cross-platform.yml`. Limitación: `sqlite-vec` no publica wheel para Windows ARM.
 
 ## Huecos del enunciado
 Decisiones sobre lo que el enunciado deja abierto: [docs/open-gaps.md](docs/open-gaps.md). Cobertura requisito a requisito: [docs/requirements-coverage.md](docs/requirements-coverage.md).

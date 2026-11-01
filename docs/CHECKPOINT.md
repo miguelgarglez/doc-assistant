@@ -170,3 +170,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 ## 01-Nov 01:53 CET · Auditoría del tag y parada por PID
 - Tag anotado v0.14.0 auditado en clon limpio sobre bb87d39: TOTAL 0 en _agents/ui7/audit-v0.14.0.txt; clon en _trash/audit-clone-v0.14.0. Este cierre documental se incorpora al último commit y la auditoría se repite sobre el tag definitivo. Parados por SIGTERM únicamente los PID propios 65810, 50708, 2292, 2312, 2322 y 2333; puertos 3170/8170/8171–8174 libres. Exportación de la versión anterior movida a _trash/. Main conserva d4eca6c y v0.13.3 conserva b962ccc. Sin push ni instalaciones en esta continuación.
+
+## 01-Nov 01:56 CET · Inventario del hardware
+- `sysctl`, `sw_vers` y `system_profiler` identifican Apple M4, CPU y GPU de 10 núcleos, 16 GiB de memoria unificada y macOS 26.6.2. README registra los comandos y distingue capacidad de consumo medido. C3 pasa a cumplido; E-B2 sigue parcial.
+- Verificación: salida de los tres comandos contrastada con README y cobertura. Sin instalaciones. La fase sigue abierta y aún no tiene tag.
+
