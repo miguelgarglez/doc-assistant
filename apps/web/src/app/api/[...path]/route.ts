@@ -21,11 +21,15 @@ async function proxyRequest(request: Request, context: RouteContext) {
   const { path } = await context.params
   if (path[0] === "history") {
     const url = new URL(request.url)
-    const localHost = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
+    const host = request.headers.get("host")
+    const originUrl = host && URL.canParse(`${url.protocol}//${host}`)
+      ? new URL(`${url.protocol}//${host}`)
+      : null
+    const localHost = originUrl !== null && ["localhost", "127.0.0.1", "[::1]"].includes(originUrl.hostname)
     const origin = request.headers.get("origin")
     const crossSite = request.headers.get("sec-fetch-site") === "cross-site"
     const mutating = !["GET", "HEAD"].includes(request.method)
-    if (!localHost || crossSite || (origin !== null && origin !== url.origin) || (mutating && !origin)) {
+    if (!localHost || crossSite || (origin !== null && origin !== originUrl?.origin) || (mutating && !origin)) {
       return Response.json({ code: "forbidden", message: "Origen no permitido" }, { status: 403 })
     }
   }

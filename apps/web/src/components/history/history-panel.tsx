@@ -108,10 +108,10 @@ export function HistoryPanel() {
               {items.map((item) => (
                 <li className="flex items-center gap-2 border-b py-2" key={item.conversation_id}>
                   <button className="min-w-0 flex-1 cursor-pointer text-left" disabled={busy} onClick={() => void show(item.conversation_id)} type="button">
-                    <span className="block truncate font-medium">{item.question || "Conversación"}</span>
+                    <span className="block truncate font-medium">{item.question.trim() || "Conversación"}</span>
                     <span className="text-xs text-muted-foreground">{new Date(item.updated_at).toLocaleString("es-ES")} · {item.count} consultas</span>
                   </button>
-                  <Button aria-label={`Borrar ${item.question || "conversación"}`} onClick={() => void remove(item.conversation_id)} size="icon-sm" variant="ghost"><Trash2Icon /></Button>
+                  <Button aria-label={`Borrar ${item.question.trim() || "conversación"}`} onClick={() => void remove(item.conversation_id)} size="icon-sm" variant="ghost"><Trash2Icon /></Button>
                 </li>
               ))}
             </ul>
