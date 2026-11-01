@@ -26,6 +26,30 @@ async function mockStages(page: Page, stages: string[]) {
 }
 
 test.describe("añadir fuentes", () => {
+  test("el aviso de errores permanece visible y permite cerrar cada archivo", async ({ page }) => {
+    await mockBackend(page)
+    await page.goto("/")
+    await openDialog(page)
+    await page.getByTestId("sources-file-input").setInputFiles([
+      { name: "uno.txt", mimeType: "text/plain", buffer: Buffer.from("uno") },
+      { name: "dos.txt", mimeType: "text/plain", buffer: Buffer.from("dos") },
+    ])
+    await page.setViewportSize({ width: 375, height: 500 })
+    await toast(page).hover()
+    await expect(toast(page)).toBeVisible()
+    const box = await toast(page).boundingBox()
+    expect(box).not.toBeNull()
+    expect(box!.x).toBeGreaterThanOrEqual(0)
+    expect(box!.y).toBeGreaterThanOrEqual(0)
+    expect(box!.x + box!.width).toBeLessThanOrEqual(375)
+    expect(box!.y + box!.height).toBeLessThanOrEqual(500)
+    await page.getByRole("button", { name: "Cerrar error de uno.txt" }).click()
+    await expect(row(page, "uno.txt")).toHaveCount(0)
+    await expect(row(page, "dos.txt")).toBeVisible()
+    await page.getByTestId("upload-toast-close").click()
+    await expect(toast(page)).toHaveCount(0)
+  })
+
   test("botón grande en la barra lateral y diálogo con zona de suelta", async ({ page }) => {
     await mockBackend(page)
     await page.goto("/")

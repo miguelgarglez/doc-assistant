@@ -401,3 +401,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 16:07 CET · Fragmentos de PDF largo
 
 - Un PDF sintético de 80 páginas con un único apartado produjo 13.934 tokens en un solo fragmento y el modelo rechazó la petición. El troceado conserva la referencia a las páginas y limita los bytes enviados por fragmento; el mismo PDF generó 160 embeddings con el modelo real. La batería del servicio pasó con 401 pruebas y 35 omitidas. Falta la subida completa, la evaluación de recuperación y el resto de la ampliación.
+
+## 01-Nov 16:09 CET · Aviso de subidas
+
+- El aviso se ancla arriba con margen para áreas seguras, permite cerrar errores individuales y conserva el cierre conjunto. El texto de error deja de truncarse, los errores se agrupan y el porcentaje de transmisión es accesible. Pasaron 11 pruebas focalizadas de navegador; resta verificar los cuatro modos, avisos simultáneos y la batería completa.
+- La subida completa del PDF sintético de 80 páginas respondió 200 con 160 fragmentos almacenados y la página 80 disponible. Esta prueba usa el modelo real de embeddings y datos sintéticos.

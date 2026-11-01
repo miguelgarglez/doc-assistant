@@ -25,7 +25,7 @@ function StatusIcon({ item }: { item: UploadItem }) {
 }
 
 function Row({ item }: { item: UploadItem }) {
-  const { retry, cancel } = useUploads()
+  const { retry, cancel, dismiss } = useUploads()
   const cancellable = item.status === "queued" || item.status === "uploading"
   return (
     <li
@@ -38,7 +38,8 @@ function Row({ item }: { item: UploadItem }) {
         <span className="truncate text-sm font-medium">{item.name}</span>
         <span
           className={cn(
-            "truncate text-xs tabular-nums text-muted-foreground",
+            "text-xs tabular-nums text-muted-foreground",
+            item.status !== "error" && "truncate",
             item.status === "error" && "text-destructive",
             item.status === "done" && !item.duplicate && "text-[var(--ok-fg)]"
           )}
@@ -54,17 +55,25 @@ function Row({ item }: { item: UploadItem }) {
           Reintentar
         </Button>
       ) : null}
+      {item.status === "error" ? (
+        <Button aria-label={`Cerrar error de ${item.name}`} onClick={() => dismiss(item.id)} size="icon-xs" type="button" variant="ghost">
+          <XIcon />
+        </Button>
+      ) : null}
       {cancellable ? (
         <Button aria-label={`Cancelar ${item.name}`} onClick={() => cancel(item.id)} size="icon-xs" type="button" variant="ghost">
           <XIcon />
         </Button>
       ) : null}
       {item.status === "uploading" ? (
-        <span
-          aria-hidden
-          className="absolute inset-x-3 bottom-0 h-0.5 origin-left rounded-full bg-primary transition-transform duration-150 ease-linear motion-reduce:transition-none"
-          style={{ transform: `scaleX(${item.progress / 100})` }}
-        />
+        <>
+          <progress className="sr-only" aria-label={`Subiendo ${item.name}`} value={item.progress} max={100} />
+          <span
+            aria-hidden
+            className="absolute inset-x-3 bottom-0 h-0.5 origin-left rounded-full bg-primary transition-transform duration-150 ease-linear motion-reduce:transition-none"
+            style={{ transform: `scaleX(${item.progress / 100})` }}
+          />
+        </>
       ) : null}
     </li>
   )
@@ -76,7 +85,7 @@ export function UploadToastContent() {
   const router = useRouter()
   const pathname = usePathname()
   const [hovered, setHovered] = useState(false)
-  const listed = items.filter((item) => !item.hidden)
+  const listed = items.filter((item) => !item.hidden).sort((a, b) => Number(b.status === "error") - Number(a.status === "error"))
   const summary = summarizeUploads(listed)
   const finished = summary.active === 0
   const calm = finished && summary.failed === 0
@@ -110,7 +119,7 @@ export function UploadToastContent() {
           </Button>
         ) : null}
       </header>
-      <ul className="flex max-h-60 flex-col divide-y divide-border/60 overflow-y-auto" aria-live="polite">
+      <ul className="flex max-h-[min(15rem,calc(100dvh-8rem))] flex-col divide-y divide-border/60 overflow-y-auto" aria-live="polite">
         {listed.map((item) => (
           <Row item={item} key={item.id} />
         ))}
