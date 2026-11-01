@@ -4,7 +4,7 @@ import { ArrowDownIcon, ArrowUpIcon, FileTextIcon, ReceiptTextIcon, PlusIcon, Se
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 
-import { useAddSources } from "@/components/providers/add-sources-provider"
+import { useAddSources } from "@/features/uploads"
 import { useSources } from "@/features/sources/sources-provider"
 import { Page, PageHeader } from "@/components/shell/page"
 import { SourceDetail } from "@/features/sources/source-detail"

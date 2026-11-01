@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react"
 
-import { AddSourcesDialog } from "@/components/uploads/add-sources-dialog"
+import { AddSourcesDialog } from "@/features/uploads/add-sources-dialog"
 
 type AddSourcesContextValue = {
   open: boolean

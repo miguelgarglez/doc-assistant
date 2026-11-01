@@ -1,5 +1,5 @@
-import { followIngestJob, type IngestStage } from "../api/ingest-events"
-import { classifyDroppedFile, uploadDocumentFile, uploadInvoiceFile } from "../api/upload"
+import { followIngestJob, type IngestStage } from "@/lib/api/ingest-events"
+import { classifyDroppedFile, uploadDocumentFile, uploadInvoiceFile } from "@/lib/api/upload"
 import { describeUploadError, UNSUPPORTED_MESSAGE } from "./errors"
 
 export { CANCELLED_MESSAGE, UNSUPPORTED_MESSAGE } from "./errors"

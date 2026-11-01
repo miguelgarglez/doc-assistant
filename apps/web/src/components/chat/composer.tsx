@@ -21,7 +21,7 @@ import {
   usePromptInput,
 } from "@/components/ai-elements/prompt-input"
 import { useConversation } from "@/components/providers/chat-provider"
-import { useUploads, type UploadItem } from "@/components/providers/uploads-provider"
+import { useUploads, type UploadItem } from "@/features/uploads"
 
 const ACCEPT = ".pdf,application/pdf,image/png,image/jpeg"
 

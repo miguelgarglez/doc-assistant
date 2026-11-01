@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react"
 
-import { useUploads } from "@/components/providers/uploads-provider"
+import { useUploads } from "@/features/uploads"
 import { useQuestionHistory } from "@/hooks/use-question-history"
 import { AskTransport } from "@/lib/chat/transport"
 import { messagesFromHistory } from "@/lib/chat/history"

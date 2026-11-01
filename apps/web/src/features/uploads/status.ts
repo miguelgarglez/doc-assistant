@@ -1,4 +1,4 @@
-import type { IngestStage } from "../api/ingest-events"
+import type { IngestStage } from "@/lib/api/ingest-events"
 import type { UploadItem } from "./store"
 
 const STAGE_TEXT: Partial<Record<IngestStage, string>> = {

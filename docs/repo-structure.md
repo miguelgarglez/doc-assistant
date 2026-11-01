@@ -27,7 +27,7 @@ apps/web/            Next.js 16 + TS strict
   src/components/ui/               primitivos shadcn sobre Base UI
   src/components/chat/             respuestas, bloques, citas, aclaraciones y visor
   src/features/viewer/             página y resaltado
-  src/components/uploads/          diálogo y avisos de subida
+  src/features/uploads/            diálogo y avisos de subida
   src/features/sources/            gestión de fuentes
   src/features/system/             estado de componentes y última traza
   src/components/ai-elements/      componentes de conversación

@@ -13,7 +13,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 
 import { HistoryPanel } from "@/features/history"
-import { useAddSources } from "@/components/providers/add-sources-provider"
+import { useAddSources } from "@/features/uploads"
 import { useConversation } from "@/components/providers/chat-provider"
 import { useSources } from "@/features/sources"
 import {

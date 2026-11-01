@@ -2,9 +2,9 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react"
 
-import { UploadStore, type UploadItem, type UploadOrigin } from "@/lib/uploads/store"
+import { UploadStore, type UploadItem, type UploadOrigin } from "@/features/uploads/store"
 
-export type { UploadItem, UploadOrigin, UploadStatus } from "@/lib/uploads/store"
+export type { UploadItem, UploadOrigin, UploadStatus } from "@/features/uploads/store"
 
 type UploadsContextValue = {
   items: UploadItem[]

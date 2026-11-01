@@ -23,6 +23,18 @@ def listener() -> tuple[socket.socket, int]:
     return s, int(s.getsockname()[1])
 
 
+def listener_with_suggestion_range() -> tuple[socket.socket, int]:
+    for port in range(8300, 8305):
+        s = socket.socket()
+        try:
+            s.bind(("127.0.0.1", port))
+            s.listen()
+            return s, port
+        except OSError:
+            s.close()
+    raise OSError("No test port available in 8300–8304")
+
+
 def test_defaults_are_the_documented_ports() -> None:
     assert resolve_ports({}) == {
         "llm": 8081,
@@ -52,7 +64,7 @@ def test_two_pieces_cannot_share_a_port() -> None:
 
 
 def test_busy_message_says_who_which_variable_and_a_free_port() -> None:
-    s, port = listener()
+    s, port = listener_with_suggestion_range()
     spare, free = listener()
     spare.close()
     try:

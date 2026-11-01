@@ -5,9 +5,9 @@ import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
-import { useUploads, type UploadItem } from "@/components/providers/uploads-provider"
+import { useUploads, type UploadItem } from "@/features/uploads/uploads-provider"
 import { Button } from "@/components/ui/button"
-import { isActive, summarizeUploads, uploadStatusText } from "@/lib/uploads/status"
+import { isActive, summarizeUploads, uploadStatusText } from "@/features/uploads/status"
 import { cn } from "@/lib/utils"
 
 const TOAST_ID = "uploads"

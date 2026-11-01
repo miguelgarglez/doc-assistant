@@ -3,7 +3,7 @@
 import { FileTextIcon, ImageIcon, UploadCloudIcon } from "lucide-react"
 import { useRef, useState, type DragEvent } from "react"
 
-import { useUploads } from "@/components/providers/uploads-provider"
+import { useUploads } from "@/features/uploads/uploads-provider"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 
