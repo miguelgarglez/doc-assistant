@@ -1,7 +1,7 @@
 from decimal import Decimal
 
+from doc_assistant.application.invoices.extract import extract_invoice, parse_es_decimal
 from doc_assistant.infra.invoices.sqlite import InvoiceDB
-from doc_assistant.invoice_extract import extract_invoice, parse_es_decimal
 from doc_assistant.invoice_query import run_plan
 from doc_assistant.model_fakes import FakeLLM, FakeOCR
 
@@ -239,7 +239,7 @@ def test_invoice_transaction_rolls_back_and_separates_pdf(config_path, synthetic
     ingest_pdfs(config_path, pdf, embedder=FakeEmbedder())
     record = {"numero": "A/120", "importe_total": "10"}
     monkeypatch.setattr(
-        "doc_assistant.invoices.extract_invoice",
+        "doc_assistant.application.invoices.upload.extract_invoice",
         lambda *a, **k: {
             "record": record,
             "estado": "revisar",

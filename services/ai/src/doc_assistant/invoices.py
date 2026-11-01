@@ -9,18 +9,17 @@ from pathlib import Path
 from typing import Any
 
 from doc_assistant.adapters import build_adapters, build_ocr
-from doc_assistant.application.ports.invoice_writer import InvoiceWrite
+from doc_assistant.application.invoices.upload import upload
+from doc_assistant.application.ports.invoice_writer import InvoiceWriter
 from doc_assistant.application.ports.models import LLM, Embedder, OcrPort
 from doc_assistant.config import load_config
 from doc_assistant.domain.answers.answer_markup import AnswerBuilder, md_escape
 from doc_assistant.domain.documents.ids import invoice_doc_id
 from doc_assistant.domain.invoices.blocks import build_blocks, follow_ups
-from doc_assistant.domain.invoices.chunking import chunk_invoice
 from doc_assistant.domain.invoices.fields import display_value
 from doc_assistant.infra.invoices.sqlite import InvoiceDB
 from doc_assistant.infra.invoices.writer import SqliteInvoiceWriter
 from doc_assistant.infra.storage.chunks import ChunkStore
-from doc_assistant.invoice_extract import extract_invoice
 from doc_assistant.invoice_query import (
     followup_question,
     is_invoice_question,
@@ -55,46 +54,19 @@ def upload_invoice(
         embedder = embedder or emb
         llm = llm or default_llm
 
-    extracted = extract_invoice(image, ocr=ocr, llm=llm, on_stage=progress)
-    record = extracted["record"]
-    numero = record.get("numero")
-    if not numero:
-        return {
-            "record": record,
-            "estado": "revisar",
-            "motivo": "sin_numero",
-            "evidencias": extracted["evidencias"],
-            "flags": extracted["flags"],
-        }
+    def writer_factory(model: Embedder) -> InvoiceWriter:
+        dim = getattr(model, "dim", None) or cfg.embeddings.dim or 8
+        return SqliteInvoiceWriter(cfg.db, cfg.data_dir, dim)
 
-    if progress:
-        progress("indexing")
-    chunks = chunk_invoice(record)
-    embeddings = embedder.embed([c["text"] for c in chunks]) if chunks else []
-
-    dim = getattr(embedder, "dim", None) or cfg.embeddings.dim or 8
-    writer = SqliteInvoiceWriter(cfg.db, cfg.data_dir, dim)
-    relative = writer.save(
-        InvoiceWrite(
-            number=numero,
-            record=record,
-            state=extracted["estado"],
-            reason=extracted["motivo"],
-            filename=filename,
-            image=image,
-            chunks=chunks,
-            embeddings=embeddings,
-        )
+    return upload(
+        image,
+        filename,
+        ocr=ocr,
+        llm=llm,
+        embedder=embedder,
+        writer_factory=writer_factory,
+        progress=progress,
     )
-
-    return {
-        "record": record,
-        "estado": extracted["estado"],
-        "motivo": extracted["motivo"],
-        "evidencias": extracted["evidencias"],
-        "flags": extracted["flags"],
-        "fichero": relative,
-    }
 
 
 def invoice_image(config_path: str | Path, invoice_id: str) -> bytes | None:

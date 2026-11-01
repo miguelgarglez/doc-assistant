@@ -9,8 +9,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from doc_assistant.api import create_app
+from doc_assistant.application.invoices.extract import check_gates, extract_amounts, extract_invoice
 from doc_assistant.ask import ask
-from doc_assistant.invoice_extract import check_gates, extract_amounts, extract_invoice
 from doc_assistant.model_fakes import FakeEmbedder, FakeLLM, FakeOCR
 
 
