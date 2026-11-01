@@ -5,7 +5,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import { MessageAction } from "@/components/ai-elements/message"
-import { useConversation } from "@/components/providers/chat-provider"
+import { useConversation } from "@/features/chat/chat-provider"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"

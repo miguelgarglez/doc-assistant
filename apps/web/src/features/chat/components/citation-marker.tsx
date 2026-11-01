@@ -2,7 +2,7 @@
 
 import type { ComponentProps } from "react"
 
-import { useCitations } from "@/components/chat/citation-context"
+import { useCitations } from "@/features/chat/components/citation-context"
 import {
   InlineCitationCard,
   InlineCitationCardBody,
@@ -10,8 +10,8 @@ import {
   InlineCitationQuote,
   InlineCitationSource,
 } from "@/components/ai-elements/inline-citation"
-import { citationLabel, citationLocation } from "@/lib/chat/citation-label"
-import { CITE_HREF } from "@/lib/chat/inline"
+import { citationLabel, citationLocation } from "@/features/chat/lib/citation-label"
+import { CITE_HREF } from "@/features/chat/lib/inline"
 
 /** The numbered marker of a citation. `number` is 1-based. */
 export function CitationMarker({ number }: { number: number }) {

@@ -12,7 +12,7 @@ import {
 } from "@/components/ai-elements/inline-citation"
 import { Source, Sources, SourcesContent, SourcesTrigger } from "@/components/ai-elements/sources"
 import type { Citation } from "@/lib/api/types"
-import { citationLabel } from "@/lib/chat/citation-label"
+import { citationLabel } from "@/features/chat/lib/citation-label"
 
 type CitationsProps = {
   citations: Citation[]

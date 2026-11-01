@@ -10,8 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Kbd } from "@/components/ui/kbd"
 import { citationPage, isInvoiceCitation, sourcePageUrl } from "@/lib/api/source-url"
 import type { Citation } from "@/lib/api/types"
-import { citationLabel } from "@/lib/chat/citation-label"
-import { HighlightedFragment } from "@/lib/domain/highlight-fragment"
+import { citationLabel } from "@/features/chat/lib/citation-label"
+import { HighlightedFragment } from "@/features/chat/highlight-fragment"
 import { isEditableTarget } from "@/lib/shortcuts"
 import { cn } from "@/lib/utils"
 

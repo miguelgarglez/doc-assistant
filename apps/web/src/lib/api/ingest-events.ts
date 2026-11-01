@@ -1,5 +1,5 @@
 import type { components } from "@/lib/api/schema"
-import { readSse } from "@/lib/chat/sse"
+import { readSse } from "@/lib/api/sse"
 
 export type IngestStageEvent = components["schemas"]["IngestStageEvent"]
 export type IngestStage = IngestStageEvent["stage"]

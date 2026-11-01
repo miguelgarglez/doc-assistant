@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test"
 
 import { answerEvents, ask, CLARIFICATION, clarificationEvents, mockBackend, sse } from "./mocks"
-import { candidateName, candidateParties, candidateTotal, hiddenCandidates } from "../src/lib/chat/clarification"
+import { candidateName, candidateParties, candidateTotal, hiddenCandidates } from "../src/features/chat/lib/clarification"
 
 const QUESTION = "¿Cuál es el importe total de la factura?"
 const card = (page: import("@playwright/test").Page) => page.getByTestId("clarification-notice")

@@ -25,7 +25,7 @@ apps/web/            Next.js 16 + TS strict
   src/app/api/[...path]/route.ts   proxy fino → servicio IA (BFF)
   src/lib/api/schema.d.ts          tipos generados desde openapi.json
   src/components/ui/               primitivos shadcn sobre Base UI
-  src/components/chat/             respuestas, bloques, citas, aclaraciones y visor
+  src/features/chat/               respuestas, bloques, citas y aclaraciones
   src/features/viewer/             página y resaltado
   src/features/uploads/            diálogo y avisos de subida
   src/features/sources/            gestión de fuentes
@@ -33,7 +33,7 @@ apps/web/            Next.js 16 + TS strict
   src/components/ai-elements/      componentes de conversación
   src/components/providers/        estado compartido de chat y subidas
   src/lib/domain/                  tipos y utilidades de dominio
-  src/lib/chat/                    transporte SSE, vistas y validación de bloques
+  src/features/chat/lib/           transporte de consulta, vistas y validación de bloques
 .github/workflows/cross-platform.yml   smoke Win/Linux/Mac (no ejecutado)
 docs/                README (índice), ADRs, CHECKPOINT, CHANGELOG, versioning, architecture, scaling,
                      requirements-coverage, open-gaps, design/, evolution-notes/, reviews/

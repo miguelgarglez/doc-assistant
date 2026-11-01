@@ -14,7 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
-import type { StepData } from "@/lib/chat/types"
+import type { StepData } from "@/features/chat"
 import { duration } from "@/lib/format"
 import {
   PIECES,

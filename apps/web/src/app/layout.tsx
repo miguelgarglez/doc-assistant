@@ -3,7 +3,7 @@ import { DM_Sans, IBM_Plex_Mono, Manrope, Space_Grotesk } from "next/font/google
 
 import { ThemeProvider } from "@/components/theme/theme-provider"
 import { PromptInputProvider } from "@/components/ai-elements/prompt-input"
-import { ChatProvider } from "@/components/providers/chat-provider"
+import { ChatProvider } from "@/features/chat"
 import { SourcesProvider } from "@/features/sources"
 import { UploadsWithSources } from "@/app/uploads-with-sources"
 import { AppShell } from "@/components/shell/app-shell"

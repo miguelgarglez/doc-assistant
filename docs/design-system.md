@@ -38,7 +38,7 @@ Muestra swatches, tipografía y componentes clave en el tema/modo activos. Úsal
 
 ## Componentes de chat
 
-Desde v0.11 el chat usa AI SDK y componentes de AI Elements copiados a `components/ai-elements` y adaptados a Base UI (ADR-010). La lógica de la conversación vive en `lib/chat` y `components/providers/chat-provider.tsx`; `components/chat` solo compone la vista.
+Desde v0.11 el chat usa AI SDK y componentes de AI Elements copiados a `components/ai-elements` y adaptados a Base UI (ADR-010). La lógica de la conversación vive en `features/chat/lib` y `features/chat/chat-provider.tsx`; `features/chat/components` compone la vista.
 
 ## Navegación y chat v0.10
 
@@ -64,7 +64,7 @@ Sistema pinta cada pieza con estado en texto y color, latencia y última consult
 
 ## Aclaración y vista previa v0.13.1
 
-- **Tarjeta de aclaración** (`components/chat/clarification.tsx`). Pregunta corta como título y las candidatas como `Item` de shadcn renderizado como botón: número y fecha arriba, «De X para Y» debajo y el total a la derecha, solo los datos que existen. El nombre accesible de cada botón dice factura, partes, fecha y total. Tab llega a cada botón; ↑/↓, Inicio y Fin mueven el foco sin animación. Hover solo con `@media (hover: hover)` y `active:scale-[0.985]`. Sin iconos decorativos. Con más de 5 candidatas lo dice y pide acotar.
+- **Tarjeta de aclaración** (`features/chat/components/clarification.tsx`). Pregunta corta como título y las candidatas como `Item` de shadcn renderizado como botón: número y fecha arriba, «De X para Y» debajo y el total a la derecha, solo los datos que existen. El nombre accesible de cada botón dice factura, partes, fecha y total. Tab llega a cada botón; ↑/↓, Inicio y Fin mueven el foco sin animación. Hover solo con `@media (hover: hover)` y `active:scale-[0.985]`. Sin iconos decorativos. Con más de 5 candidatas lo dice y pide acotar.
 - **Vista previa de cita.** El panel se centra en el marcador, deja 12 px a los bordes del hilo (v0.13.2: antes, de la ventana) y se oculta si el marcador sale del hilo. Nace desde el marcador (`--transform-origin`). Dentro de un hilo, su límite de colisión es el elemento de scroll (`useConversationScrollArea`): se abre hacia arriba si abajo no cabe y se ciñe al hilo, con scroll interno, si no cabe en ninguna dirección, de modo que nunca cubre el composer.
 
 ## Respuestas con datos

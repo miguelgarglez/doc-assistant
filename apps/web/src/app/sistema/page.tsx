@@ -3,7 +3,7 @@
 import { RefreshCwIcon } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
-import { useConversation } from "@/components/providers/chat-provider"
+import { useConversation } from "@/features/chat"
 import { Page, PageHeader } from "@/components/shell/page"
 import { HistoryStatusPanel } from "@/features/system"
 import { SystemDiagram } from "@/features/system"

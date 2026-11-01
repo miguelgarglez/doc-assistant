@@ -1,6 +1,6 @@
 import type { UIMessage } from "ai"
 
-import type { components } from "../api/schema"
+import type { components } from "@/lib/api/schema"
 
 export type Citation = components["schemas"]["Citation"]
 export type Suggestion = components["schemas"]["Suggestion"]

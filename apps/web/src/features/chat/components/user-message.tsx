@@ -2,8 +2,8 @@
 
 import { Attachment, AttachmentInfo, AttachmentPreview, Attachments } from "@/components/ai-elements/attachments"
 import { Message, MessageContent } from "@/components/ai-elements/message"
-import type { AskMessage } from "@/lib/chat/types"
-import { userText } from "@/lib/chat/view"
+import type { AskMessage } from "@/features/chat/lib/types"
+import { userText } from "@/features/chat/lib/view"
 
 export function UserMessage({ message }: { message: AskMessage }) {
   const files = message.parts.flatMap((part, index) => (part.type === "file" ? [{ part, index }] : []))

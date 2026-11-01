@@ -4,7 +4,7 @@ import path from "node:path"
 import type { Page, Route } from "@playwright/test"
 
 import type { Source } from "../src/lib/api/types"
-import type { Block, Citation, Clarification, FollowUp, KeyDataBlock, TableBlock } from "../src/lib/chat/types"
+import type { Block, Citation, Clarification, FollowUp, KeyDataBlock, TableBlock } from "../src/features/chat/lib/types"
 
 /** Synthetic datasheet page, generated for the repo. */
 export const PAGE_PNG = fs.readFileSync(path.join(process.cwd(), "e2e", "fixtures", "page-acme-demo-ds.png"))

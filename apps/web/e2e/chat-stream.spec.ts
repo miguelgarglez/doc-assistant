@@ -1,10 +1,10 @@
 import { readUIMessageStream } from "ai"
 import { expect, test } from "@playwright/test"
 
-import { ChunkMapper, type AskChunk } from "../src/lib/chat/chunks"
-import { readSse } from "../src/lib/chat/sse"
-import type { AskMessage, StreamEvent } from "../src/lib/chat/types"
-import { lastTrace, viewOfAssistant } from "../src/lib/chat/view"
+import { ChunkMapper, type AskChunk } from "../src/features/chat/lib/chunks"
+import { readSse } from "../src/lib/api/sse"
+import type { AskMessage, StreamEvent } from "../src/features/chat/lib/types"
+import { lastTrace, viewOfAssistant } from "../src/features/chat/lib/view"
 
 const citation = {
   chunk_id: "c1",

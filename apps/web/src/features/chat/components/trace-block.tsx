@@ -19,7 +19,7 @@ import {
   ChainOfThoughtStep,
 } from "@/components/ai-elements/chain-of-thought"
 import { Shimmer } from "@/components/ai-elements/shimmer"
-import type { StepData, StepId } from "@/lib/chat/types"
+import type { StepData, StepId } from "@/features/chat/lib/types"
 import { duration } from "@/lib/format"
 
 const ICONS: Record<StepId, LucideIcon> = {

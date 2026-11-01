@@ -8,8 +8,8 @@ import {
   candidateParties,
   candidateTotal,
   hiddenCandidates,
-} from "@/lib/chat/clarification"
-import type { ClarificationData } from "@/lib/chat/types"
+} from "@/features/chat/lib/clarification"
+import type { ClarificationData } from "@/features/chat/lib/types"
 
 const MOVES: Record<string, (index: number, last: number) => number> = {
   ArrowDown: (index, last) => Math.min(index + 1, last),

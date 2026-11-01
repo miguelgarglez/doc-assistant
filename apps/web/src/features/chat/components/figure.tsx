@@ -1,4 +1,4 @@
-import type { Cell } from "@/lib/chat/types"
+import type { Cell } from "@/features/chat/lib/types"
 import { cn } from "@/lib/utils"
 
 const BASE = "whitespace-nowrap tabular-nums"

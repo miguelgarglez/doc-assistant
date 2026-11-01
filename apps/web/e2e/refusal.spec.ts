@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test"
 
 import { ask, mockBackend, sse, step, type SseEvent } from "./mocks"
-import { refusalCopy } from "../src/lib/chat/refusal-copy"
+import { refusalCopy } from "../src/features/chat/lib/refusal-copy"
 
 const GENERIC = "No dispongo de esa información en los documentos"
 const refusal = (reason: string, answer = GENERIC) => ({ answer, reason, suggestions: [] })

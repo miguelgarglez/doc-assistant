@@ -12,11 +12,11 @@ import {
 } from "react"
 
 import { useUploads } from "@/features/uploads"
-import { useQuestionHistory } from "@/hooks/use-question-history"
-import { AskTransport } from "@/lib/chat/transport"
-import { messagesFromHistory } from "@/lib/chat/history"
-import type { AskMessage } from "@/lib/chat/types"
-import { lastTrace, lastQuestion } from "@/lib/chat/view"
+import { useQuestionHistory } from "@/features/chat/use-question-history"
+import { AskTransport } from "@/features/chat/lib/transport"
+import { messagesFromHistory } from "@/features/chat/lib/history"
+import type { AskMessage } from "@/features/chat/lib/types"
+import { lastTrace, lastQuestion } from "@/features/chat/lib/view"
 
 const STORAGE_KEY = "doc-assistant.conversation.v1"
 const CONVERSATION_KEY = "doc-assistant.conversation-id.v1"

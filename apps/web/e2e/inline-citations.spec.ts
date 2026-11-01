@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
 
-import { segmentsMatch, withMarkers } from "../src/lib/chat/inline"
+import { segmentsMatch, withMarkers } from "../src/features/chat/lib/inline"
 import { answerEvents, ask, CITATION, mockBackend, SECOND_CITATION, sse, type Segment } from "./mocks"
 
 const assistant = (page: Page) => page.getByTestId("assistant-message")

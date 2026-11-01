@@ -1,7 +1,7 @@
 import type { ChatTransport } from "ai"
 
 import { ChunkMapper, type AskChunk } from "./chunks"
-import { readSse } from "./sse"
+import { readSse } from "@/lib/api/sse"
 import type { AskMessage, DoneEvent, StreamEvent } from "./types"
 import { lastQuestion } from "./view"
 

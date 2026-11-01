@@ -16,11 +16,11 @@ import {
   TABLE_TEXT,
   type SseEvent,
 } from "./mocks"
-import { tableTsv, usableBlocks, usableFollowUps } from "../src/lib/chat/blocks"
-import { ChunkMapper, type AskChunk } from "../src/lib/chat/chunks"
-import { rehypeFigures } from "../src/lib/chat/figures"
-import type { AskMessage, Block, StreamEvent } from "../src/lib/chat/types"
-import { viewOfAssistant } from "../src/lib/chat/view"
+import { tableTsv, usableBlocks, usableFollowUps } from "../src/features/chat/lib/blocks"
+import { ChunkMapper, type AskChunk } from "../src/features/chat/lib/chunks"
+import { rehypeFigures } from "../src/features/chat/lib/figures"
+import type { AskMessage, Block, StreamEvent } from "../src/features/chat/lib/types"
+import { viewOfAssistant } from "../src/features/chat/lib/view"
 
 type Hast = { type: string; value?: string; tagName?: string; properties?: Record<string, unknown>; children?: Hast[] }
 
