@@ -1,5 +1,6 @@
 from pathlib import Path
-from doc_assistant.chunking import chunk_pdf, extract_pdf_text, ws
+from doc_assistant.domain.documents.chunking import ws
+from doc_assistant.infra.pdf.extract import chunk_pdf, extract_pdf_text
 
 root = Path('evidence/fixtures/docs')
 cases = {

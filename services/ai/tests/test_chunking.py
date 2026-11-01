@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from doc_assistant.chunking import chunk_pdf, extract_pdf_text
 from doc_assistant.domain.invoices.chunking import chunk_invoice
+from doc_assistant.infra.pdf.extract import chunk_pdf, extract_pdf_text
 
 
 def test_extract_pdf_text_has_sections(synthetic_pdf: Path) -> None:
@@ -49,7 +49,7 @@ def test_long_section_keeps_content_and_page_references(monkeypatch, tmp_path: P
         {"n": n, "text": ("Manual\n1. Prueba\n" if n == 1 else "") + (f"pagina{n} dato " * 100)}
         for n in range(1, 4)
     ]
-    monkeypatch.setattr("doc_assistant.chunking.extract_pdf_text", lambda _: pages)
+    monkeypatch.setattr("doc_assistant.infra.pdf.extract.extract_pdf_text", lambda _: pages)
     chunks = chunk_pdf(tmp_path / "long.pdf")
     assert len(chunks) > 3
     assert all(len(c["text"].encode("utf-8")) <= 480 for c in chunks)
@@ -61,7 +61,7 @@ def test_long_section_keeps_content_and_page_references(monkeypatch, tmp_path: P
 
 def test_document_without_numbered_sections_is_indexed(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(
-        "doc_assistant.chunking.extract_pdf_text",
+        "doc_assistant.infra.pdf.extract.extract_pdf_text",
         lambda _: [{"n": 1, "text": "Manual\nTexto sin encabezado numerado."}],
     )
     chunks = chunk_pdf(tmp_path / "document.pdf")
