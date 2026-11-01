@@ -250,3 +250,18 @@ def test_feedback_rejects_unknown_kind_without_writing(tmp_path):
     assert store.get_feedback("c", "f") is None
     for kind in ("incorrecta", "cita_equivocada", "falta_informacion", "otro"):
         assert store.add_feedback(kind, "c", "r", "now", kind, None)
+
+
+def test_editing_a_reviewed_answer_requires_review_again(tmp_path):
+    store = HistoryStore(tmp_path / "history.db")
+    store.record("r", "c", "now", {"question": "question"})
+    assert store.add_feedback("f", "c", "r", "now", "otro", None)
+    assert store.review_feedback("c", "f", "original")
+    assert len(list(store.export_reviewed("c"))) == 1
+    assert store.set_expected_answer("c", "f", "original")
+    assert store.get_feedback("c", "f")["status"] == "revisado"
+    assert store.set_expected_answer("c", "f", "changed")
+    assert store.get_feedback("c", "f")["status"] == "nuevo"
+    assert list(store.export_reviewed("c")) == []
+    assert store.review_feedback("c", "f", "changed")
+    assert json.loads(next(store.export_reviewed("c")))["expected_answer"] == "changed"

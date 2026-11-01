@@ -513,3 +513,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 11:16 CET · Invariantes del historial
 - El almacén rechaza una traza con `conversation_id` distinto y motivos de feedback fuera de los cuatro previstos. Las trazas antiguas sin ese campo siguen admitidas. El filtro no autentica y la persistencia sigue desconectada.
 - Pasan 20 pruebas de historial, revisión y exportación; Ruff, formato y mypy correctos.
+
+## 01-Nov 11:16 CET · Revisión de respuestas esperadas
+- Cambiar la respuesta esperada devuelve el feedback a `nuevo`; conservar el mismo texto mantiene su estado. Así la exportación no incluye un texto modificado hasta revisarlo de nuevo.
+- La regresión falló antes de la corrección; pasan 21 pruebas focalizadas, Ruff, formato y mypy.

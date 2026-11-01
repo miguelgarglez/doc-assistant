@@ -210,8 +210,10 @@ class HistoryStore:
         """Save the reviewer's expected answer without changing the captured trace."""
         with self._connect() as db:
             cursor = db.execute(
-                "UPDATE feedback SET expected_answer = ? WHERE conversation_id = ? AND feedback_id = ?",
-                (answer, conversation_id, feedback_id),
+                "UPDATE feedback SET status = CASE WHEN expected_answer IS NOT ? "
+                "THEN 'nuevo' ELSE status END, expected_answer = ? "
+                "WHERE conversation_id = ? AND feedback_id = ?",
+                (answer, answer, conversation_id, feedback_id),
             )
             return cursor.rowcount == 1
 
