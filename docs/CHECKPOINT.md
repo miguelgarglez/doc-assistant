@@ -2,6 +2,8 @@
 (Horas reales de los commits, Europe/Madrid, tomadas de `git log`.)
 
 ## Hitos
+- **01-nov 02:31 · Verificación visual sintética.** Tres parejas de capturas a 1440 × 900 en `evidence/comparison-v0.14.0-continuacion/`; antes de la galería v0.14.0, después de la rama actual. Cada pareja es idéntica byte a byte y se inspeccionó. No cubre datos reales ni otros tamaños o temas.
+- **01-nov 02:31 · Playwright con versiones fijadas.** Tres pasadas con Node 24.22.2: 180 aprobadas y 4 live omitidas cada una; incluyen axe. El puerto 3180 quedó libre.
 - **01-nov 02:28 · Comparación exploratoria de modelos.** Qwen3.5 4B y 9B respondieron tres preguntas sintéticas iguales; se anotaron RSS y tiempos individuales con otra actividad en el equipo. Método reproducible y límites en `modelos-hardware.md`; no permite descartar alternativas. Los dos procesos se cerraron por PID.
 - **01-nov 02:27 · Documentación de continuación.** CHANGELOG y cobertura reflejan la comparación sintética, las muestras de memoria y los límites de las verificaciones, sin declarar una versión cerrada.
 - **01-nov 02:27 · Memoria de modelos.** Cuatro servidores con compilación 11960 y modelos fijados: dos muestras RSS antes/después de una inferencia sintética. Detalle y límites en `modelos-hardware.md`; no mide pico ni equivale a GPU separada. Procesos cerrados por PID y puertos libres.

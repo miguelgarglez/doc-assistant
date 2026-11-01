@@ -4,6 +4,9 @@ Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`g
 
 ## Sin publicar
 
+- Comparación visual sintética con v0.14.0 en tres vistas de escritorio; las parejas son idénticas byte a byte. Repetidas tres pasadas Playwright con Node fijado: 180 aprobadas y cuatro live omitidas por pasada.
+- Comparación exploratoria reproducible de Qwen3.5 4B y 9B con tres preguntas sintéticas; no acredita calidad general ni descarta alternativas.
+
 - Comparados dos troceados sobre seis hechos sintéticos: 6/6 íntegros por secciones frente a 2/6 con ventanas fijas. La comparación no mide recuperación.
 - Muestras RSS de cuatro modelos cargados y una inferencia sintética con llama.cpp 11960; no son picos ni prueban el ZIP. `mise run check` correcto y tres pasadas Playwright con 180 aprobadas y cuatro live omitidas en cada una.
 
