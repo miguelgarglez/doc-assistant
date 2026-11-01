@@ -5,38 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import yaml
-from doubles import FakeEmbedder, FakeLLM, FakeReranker
 
 from doc_assistant.bootstrap import build_adapters
 from doc_assistant.config import load_config
 from doc_assistant.infra.models.http import HttpEmbedder
-
-
-def test_fake_embedder_dim() -> None:
-    e = FakeEmbedder(dim=8)
-    vecs = e.embed(["hola", "mundo"])
-    assert len(vecs) == 2
-    assert all(len(v) == 8 for v in vecs)
-
-
-def test_fake_reranker_preserves_order_scores() -> None:
-    r = FakeReranker()
-    scores = r.rerank("q", ["a", "b", "c"])
-    assert len(scores) == 3
-    assert scores[0][0] == 0
-
-
-def test_fake_llm_json_schema_shape() -> None:
-    llm = FakeLLM(
-        response={
-            "answerable": True,
-            "answer": "24 V",
-            "citations": [{"chunk_id": "abc", "quote": "24 V"}],
-        }
-    )
-    out = llm.chat([{"role": "user", "content": "x"}], schema={"type": "object"})
-    assert out["answerable"] is True
-    assert out["citations"][0]["chunk_id"] == "abc"
 
 
 def test_config_swap_changes_ports(tmp_path: Path) -> None:

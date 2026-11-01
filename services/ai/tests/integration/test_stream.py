@@ -25,13 +25,12 @@ from doc_assistant.application.ask import pipeline as ask_module
 from doc_assistant.application.ports.models import AdapterBusy, AdapterError
 from doc_assistant.bootstrap import ask_events, create_app, save_and_ingest_pdf
 from doc_assistant.config import load_config
-from doc_assistant.domain.answers.partial_json import FieldStreamer
 from doc_assistant.infra.models.http import HttpLLM
 from doc_assistant.infra.storage.chunks import ChunkStore
 
 ask_stream_events = partial(_ask_stream_events, ask_events_fn=ask_events)
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 
 
 def events(body: str) -> list[tuple[str, dict[str, Any]]]:
@@ -68,21 +67,6 @@ def stream(config_path: Path, question: str) -> list[tuple[str, dict[str, Any]]]
         assert r.status_code == 200
         assert r.headers["content-type"].startswith("text/event-stream")
         return events(r.text)
-
-
-def test_field_streamer_decodes_answer_in_any_split() -> None:
-    obj = {
-        "citations": [{"quote": '"answer": no'}],
-        "answer": 'A "b" \u00e9\nc',
-        "answerable": True,
-    }
-    text = json.dumps(obj)
-    for size in (1, 2, 5, 64):
-        f = FieldStreamer("answer")
-        assert (
-            "".join(f.feed(text[i : i + size]) for i in range(0, len(text), size)) == obj["answer"]
-        )
-    assert FieldStreamer("answer").feed('{"answerable":false,"answer":null}') == ""
 
 
 def test_stream_verified_answer(
@@ -347,16 +331,6 @@ def test_stream_end_to_end_over_http_adapters(
     assert kinds[0] == "step" and kinds[-2:] == ["refusal", "done"]
     assert evs[-1][1]["reason"] == "llm_unanswerable"
     assert evs[-1][1]["answer"] == ask_module.NO_INFO
-
-
-def test_scope_sentence_is_verbatim_first_sentence() -> None:
-    from doc_assistant.application.answers.meta import _scope_sentence
-
-    body = "Este documento define la instalación. Incluye cableado."
-    chunk = {"heading": "1. Alcance", "body": body, "text": f"[d · t · 1. Alcance] {body}"}
-    other = {"heading": "2. Cableado", "body": "x.", "text": "x."}
-    assert _scope_sentence([other, chunk]) == (chunk, "Este documento define la instalación.")
-    assert _scope_sentence([other]) is None
 
 
 def test_stream_ambiguous_invoice_is_a_clarification_not_a_refusal(

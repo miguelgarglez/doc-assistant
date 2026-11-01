@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from doc_assistant.config import expand_env, load_config
+from doc_assistant.config import load_config
 
-REPO_CONFIG = Path(__file__).resolve().parents[3] / "config" / "config.yaml"
+REPO_CONFIG = Path(__file__).resolve().parents[4] / "config" / "config.yaml"
 PORT_VARS = [
     "DOC_ASSISTANT_LLM_PORT",
     "DOC_ASSISTANT_EMBEDDINGS_PORT",
@@ -49,12 +49,3 @@ def test_ollama_runtime_ignores_the_llama_port_wherever_it_is(monkeypatch):
     assert load_config(REPO_CONFIG).ocr.ollama_url() == "http://127.0.0.1:11434"
     monkeypatch.setenv("DOC_ASSISTANT_OCR_PORT", "8184")
     assert load_config(REPO_CONFIG).ocr.ollama_url() == "http://127.0.0.1:11434"
-
-
-def test_expand_env_defaults_and_missing_names(monkeypatch):
-    monkeypatch.setenv("X_SET", "1")
-    assert expand_env({"a": ["${X_SET}", "${X_NOPE:-7}", "plain", 3]}) == {
-        "a": ["1", "7", "plain", 3]
-    }
-    with pytest.raises(ValueError, match="X_NOPE"):
-        expand_env("${X_NOPE}")

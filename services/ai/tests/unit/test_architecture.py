@@ -137,7 +137,7 @@ def architecture_errors(root: Path) -> list[str]:
 
 
 def test_package_architecture() -> None:
-    root = Path(__file__).resolve().parents[1] / "src" / PACKAGE
+    root = Path(__file__).resolve().parents[2] / "src" / PACKAGE
     assert architecture_errors(root) == []
 
 

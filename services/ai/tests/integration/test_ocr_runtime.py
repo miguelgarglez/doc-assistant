@@ -13,7 +13,7 @@ from doc_assistant.bootstrap import build_ocr
 from doc_assistant.config import load_config
 from doc_assistant.infra.models.http import LlamaOCR, OllamaOCR
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 
 
 def test_repo_config_uses_llama_runtime_on_8084(monkeypatch: pytest.MonkeyPatch) -> None:

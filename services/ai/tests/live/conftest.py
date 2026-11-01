@@ -1,0 +1,3 @@
+from invoice_battery_support import battery_config as shared_battery_config
+
+battery_config = shared_battery_config

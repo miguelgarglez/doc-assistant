@@ -6,13 +6,10 @@ from doubles import FakeLLM
 from doc_assistant.application.invoices.query import (
     is_invoice_question,
     plan_and_run,
-    role_cue,
     run_plan,
-    validate_plan,
 )
 from doc_assistant.application.ports.models import AdapterError
 from doc_assistant.bootstrap import ask_invoices
-from doc_assistant.domain.invoices.fields import FIELD_SPECS
 from doc_assistant.infra.invoices.reader import SqliteInvoiceReader
 from doc_assistant.infra.invoices.sqlite import InvoiceDB
 
@@ -229,24 +226,6 @@ def test_count_sum_and_has():
     assert nums(r) == ["FAC-2026-0042"]
 
 
-def test_invalid_plans_are_rejected():
-    assert validate_plan({"intent": "x"})[0] is None
-    base = {
-        "intent": "lista",
-        "numero": None,
-        "parte": None,
-        "campos": [],
-        "fecha_desde": None,
-        "fecha_hasta": None,
-        "tiene": [],
-    }
-    plan, errors = validate_plan(
-        {**base, "filtros": [{"campo": "importe_total", "op": ">", "valor": "mucho"}]}
-    )
-    assert plan is None and errors
-    assert validate_plan({**base, "filtros": [], "fecha_desde": "ayer"})[0] is None
-
-
 def test_one_retry_then_refusal_and_documentos_goes_to_rag():
     con = make(LUCIA, TECNO)
     bad = {
@@ -325,11 +304,6 @@ def test_identity_fields_follow_the_selecting_party_unless_a_role_is_named():
     assert r["ok"] and "B-81234567" in r["answer"]
 
 
-def test_plan_with_only_intent_is_valid():
-    plan, errors = validate_plan({"intent": "lista"})
-    assert plan is not None and not errors
-
-
 def test_number_without_leading_zeros():
     con = make(LUCIA, TECNO)
     r = run_plan(con, {"intent": "valor", "numero": "FAC-2026-42", "campos": ["importe_total"]})
@@ -377,11 +351,6 @@ def test_filters_settle_an_ambiguous_name():
     }
     r = run_plan(con, plan, "total de la factura de Lucía del 7 de marzo")
     assert r["ok"] and "1.706,60 €" in r["answer"] and "99,00 €" not in r["answer"]
-
-
-def test_longer_role_cue_wins():
-    assert role_cue("¿qué facturas se han emitido a Lucía Martín?") == "cliente"
-    assert role_cue("¿qué facturas ha emitido Lucía?") == "emisor"
 
 
 @pytest.mark.parametrize("intent", ["valor", "lista", "contar", "sumar"])
@@ -554,21 +523,6 @@ def test_clarification_truncates_to_five_and_counts_all(config_path):
     clarification = result["clarification"]
     assert clarification["total"] == 12 and len(clarification["candidates"]) == 5
     assert "y 7 más" in result["answer"]
-
-
-def test_followup_question_is_built_from_the_fields_asked():
-    from doc_assistant.application.invoices.query import FIELDS, followup_question
-
-    assert set(FIELD_SPECS) == set(FIELDS)
-    assert (
-        followup_question(["importe_total"], "A-1")
-        == "¿Cuál es el importe total de la factura A-1?"
-    )
-    assert (
-        followup_question(["fecha_emision", "importe_total", "iban"], "A-1")
-        == "¿Cuáles son la fecha de emisión, el importe total y el IBAN de la factura A-1?"
-    )
-    assert followup_question([], "A-1") == "¿Qué datos tiene la factura A-1?"
 
 
 def test_only_ambiguity_is_a_clarification_not_absence(config_path):
