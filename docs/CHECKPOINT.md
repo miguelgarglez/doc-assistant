@@ -292,3 +292,6 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Tres pasadas del build final dieron 182 aprobadas y 4 live omitidas por pasada, con axe en las vistas cubiertas. Cerrado por PID el servidor propio; puertos propios libres. Los enlaces de dependencias y la configuración temporal se movieron a `_trash/`.
 - Mejoran la concurrencia PDF, la admisión de consultas y los mensajes de error. Pendientes la evaluación sintética, los percentiles, la equidad de la cola y el check en un entorno local de dependencias. Recuento: 18 cumplidas, 10 parciales y 3 no.
 
+## 01-Nov 03:22 CET · Auditoría v0.15.1
+- La auditoría del tag `b48094a` en un clon limpio terminó con TOTAL 0. Sus temporales se aislaron para no sobrescribir los archivos `/tmp/aud-*` existentes; el clon y esos temporales se movieron a `_trash/`.
+
