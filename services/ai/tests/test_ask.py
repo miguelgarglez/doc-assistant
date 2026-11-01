@@ -81,6 +81,11 @@ def test_private_trace_captures_scores_without_changing_events(
             trace=trace,
         )
     )
+    assert len(trace["versions"]["config_sha256"]) == 64
+    assert len(trace["versions"]["answer_prompts_sha256"]) == 64
+    assert set(trace["versions"]["models_configured"]) == {
+        "llm", "embeddings", "reranker", "ocr"
+    }
     selected = [c for c in trace["candidates"] if c["selected"]]
     assert selected and all(c["rerank_score"] is not None for c in selected)
     assert any(c["vector_score"] is not None for c in trace["candidates"])

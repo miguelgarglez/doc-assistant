@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from collections.abc import Generator, Iterator
@@ -180,6 +181,19 @@ def _ask_events(
         return
     question = q
     cfg = load_config(config_path)
+    if trace is not None:
+        trace["versions"] = {
+            "config_sha256": hashlib.sha256(cfg.path.read_bytes()).hexdigest(),
+            "models_configured": {
+                "llm": cfg.llm.model,
+                "embeddings": cfg.embeddings.model,
+                "reranker": cfg.reranker.model,
+                "ocr": cfg.ocr.model,
+            },
+            "answer_prompts_sha256": hashlib.sha256(
+                (SYSTEM_PROMPT + "\0" + EVIDENCE_FIRST_PROMPT + "\0" + SEGMENTS_PROMPT).encode()
+            ).hexdigest(),
+        }
     latencies: dict[str, float] = {}
 
     t = time.perf_counter()

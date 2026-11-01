@@ -343,3 +343,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:11 CET · Ciclo de vida de la traza
 - El colector opcional guarda pasos, resultado y duración, y distingue finalización, error e interrupción al cerrar el generador. El flujo público conserva sus eventos y aún no se guarda ninguna traza.
 - 40 pruebas de consulta y streaming pasan, junto con Ruff y mypy. Faltan versiones e integración con el almacén y la interfaz.
+
+## 01-Nov 07:11 CET · Versiones parciales en la traza
+- El colector en memoria registra el SHA256 del archivo de configuración, el de los prompts de respuesta y los nombres configurados de los cuatro modelos. Estos nombres no acreditan los archivos cargados.
+- Siete pruebas de consulta y Ruff pasan. Faltan hashes de modelos cargados, revisión del índice y conexión al historial. No se activa la persistencia.
