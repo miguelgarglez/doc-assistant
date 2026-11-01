@@ -190,3 +190,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Sustituida la promesa de ausencia de invenciones por una descripción de las verificaciones y su límite heurístico, coherente con `docs/architecture.md`. No se afirma una tasa de error sin gold aprobado.
 - Verificación: revisión del texto y `git diff --check`. Sin cambios de comportamiento.
 
+
+## 01-Nov 01:57 CET · Línea base de pruebas Python
+- Ejecutados los tests del worktree con el intérprete ya existente de ui7 y `PYTHONPATH=services/ai/src`: 313 pasados y 35 omitidos en servicio; 26 pasados en scripts. Un aviso de deprecación de Starlette. No equivale a `mise run check` ni a las pruebas live.
+- No se instaló nada ni se arrancaron servidores. Pendiente autorización para instalar dependencias locales y completar los checks exigidos.
+
