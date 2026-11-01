@@ -47,3 +47,11 @@ Se reutilizan Table, Badge, Skeleton y Button de shadcn y la composición Artifa
 - Capturas sintéticas antes/después, capturas reales aisladas, inspección visual, documentación y auditoría en clon limpio.
 
 No se inicia historial ni feedback. No se cambia extracción ni prompts a partir de material real.
+
+## Cierre de implementación
+
+Se conservó B con bloques de presentación autocontenidos. La revisión independiente pidió un conjunto atómico en el cliente, identidad citada, referencias de suma y fidelidad al copiar notas y columnas. Se implementaron esas correcciones, incluida la deduplicación del número en comparativas. La versión es `blocks_version: 1`; los agregados declaran `operation: "sum"` y sus `refs`. El detalle de verificación y capturas queda en CHECKPOINT y en la revisión de v0.14.0.
+
+Se mantiene como límite la evidencia SQL del valor almacenado. Para citar una región del OCR haría falta guardar posiciones en la ingesta. Este cambio no introduce ese dato ni lo infiere.
+
+La petición general se reconoce solo en formas explícitas como "qué datos tiene la factura" o "datos de la factura" y sin campos concretos. Una petición de datos bancarios conserva el IBAN. La batería acepta suma o desglose ante la frase ambigua "total de las facturas" y comprueba los operandos y el resultado mediante Decimal, sin fijar la redacción de la cabecera.

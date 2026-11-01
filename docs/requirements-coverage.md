@@ -49,7 +49,7 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 
 | Id | Requisito (paráfrasis) | Dónde | Estado | Fiabilidad real |
 |---|---|---|---|---|
-| E-A1 | Código de calidad, errores controlados, README | `mise run check` (ruff, mypy, 218 tests del servicio y 14 de scripts, contrato, eslint, tsc, build) | Cumplido | `check` OK; revisión independiente triada (ADR-006). |
+| E-A1 | Código de calidad, errores controlados, README | `mise run check` (ruff, mypy, 313 tests del servicio y 26 de scripts, contrato, eslint, tsc, build) | Cumplido | `check` OK; revisión independiente triada (ADR-006). |
 | E-A2 | Sin scripts sueltos ni notebooks | Servicio + web + tareas mise | Cumplido | Los `scripts/` son las tareas del proyecto, con sus propios tests. |
 | E-A3 / E-A4 | Interfaz cuidada: respuesta, fuentes navegables, fragmento | `apps/web` (chat sobre AI SDK, citas inline, visor a pantalla completa, Fuentes, Sistema; ADR-010 y ADR-011); API de streaming con trazas y catálogo de fuentes (`docs/streaming.md`, ADR-009) | Cumplido | Integración: 118 e2e con respuestas simuladas en tres pasadas seguidas; los cuatro tests de fixtures contra stack real se omiten. Esos cuatro se ejecutaron en v0.12.0. Axe sin violaciones serias ni críticas en rutas, temas y modos (incluidos el visor, el diálogo de subida y el aviso); capturas contra el stack real con fuentes sintéticas en tres tamaños y cuatro combinaciones de tema. Desde v0.13.1: tarjeta de aclaración de facturas (teclado, axe en cuatro temas y modos) y vista previa de cita anclada con test de posición; 139 e2e en tres pasadas. No se ha probado con usuarios. |
 | E-B1 | Conjunto de evaluación con respuestas esperadas y métricas | — | **No** | El gold no está aprobado. `evidence/live` solo tiene 6 facturas y 5 preguntas, sin métricas agregadas. |
@@ -62,6 +62,11 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 | N2 | Documentar las elecciones | `decisions-log.md` | Cumplido | — |
 | N3 | Huecos del enunciado decididos | `docs/open-gaps.md` | Cumplido | — |
 | N5 | ZIP con código, README y arquitectura | `mise run package` | Parcial | Solo se ha probado el smoke falso, sin modelos. El paquete completo con smoke real está pendiente. |
+
+**v0.14.0.**
+- Mejoran B3, B4, B5 y E-A3/E-A4 con fichas y tablas derivadas de evidencia, contrato versionado, copia fiel y degradación; E-B3 incorpora comparación y galería. 180 e2e ×3 y batería propia de 35 casos live sin respuestas falsas.
+- Pendientes: B5 sigue parcial y E-B1 en "no" hasta el gold aprobado; faltan posiciones OCR y prueba de teclado virtual real. Las fechas conservan su representación almacenada.
+- Recuento de 31 filas: 17 cumplidas, 10 parciales y 4 no. No cambia el estado de ninguna fila.
 
 **v0.13.3.**
 - Mejoran R1.5 (rechazo con lenguaje llano, sin códigos internos), B3 y B5 (importes es-ES y solo los campos pedidos, con una batería sintética de 35 casos y 0 falsas) y E-B3 (capturas nuevas). No cambia el estado de ninguna fila.

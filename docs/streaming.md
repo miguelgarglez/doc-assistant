@@ -1,6 +1,6 @@
 # API: consulta en streaming y catálogo de fuentes
 
-Contrato de `POST /ask/stream` (SSE), `GET /sources`, `DELETE /sources/{id}` y `POST /sources/{id}/reindex`. El esquema exacto está en `services/ai/openapi.json` (`StreamEvent`, `Source`, `Suggestion`, `Clarification`).
+Contrato de `POST /ask/stream` (SSE), `GET /sources`, `DELETE /sources/{id}` y `POST /sources/{id}/reindex`. El esquema exacto está en `services/ai/openapi.json` (`StreamEvent`, `Source`, `Suggestion`, `Clarification`, `KeyDataBlock`, `TableBlock`).
 
 Desde la web se accede por el proxy igual que hoy: `/api/ask/stream`, `/api/sources`, ...
 
@@ -46,7 +46,7 @@ El proxy actual de Next ya devuelve `upstream.body` como stream; comprobar que n
 
 4b. `clarification` — la pregunta es ambigua y el servicio puede resolverla con candidatas reales. Sustituye a `refusal` en ese caso (nunca salen los dos):
    ```json
-   {"reason":"invoice:aclaracion","clarification":{"prompt":"¿De qué factura?","detail":null,"total":2,"candidates":[{"doc":"FRA-1","doc_id":"inv-...","emisor":"...","cliente":"...","fecha":"07 marzo 2026","total":"1706.60","question":"¿Cuál es el importe total de la factura FRA-1?"}]}}
+   {"reason":"invoice:aclaracion","clarification":{"prompt":"¿De qué factura?","detail":null,"total":2,"candidates":[{"doc":"FRA-1","doc_id":"inv-...","emisor":"...","cliente":"...","fecha":"07 marzo 2026","total":"1.706,60 €","question":"¿Cuál es el importe total de la factura FRA-1?"}]}}
    ```
    - `reason` ∈ `invoice:aclaracion`, `invoice:factura_ambigua`, `invoice:parte_ambigua`. El resto de `invoice:*` (`factura_no_encontrada`, `parte_no_encontrada`, `sin_resultados`...) siguen siendo `refusal`: no hay nada entre lo que elegir.
    - `prompt` es la pregunta corta que se muestra; `detail`, una frase de contexto cuando la hay (qué personas encajan, cuántas facturas hay).
@@ -54,6 +54,14 @@ El proxy actual de Next ya devuelve `upstream.body` como stream; comprobar que n
    - `question` es la pregunta original con la factura elegida nombrada, construida en el servicio con los campos que se pedían (`¿Cuál es el importe total de la factura X?`; si la pregunta no era de valor, `¿Qué datos tiene la factura X?`). El cliente la envía tal cual como pregunta nueva.
    - `total` cuenta todas las facturas que encajan; si es mayor que `candidates.length`, el cliente lo dice y sugiere acotar por número o fecha.
    - Sin tokens previos: no hay `retract`. `done` repite `clarification` y lleva `ok:false`, `reason` y `suggestions:[]`; `answer` conserva un texto plano («¿De qué factura? ¿Te refieres a alguna de estas? …») para clientes que no entienden el evento. `/ask` devuelve el mismo campo `clarification`.
+
+4c. `blocks` contiene `{"blocks_version":1,"blocks":[...],"follow_ups":[...]}`. Es aditivo desde v0.14.0 y se emite tras `citations` cuando hay bloques o preguntas sugeridas. `done` repite estos campos y prevalece sobre el evento anticipado.
+   - `key_data`: `title`, `doc_id`, `items[{field,label,text,kind,cite}]`, `note`. `text:null` indica ausencia. Cada valor presente referencia una cita del mismo documento y campo, cuyo `quote` coincide con el texto mostrado.
+   - `table`: `title`, `columns[{key,label,kind}]`, `rows[{doc_id,question,cells}]`, `summary`, `note`. Cada celda sigue el orden de columnas; el número de factura también tiene cita. La pregunta de fila se genera en el servicio.
+   - `summary`: `operation:"sum"`, `refs` de cada operando, `label`, `text` y `kind:"amount"`. El servicio calcula la suma con Decimal desde las filas seleccionadas; el cliente no calcula importes.
+   - `kind` es `text | date | amount | percent | id`. `follow_ups` lleva `label` y `question`, derivadas de campos presentes o apartados recuperados. No implica memoria entre turnos.
+   - El cliente solo presenta bloques al recibir el resultado final. Si la versión es desconocida, alguna estructura no es válida o una celda pierde su respaldo, muestra el Markdown completo. No conserva un subconjunto que pueda ocultar información.
+   - Los clientes previos ignoran el evento y los campos nuevos. `answer` y `segments` conservan los valores, ausencias y advertencias para poder leer y copiar la respuesta sin bloques.
 
 5. `done` — siempre el último evento si no hubo error. Es la verdad final (igual a la respuesta de `/ask` + tiempos):
    ```json
@@ -81,7 +89,7 @@ apuntando a los fragmentos cuyos títulos de sección se listan (quote = título
 ### Citas inline (`segments`, `inline`)
 `done` (y `/ask`) llevan `segments: {text, refs[]}[]`: la respuesta partida en trozos, donde `refs` son posiciones en `citations`.
 Los `text` concatenados reconstruyen `answer` exactamente; un trozo sin `refs` no lleva marcador. `citations` viene ordenada por primer uso
-(los marcadores se leen 1, 2, 3 a lo largo del texto) y solo contiene las citas que algún trozo usa; si ninguno tiene marcador, se
+(los marcadores se leen 1, 2, 3 a lo largo del texto) y contiene las citas usadas por los segmentos o por los bloques estructurados. Las citas adicionales de los bloques se añaden al final sin cambiar los índices anteriores; si ningún segmento tiene marcador, se
 mantienen todas y se muestran tras la respuesta. `inline` dice quién colocó los marcadores:
 - `template`: respuestas meta y de facturas, construidas por plantilla con una cita por elemento listado.
 - `rules` (por defecto): asignación determinista por frase. Una cita respalda una frase si cubre sus cifras y, al menos, la mitad de sus raíces de palabra.
@@ -141,3 +149,9 @@ Solo PDFs con fichero en `data_dir/documents/`. Facturas → `400 {code:"not_rei
 ## Petición al servicio AI: endpoint de salud por pieza
 
 Propuesta: `GET /health/components` devuelve `{ "components": [{ "id": "web" | "proxy" | "ai" | "llm" | "embeddings" | "reranker" | "ocr" | "sqlite", "status": "ok" | "degraded" | "unavailable" | "unknown", "latency_ms": number | null, "detail": string | null }] }`. Una latencia nula indica que no se ha medido. El cliente presenta `unknown` cuando no existe el endpoint y no inventa disponibilidad ni latencias.
+
+## Evidencia de facturas
+
+Las citas SQL corresponden al dato extraído y almacenado en InvoiceDB. `chunk_id` identifica número y campo, `quote` y `fragment` muestran el mismo formato determinista que la celda. No acreditan una posición literal del OCR. El visor de imagen de factura informa de la ausencia de posiciones y permite contrastar el original.
+
+El contrato público se exporta desde Pydantic a `services/ai/openapi.json` y de ahí a `schema.d.ts`. `blocks_version: 1` versiona la representación nueva sin cambiar la versión histórica global del API. `mise run check` comprueba su deriva.

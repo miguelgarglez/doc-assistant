@@ -66,3 +66,17 @@ Sistema pinta cada pieza con estado en texto y color, latencia y última consult
 
 - **Tarjeta de aclaración** (`components/chat/clarification.tsx`). Pregunta corta como título y las candidatas como `Item` de shadcn renderizado como botón: número y fecha arriba, «De X para Y» debajo y el total a la derecha, solo los datos que existen. El nombre accesible de cada botón dice factura, partes, fecha y total. Tab llega a cada botón; ↑/↓, Inicio y Fin mueven el foco sin animación. Hover solo con `@media (hover: hover)` y `active:scale-[0.985]`. Sin iconos decorativos. Con más de 5 candidatas lo dice y pide acotar.
 - **Vista previa de cita.** El panel se centra en el marcador, deja 12 px a los bordes del hilo (v0.13.2: antes, de la ventana) y se oculta si el marcador sale del hilo. Nace desde el marcador (`--transform-origin`). Dentro de un hilo, su límite de colisión es el elemento de scroll (`useConversationScrollArea`): se abre hacia arriba si abajo no cabe y se ciñe al hilo, con scroll interno, si no cabe en ninguna dirección, de modo que nunca cubre el composer.
+
+## Respuestas con datos
+
+Desde v0.14.0, Artifact agrupa una ficha `dl` o una tabla de facturas derivadas del servicio. Reutiliza Button y Tooltip de Base UI, Table y Skeleton de shadcn, y Message y Suggestion de AI Elements. El contrato está en [ADR-014](decisions-log.md#adr-014-bloques-de-respuesta-derivados-de-evidencia-2026-11-01).
+
+Cada valor presente tiene una cita junto a él. Las sumas muestran los marcadores de los operandos. La ficha general incluye emisor, cliente, número, fecha y total; una pregunta por un campo conserva solo ese campo. Un guion con nombre accesible "sin dato" representa ausencia, nunca cero. Los importes y fechas usan cifras tabulares y no parten el símbolo; las columnas de importes se alinean a la derecha. La tabla se desplaza dentro del hilo en móvil.
+
+El Markdown sigue siendo la alternativa completa para clientes sin bloques o ante una versión o estructura que no se pueda validar. El realce de cifras en Markdown solo envuelve texto literal, sin cambiar valores ni añadir campos. Omite código y enlaces.
+
+La copia de respuesta conserva Markdown y fuentes. La copia de tabla usa TSV con igual número de columnas y conserva notas de revisión o truncamiento. Alt+C copia la respuesta, Alt+T la tabla y Alt+1 a Alt+3 envían sugerencias; actúan fuera de campos editables y del visor. La ayuda lista estos atajos.
+
+Mientras llega contenido se muestra Skeleton, oculto para lectores de pantalla, junto al estado accesible. El texto provisional entra con fade de 140 ms y sigue marcado como pendiente de verificación. Con `prefers-reduced-motion`, no se anima el streaming, no hay retardos CSS ni scroll suave de seguimiento. El envío por teclado lleva al final de forma instantánea.
+
+Auditoría de componentes y decisiones de copy en [revisión v0.14.0](reviews/respuestas-enriquecidas-v0.14.0.md). Capturas sintéticas antes/después en [comparación](../evidence/comparison-v0.13.3-v0.14.0/README.md).

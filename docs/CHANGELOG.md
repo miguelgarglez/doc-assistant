@@ -2,6 +2,15 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
+## v0.14.0 · 2026-11-01
+- Respuestas enriquecidas desde el servicio. Ficha general con emisor, cliente, número, fecha y total; preguntas específicas con los campos pedidos. Listados y comparativas como tablas, números y valores con su cita, sumas con operación y referencias de operandos.
+- Contrato aditivo `blocks_version: 1`, evento SSE `blocks` y data part tipado. OpenAPI y cliente generados. `done` conserva la instantánea completa; ante una versión desconocida o bloques inválidos, la web muestra el Markdown verificado.
+- Importes y fechas con cifras tabulares y sin partir el importe. Acciones sugeridas desde campos existentes o apartados recuperados, copia de respuesta con fuentes y TSV con columnas y notas de revisión. Atajos Alt+C/T y Alt+1 a Alt+3 fuera de campos editables.
+- Skeletons durante la espera, streaming provisional con entrada breve y movimiento reducido también en retardos CSS y scroll programático. No se añade historial ni feedback.
+- Corregidas la pregunta por número que mostraba un total, la duplicación de esa columna en comparativas y el formato monetario del inventario. La ficha general es estable aunque el plan proponga todos los campos; una petición de datos bancarios conserva el IBAN.
+- Probado: `mise run check` con 313 tests del servicio y 26 de scripts, contrato sin deriva, lint, tipos y build. Batería sintética de 84 tests con 35 casos sobre el modelo real, sin respuestas falsas bajo sus oráculos y con sumas comprobadas mediante Decimal. Playwright 180/180 en tres pasadas, con axe sin violaciones serias ni críticas; cuatro pruebas de fixtures live omitidas por pasada.
+- [Diseño y alternativas](design/respuestas-enriquecidas.md), ADR-014, [revisión](reviews/respuestas-enriquecidas-v0.14.0.md), [comparación sintética](../evidence/comparison-v0.13.3-v0.14.0/README.md) y [galería](../evidence/evolution/v0.14.0/README.md). Capturas de humo con fuentes privadas conservadas solo en local. La batería propia no sustituye a un gold aprobado ni aporta posiciones OCR.
+
 ## v0.13.3 · 2026-11-01
 - Los importes de las facturas salen siempre en es-ES, «1.706,60 €», con el formateo hecho en el servicio y no en el modelo. El valor guardado no cambia; la cita enseña lo mismo que el texto.
 - La respuesta usa el término de la pregunta («precio final», «importe total», «IVA») y solo los campos pedidos: ya no añade el emisor ni otros datos que nadie preguntó. Una tabla cerrada de campos (`invoice_fields.py`) sustituye a los diccionarios sueltos.
