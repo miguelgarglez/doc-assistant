@@ -143,6 +143,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/history/feedback/{feedback_id}/original": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Feedback Original */
+        get: operations["feedback_original_history_feedback__feedback_id__original_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/history/feedback/{feedback_id}/decision": {
         parameters: {
             query?: never;
@@ -1597,6 +1614,41 @@ export interface operations {
         };
     };
     feedback_detail_history_feedback__feedback_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-history-token"?: string | null;
+            };
+            path: {
+                feedback_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    feedback_original_history_feedback__feedback_id__original_get: {
         parameters: {
             query?: never;
             header?: {

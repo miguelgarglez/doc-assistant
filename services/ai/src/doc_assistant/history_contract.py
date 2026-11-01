@@ -40,6 +40,8 @@ class HistoryRepository(HistoryWriter, Protocol):
 
     def feedback_detail(self, feedback_id: str) -> dict[str, Any] | None: ...
 
+    def get(self, conversation_id: str, request_id: str) -> dict[str, Any] | None: ...
+
     def decide_feedback(
         self,
         feedback_id: str,

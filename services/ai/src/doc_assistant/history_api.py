@@ -183,6 +183,17 @@ def feedback_detail(feedback_id: str, store: Store) -> dict[str, Any]:
     return item
 
 
+@router.get("/feedback/{feedback_id}/original")
+def feedback_original(feedback_id: str, store: Store) -> dict[str, Any]:
+    item = store.feedback_detail(feedback_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+    original = store.get(item["conversation_id"], item["request_id"])
+    if original is None:
+        raise HTTPException(status_code=404, detail="Original request not found")
+    return original
+
+
 @router.put("/feedback/{feedback_id}/decision")
 def feedback_decision(feedback_id: str, payload: FeedbackDecision, store: Store) -> dict[str, bool]:
     if payload.status == "revisado" and (

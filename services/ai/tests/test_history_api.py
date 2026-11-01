@@ -107,6 +107,10 @@ def test_decision_exports_only_approved_redactions_and_revokes_on_reopen(tmp_pat
     assert store.add_private_feedback(
         "f", "c", "r", "now", "secret@example.com", include_context=True
     )
+    assert client.get("/history/feedback/f/original").status_code == 403
+    assert client.get("/history/feedback/f/original", headers=headers).json()["question"] == (
+        "secret@example.com"
+    )
     url = "/history/feedback/f/decision"
     decision = {
         "status": "revisado",
