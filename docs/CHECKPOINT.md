@@ -252,3 +252,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Los errores HTTP 429 y 503 y los tiempos de espera tienen códigos y mensajes para reintentar. El planificador de facturas propaga estos errores en lugar de tratarlos como planes inválidos. El contrato conserva los campos existentes.
 - Pasaron 102 pruebas focalizadas y Ruff. Pendientes cola, carga ampliada, check completo y auditoría de la versión.
 
+## 01-Nov 03:07 CET · Acceso concurrente a PDFium
+- Una carga de consultas e ingestas terminó el proceso dentro de PDFium. El servicio ahora serializa la creación, uso y cierre de objetos PDFium entre ingesta, validación y localización de citas.
+- Una prueba fuerza el solapamiento entre ingesta y localización y comprueba la exclusión. En la repetición con modelos locales, 12 consultas dieron respuestas verificadas con citas y 4 PDF se indexaron. La muestra no demuestra ausencia de otras carreras.
+

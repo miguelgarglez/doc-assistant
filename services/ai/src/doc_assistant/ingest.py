@@ -16,6 +16,7 @@ import pypdfium2 as pdfium
 from doc_assistant.adapters import Embedder, build_adapters
 from doc_assistant.chunking import chunk_invoice, chunk_pdf, pdf_doc_id
 from doc_assistant.config import load_config
+from doc_assistant.pdf_lock import pdf_lock
 from doc_assistant.store import ChunkStore
 
 
@@ -93,14 +94,24 @@ def ingest_pdfs(
         if not chunks:
             warnings.append(f"sin capa de texto (necesita OCR), no se indexa: {pdf.name}")
         try:
-            pdf_document = pdfium.PdfDocument(pdf)
-            images = []
-            for page in pdf_document:
-                image = page.render(scale=2).to_pil()
-                output = io.BytesIO()
-                image.save(output, format="PNG")
-                images.append(output.getvalue())
-            pdf_document.close()
+            with pdf_lock:
+                pdf_document = pdfium.PdfDocument(pdf)
+                try:
+                    images = []
+                    for page in pdf_document:
+                        try:
+                            bitmap = page.render(scale=2)
+                            try:
+                                image = bitmap.to_pil()
+                                output = io.BytesIO()
+                                image.save(output, format="PNG")
+                                images.append(output.getvalue())
+                            finally:
+                                bitmap.close()
+                        finally:
+                            page.close()
+                finally:
+                    pdf_document.close()
         except Exception as exc:  # noqa: BLE001 — isolate rendering failures
             warnings.append(f"no se pudo renderizar {pdf.name}: {type(exc).__name__}")
             continue

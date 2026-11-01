@@ -22,6 +22,7 @@ from doc_assistant.highlight import locate
 from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
 from doc_assistant.ingest_jobs import IngestJobs, Progress, Stage
 from doc_assistant.invoices import InvoiceDB, invoice_image, upload_invoice
+from doc_assistant.pdf_lock import pdf_lock
 from doc_assistant.sources import find_source, list_sources, remove_source
 from doc_assistant.store import ChunkStore
 
@@ -600,11 +601,12 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
                     ).model_dump(),
                 )
             try:
-                pdf = pdfium.PdfDocument(data)
-                try:
-                    pages = len(pdf)
-                finally:
-                    pdf.close()
+                with pdf_lock:
+                    pdf = pdfium.PdfDocument(data)
+                    try:
+                        pages = len(pdf)
+                    finally:
+                        pdf.close()
             except pdfium.PdfiumError:
                 return upload_error("invalid_file", "Invalid PDF", 400)
             if pages > cfg.upload_pdf_max_pages:

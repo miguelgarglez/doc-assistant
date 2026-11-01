@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pypdfium2 as pdfium
 
+from doc_assistant.pdf_lock import pdf_lock
+
 LINE_PAD = 0.0015
 
 
@@ -109,11 +111,12 @@ def locate_on_page(pdf: pdfium.PdfDocument, page_number: int, quote: str) -> lis
 
 @lru_cache(maxsize=256)
 def _cached(path: str, mtime_ns: int, page_number: int, quote: str) -> tuple[Rect, ...] | None:
-    pdf = pdfium.PdfDocument(path)
-    try:
-        found = locate_on_page(pdf, page_number, quote)
-    finally:
-        pdf.close()
+    with pdf_lock:
+        pdf = pdfium.PdfDocument(path)
+        try:
+            found = locate_on_page(pdf, page_number, quote)
+        finally:
+            pdf.close()
     return None if found is None else tuple(found)
 
 
