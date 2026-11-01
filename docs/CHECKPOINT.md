@@ -326,3 +326,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 ## 01-Nov 07:07 CET · Transporte sin streaming
 - El transporte sin streaming recoge `x-request-id` de la respuesta. Los fixtures SSE incluyen el campo nuevo y el chequeo de tipos de la web pasa. Si un servicio anterior no envía la cabecera, el identificador queda vacío.
+
+## 01-Nov 07:08 CET · Almacén de historial aislado
+- Añadido un almacén SQLite separado del índice, aún sin conectar a la API. Cada operación abre y cierra su conexión; el feedback copia la traza guardada en una sola operación SQL. No se activa la persistencia de datos de usuario.
+- Tres pruebas cubren concurrencia de escritores, rechazo de identificadores duplicados y conservación de la copia de feedback. Ruff y mypy pasan. Faltan la traza completa, endpoints, interfaz, política de privacidad y verificaciones de entrega; no hay tag v0.16.0.
