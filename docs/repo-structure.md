@@ -26,7 +26,7 @@ apps/web/            Next.js 16 + TS strict
   src/lib/api/schema.d.ts          tipos generados desde openapi.json
   src/components/ui/               primitivos shadcn sobre Base UI
   src/components/chat/             respuestas, bloques, citas, aclaraciones y visor
-  src/components/viewer/           página y resaltado
+  src/features/viewer/             página y resaltado
   src/components/uploads/          diálogo y avisos de subida
   src/components/sources/          gestión de fuentes
   src/components/system/           estado de componentes y última traza

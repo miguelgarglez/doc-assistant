@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-import { boundsOf, clampView, fitSize, focusView, panBy, zoomAt, zoomStep, MAX_SCALE } from "../src/lib/viewer/pan-zoom"
+import { boundsOf, clampView, fitSize, focusView, panBy, zoomAt, zoomStep, MAX_SCALE } from "../src/features/viewer/pan-zoom"
 
 const viewport = { w: 800, h: 600 }
 const page = fitSize({ w: 612, h: 792 }, viewport)

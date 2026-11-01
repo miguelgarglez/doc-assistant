@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "node eslint-rules/feature-boundaries.test.mjs && eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "gen:api": "openapi-typescript ../../services/ai/openapi.json -o src/lib/api/schema.d.ts",
     "e2e": "pnpm build && playwright test"

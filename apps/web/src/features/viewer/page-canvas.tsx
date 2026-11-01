@@ -17,7 +17,7 @@ import {
   type Point,
   type Size,
   type View,
-} from "@/lib/viewer/pan-zoom"
+} from "@/features/viewer/pan-zoom"
 import { cn } from "@/lib/utils"
 
 type PageCanvasProps = {

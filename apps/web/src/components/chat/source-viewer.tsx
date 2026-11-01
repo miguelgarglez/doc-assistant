@@ -3,8 +3,8 @@
 import { ChevronLeftIcon, ChevronRightIcon, XIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 
-import { PageCanvas } from "@/components/viewer/page-canvas"
-import { useHighlight, type HighlightState } from "@/components/viewer/use-highlight"
+import { PageCanvas } from "@/features/viewer"
+import { useHighlight, type HighlightState } from "@/features/viewer"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Kbd } from "@/components/ui/kbd"
