@@ -106,7 +106,11 @@ class HistoryStore:
             raise ValueError("invalid pagination")
         with self._connect() as db:
             rows = db.execute(
-                "SELECT conversation_id, MAX(created_at), COUNT(*) FROM requests "
+                "SELECT conversation_id, MAX(created_at), COUNT(*), "
+                "(SELECT trace_json FROM requests AS first_request "
+                "WHERE first_request.conversation_id = requests.conversation_id "
+                "AND first_request.owner = requests.owner "
+                "ORDER BY created_at, request_id LIMIT 1) FROM requests "
                 "WHERE owner = ? AND (? = '' OR conversation_id IN "
                 "(SELECT conversation_id FROM requests WHERE owner = ? "
                 "AND instr(lower(trace_json), lower(?)) > 0)) "
@@ -114,7 +118,15 @@ class HistoryStore:
                 "LIMIT ? OFFSET ?",
                 (owner, search, owner, search, limit, offset),
             ).fetchall()
-        return [{"conversation_id": row[0], "updated_at": row[1], "count": row[2]} for row in rows]
+        return [
+            {
+                "conversation_id": row[0],
+                "updated_at": row[1],
+                "count": row[2],
+                "question": json.loads(row[3]).get("question", ""),
+            }
+            for row in rows
+        ]
 
     def delete_conversation(self, conversation_id: str, *, owner: str = "local") -> int:
         with self._connect() as db:

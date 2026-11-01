@@ -14,6 +14,7 @@ import {
 import { useUploads } from "@/components/providers/uploads-provider"
 import { useQuestionHistory } from "@/hooks/use-question-history"
 import { AskTransport } from "@/lib/chat/transport"
+import { messagesFromHistory } from "@/lib/chat/history"
 import type { AskMessage } from "@/lib/chat/types"
 import { lastTrace, lastQuestion } from "@/lib/chat/view"
 
@@ -30,6 +31,7 @@ type ChatContextValue = {
   stop: () => void
   clear: () => void
   conversationId: () => string
+  openConversation: (id: string) => Promise<void>
   history: ReturnType<typeof useQuestionHistory>
   trace: ReturnType<typeof lastTrace>
 }
@@ -72,6 +74,15 @@ class ConversationIdentity {
       window.sessionStorage.removeItem(CONVERSATION_KEY)
     } catch {
       // Nothing persisted to remove.
+    }
+  }
+
+  set(id: string) {
+    this.id = id
+    try {
+      window.sessionStorage.setItem(CONVERSATION_KEY, id)
+    } catch {
+      // The identity remains available for this page session.
     }
   }
 }
@@ -136,14 +147,33 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       // Nothing persisted to remove.
     }
   }, [identity, setMessages, stop])
+  const openConversation = useCallback(async (id: string) => {
+    const items: unknown[] = []
+    let cursor: [string, string] | null = null
+    do {
+      const query = new URLSearchParams({ limit: "100" })
+      if (cursor) {
+        query.set("before_at", cursor[0])
+        query.set("before_id", cursor[1])
+      }
+      const response = await fetch(`/api/history/conversations/${encodeURIComponent(id)}?${query}`)
+      if (!response.ok) throw new Error("No se pudo abrir la conversación")
+      const page: { items: unknown[]; next_cursor: [string, string] | null } = await response.json()
+      items.push(...page.items)
+      cursor = page.next_cursor
+    } while (cursor)
+    await stop()
+    identity.set(id)
+    setMessages(messagesFromHistory(items))
+  }, [identity, setMessages, stop])
 
   const busy = status === "submitted" || status === "streaming"
   const trace = useMemo(() => lastTrace(messages), [messages])
   const getConversationId = useCallback(() => identity.get(), [identity])
 
   const value = useMemo<ChatContextValue>(
-    () => ({ messages, status, error, busy, ask, regenerate: retry, stop: () => void stop(), clear, conversationId: getConversationId, history, trace }),
-    [messages, status, error, busy, ask, retry, stop, clear, getConversationId, history, trace]
+    () => ({ messages, status, error, busy, ask, regenerate: retry, stop: () => void stop(), clear, openConversation, conversationId: getConversationId, history, trace }),
+    [messages, status, error, busy, ask, retry, stop, clear, openConversation, getConversationId, history, trace]
   )
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>
 }

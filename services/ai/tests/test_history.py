@@ -302,6 +302,7 @@ def test_conversation_pages_search_and_delete(tmp_path):
     store.record("r2", "c2", "2026-01-02", {"question": "beta"})
     store.record("r3", "c2", "2026-01-03", {"question": "gamma"})
     assert [x["conversation_id"] for x in store.conversations_page(limit=1)] == ["c2"]
+    assert store.conversations_page(limit=1)[0]["question"] == "beta"
     assert [x["conversation_id"] for x in store.conversations_page(limit=1, offset=1)] == ["c1"]
     assert store.conversations_page(search="beta")[0]["count"] == 2
     assert store.add_private_feedback("f", "c2", "r2", "now", None)

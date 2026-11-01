@@ -12,6 +12,7 @@ import {
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 
+import { HistoryPanel } from "@/components/history/history-panel"
 import { useAddSources } from "@/components/providers/add-sources-provider"
 import { useConversation } from "@/components/providers/chat-provider"
 import { useSources } from "@/components/providers/sources-provider"
@@ -89,6 +90,7 @@ export function AppSidebar() {
         <SidebarGroup className="py-0">
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem><HistoryPanel /></SidebarMenuItem>
               {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
                 const active = href === "/" ? pathname === "/" : pathname.startsWith(href)
                 return (
