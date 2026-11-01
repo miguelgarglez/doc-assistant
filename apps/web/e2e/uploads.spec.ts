@@ -56,6 +56,7 @@ test.describe("añadir fuentes", () => {
     await page.setViewportSize({ width: 375, height: 500 })
     await toast(page).hover()
     await expect(toast(page)).toBeVisible()
+    await page.waitForTimeout(500) // Measure after Sonner's entrance and expansion transitions.
     const box = await toast(page).boundingBox()
     expect(box).not.toBeNull()
     expect(box!.x).toBeGreaterThanOrEqual(0)
