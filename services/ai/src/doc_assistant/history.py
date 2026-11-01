@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import builtins
 import json
 import sqlite3
 from collections.abc import Iterator
@@ -74,7 +75,7 @@ class HistoryStore:
         *,
         limit: int = 50,
         before: tuple[str, str] | None = None,
-    ) -> tuple[list[dict[str, Any]], tuple[str, str] | None]:
+    ) -> tuple[builtins.list[dict[str, Any]], tuple[str, str] | None]:
         """Return a stable page and the position for the next page, if any."""
         if not 1 <= limit <= 100:
             raise ValueError("limit must be between 1 and 100")
@@ -82,7 +83,7 @@ class HistoryStore:
             "SELECT created_at, request_id, trace_json FROM requests "
             "WHERE conversation_id = ?"
         )
-        params: list[Any] = [conversation_id]
+        params: builtins.list[Any] = [conversation_id]
         if before is not None:
             query += " AND (created_at, request_id) < (?, ?)"
             params.extend(before)

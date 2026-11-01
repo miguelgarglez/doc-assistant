@@ -351,3 +351,5 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:12 CET · Paginación del almacén aislado
 - El almacén ofrece páginas por fecha e identificador, con un límite de 100 registros. El cursor evita duplicados o saltos cuando llegan consultas más recientes y deshace los empates de fecha. Aún no hay endpoint conectado.
 - Cuatro pruebas del almacén y Ruff pasan. La persistencia sigue desactivada.
+
+- Comprobación posterior: mypy detectó que el método `list` ocultaba el tipo integrado en las nuevas anotaciones. Se corrigió; mypy y las 11 pruebas de historial y consulta pasan.
