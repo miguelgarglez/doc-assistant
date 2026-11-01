@@ -164,3 +164,6 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 ## 01-Nov 01:49 CET · Documentación de v0.14.0 actualizada
 - CHANGELOG, contrato SSE, sistema de diseño, ADR-014, diseño y revisión reflejan el resultado final. Cobertura con resumen de tres líneas: mejoran B3/B4/B5 y E-A3/E-A4; pendientes gold y posiciones OCR; 17 cumplidas, 10 parciales, 4 no. Pruebas y capturas enlazadas con sus límites. Se prepara auditoría en clon limpio antes del tag y otra sobre el tag final.
+
+## 01-Nov 01:51 CET · Cierre documental y auditoría preliminar
+- Auditoría en clon limpio del commit f4cd57c: TOTAL 0 en _agents/ui7/audit-pre-v0.14.0.txt; clon movido a _trash/audit-clone-pre-v0.14.0. Humo final del servicio con fuentes locales: ficha general de cinco campos, precio final específico y tabla de cinco filas, con valores contrastados contra las filas almacenadas y todas las citas correctas; solo salida privada en _agents/ui7/release-smoke.json. El informe del tag final se guarda en _agents/ui7/audit-v0.14.0.txt. No se cambia la acreditación pendiente del gold.
