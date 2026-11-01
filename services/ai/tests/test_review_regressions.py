@@ -1,10 +1,11 @@
 from decimal import Decimal
 
+from doubles import FakeLLM, FakeOCR
+
 from doc_assistant.application.invoices.extract import extract_invoice, parse_es_decimal
 from doc_assistant.application.invoices.query import run_plan
 from doc_assistant.infra.invoices.reader import SqliteInvoiceReader
 from doc_assistant.infra.invoices.sqlite import InvoiceDB
-from doc_assistant.model_fakes import FakeLLM, FakeOCR
 
 
 def test_model_overload_and_timeout_are_preserved_at_transport_boundary(monkeypatch):
@@ -230,6 +231,7 @@ def test_review_status_is_exposed_and_warns(config_path):
 
 def test_invoice_transaction_rolls_back_and_separates_pdf(config_path, synthetic_pdf, monkeypatch):
     import pytest
+    from doubles import FakeEmbedder
     from fastapi.testclient import TestClient
 
     from doc_assistant.api import create_app
@@ -239,7 +241,6 @@ def test_invoice_transaction_rolls_back_and_separates_pdf(config_path, synthetic
     from doc_assistant.infra.storage.chunks import ChunkStore
     from doc_assistant.ingest import ingest_pdfs
     from doc_assistant.invoices import upload_invoice
-    from doc_assistant.model_fakes import FakeEmbedder
 
     pdf = synthetic_pdf.with_name("A120.pdf")
     pdf.write_bytes(synthetic_pdf.read_bytes())

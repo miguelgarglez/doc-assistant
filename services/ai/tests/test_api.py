@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from doubles import FakeEmbedder
 from fastapi.testclient import TestClient
 
 from doc_assistant.api import create_app
@@ -8,7 +9,6 @@ from doc_assistant.config import load_config
 from doc_assistant.domain.documents.ids import pdf_doc_id
 from doc_assistant.infra.storage.chunks import ChunkStore
 from doc_assistant.ingest import ingest_pdfs
-from doc_assistant.model_fakes import FakeEmbedder
 
 
 def test_upload_error_reasons_and_transient_models(config_path, tmp_path, monkeypatch):
@@ -124,8 +124,8 @@ def test_documents_upload_sanitizes_and_is_idempotent_by_hash(
     config_path: Path, synthetic_pdf: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(
-        "doc_assistant.ingest.build_adapters",
-        lambda cfg, fake=False: (FakeEmbedder(dim=8), None, None),
+        "doc_assistant.bootstrap.build_adapters",
+        lambda cfg: (FakeEmbedder(dim=8), None, None),
     )
     payload = synthetic_pdf.read_bytes()
     with TestClient(create_app(config_path)) as client:

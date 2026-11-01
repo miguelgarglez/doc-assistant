@@ -13,8 +13,26 @@ from fastapi import FastAPI
 
 from doc_assistant.application.ask.capacity import AskCapacity
 from doc_assistant.application.ingest.jobs import IngestJobs
-from doc_assistant.config import load_config
+from doc_assistant.application.ports.models import LLM, Embedder, OcrPort, Reranker
+from doc_assistant.config import AppConfig, load_config
+from doc_assistant.infra.models.http import HttpEmbedder, HttpLLM, HttpReranker, LlamaOCR, OllamaOCR
 from doc_assistant.infra.pdf.service import PdfService
+
+
+def build_ocr(cfg: AppConfig) -> OcrPort:
+    runtime = os.environ.get("DOC_ASSISTANT_OCR_RUNTIME", cfg.ocr.runtime)
+    if runtime == "ollama":
+        return OllamaOCR(cfg.ocr.ollama_url(), cfg.ocr.model, cfg.ocr.timeout_s)
+    return LlamaOCR(cfg.ocr.base_url, cfg.ocr.model, cfg.ocr.timeout_s)
+
+
+def build_adapters(cfg: AppConfig) -> tuple[Embedder, Reranker, LLM]:
+    embedder = HttpEmbedder(
+        cfg.embeddings.url, cfg.embeddings.model, cfg.embeddings.timeout_s, cfg.embeddings.dim
+    )
+    reranker = HttpReranker(cfg.reranker.url, cfg.reranker.model, cfg.reranker.timeout_s)
+    llm = HttpLLM(cfg.llm.url, cfg.llm.model, cfg.llm.timeout_s)
+    return embedder, reranker, llm
 
 
 def lifespan_for(config_path: Path) -> Callable[[FastAPI], AbstractAsyncContextManager[None]]:

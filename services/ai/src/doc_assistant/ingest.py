@@ -13,7 +13,7 @@ from typing import Any
 
 import pypdfium2 as pdfium
 
-from doc_assistant.adapters import build_adapters
+from doc_assistant import bootstrap
 from doc_assistant.application.ports.models import Embedder
 from doc_assistant.config import load_config
 from doc_assistant.domain.documents.ids import pdf_doc_id
@@ -59,7 +59,7 @@ def ingest_pdfs(
     pdf_dir = Path(pdf_dir)
 
     if embedder is None:
-        embedder, _, _ = build_adapters(cfg, fake=False)
+        embedder, _, _ = bootstrap.build_adapters(cfg)
 
     dim = getattr(embedder, "dim", None) or cfg.embeddings.dim or 8
     store = ChunkStore(cfg.db, dim=dim)

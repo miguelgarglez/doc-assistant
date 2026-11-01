@@ -5,11 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import yaml
+from doubles import FakeEmbedder, FakeLLM, FakeReranker
 
-from doc_assistant.adapters import build_adapters
+from doc_assistant.bootstrap import build_adapters
 from doc_assistant.config import load_config
 from doc_assistant.infra.models.http import HttpEmbedder
-from doc_assistant.model_fakes import FakeEmbedder, FakeLLM, FakeReranker
 
 
 def test_fake_embedder_dim() -> None:
@@ -83,8 +83,8 @@ def test_config_swap_changes_ports(tmp_path: Path) -> None:
     assert a.embeddings.model != b.embeddings.model
     assert a.llm.model != b.llm.model
 
-    emb_a, _, llm_a = build_adapters(a, fake=False)
-    emb_b, _, llm_b = build_adapters(b, fake=False)
+    emb_a, _, llm_a = build_adapters(a)
+    emb_b, _, llm_b = build_adapters(b)
     assert isinstance(emb_a, HttpEmbedder)
     assert emb_a.url != emb_b.url
     assert llm_a.model != llm_b.model

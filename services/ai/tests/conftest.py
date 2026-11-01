@@ -7,10 +7,9 @@ from pathlib import Path
 
 import pytest
 import yaml
+from doubles import FakeEmbedder, FakeReranker
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen.canvas import Canvas
-
-from doc_assistant.model_fakes import FakeEmbedder, FakeReranker
 
 
 @pytest.fixture

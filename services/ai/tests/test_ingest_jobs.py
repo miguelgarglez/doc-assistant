@@ -9,11 +9,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from doubles import FakeEmbedder
 from fastapi.testclient import TestClient
 
 from doc_assistant.api import create_app
 from doc_assistant.application.ingest.jobs import IngestJobs
-from doc_assistant.model_fakes import FakeEmbedder
 
 JOB = "job-0123456789"
 
@@ -79,8 +79,8 @@ def events(body: str) -> list[dict[str, Any]]:
 @pytest.fixture
 def fakes(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "doc_assistant.ingest.build_adapters",
-        lambda cfg, fake=False: (FakeEmbedder(dim=8), None, None),
+        "doc_assistant.bootstrap.build_adapters",
+        lambda cfg: (FakeEmbedder(dim=8), None, None),
     )
 
 
@@ -147,7 +147,7 @@ def test_document_stages_are_reported_while_it_is_processed(
             return super().embed(texts)
 
     monkeypatch.setattr(
-        "doc_assistant.ingest.build_adapters", lambda cfg, fake=False: (Slow(dim=8), None, None)
+        "doc_assistant.bootstrap.build_adapters", lambda cfg: (Slow(dim=8), None, None)
     )
     app = create_app(config_path)
     with TestClient(app) as client:

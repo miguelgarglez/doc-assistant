@@ -6,12 +6,12 @@ import json
 from pathlib import Path
 
 import pytest
+from doubles import FakeEmbedder, FakeLLM, FakeOCR, FakeReranker
 from fastapi.testclient import TestClient
 
 from doc_assistant.api import create_app
 from doc_assistant.application.invoices.extract import check_gates, extract_amounts, extract_invoice
 from doc_assistant.ask import ask
-from doc_assistant.model_fakes import FakeEmbedder, FakeLLM, FakeOCR
 
 
 def test_amount_labels_with_colons_keep_values_and_evidence():
@@ -178,12 +178,12 @@ def test_api_invoice_upload_and_ask(config_path: Path, monkeypatch: pytest.Monke
     ocr_text = ocr_from_ground_truth(gt)
 
     monkeypatch.setattr(
-        "doc_assistant.invoices.build_ocr",
-        lambda cfg, fake=False, text="": FakeOCR(ocr_text),
+        "doc_assistant.bootstrap.build_ocr",
+        lambda cfg: FakeOCR(ocr_text),
     )
     monkeypatch.setattr(
-        "doc_assistant.invoices.build_adapters",
-        lambda cfg, fake=False: (
+        "doc_assistant.bootstrap.build_adapters",
+        lambda cfg: (
             FakeEmbedder(dim=8),
             None,
             text_llm_from_gt(gt),
@@ -221,7 +221,7 @@ def test_api_invoice_upload_and_ask(config_path: Path, monkeypatch: pytest.Monke
         config_path,
         "¿Cuál es el importe total de la factura A120?",
         embedder=FakeEmbedder(dim=8),
-        reranker=__import__("doc_assistant.adapters", fromlist=["FakeReranker"]).FakeReranker(),
+        reranker=FakeReranker(),
         llm=plan_llm,
     )
     assert result["ok"] is True

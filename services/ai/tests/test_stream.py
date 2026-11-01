@@ -14,10 +14,12 @@ from typing import Any
 
 import pytest
 import yaml
+from doubles import FakeEmbedder, FakeLLM, FakeReranker
 from fastapi.testclient import TestClient
 
 from doc_assistant import ask as ask_module
 from doc_assistant import ask_stream as stream_module
+from doc_assistant import bootstrap as bootstrap_module
 from doc_assistant.api import create_app
 from doc_assistant.application.answers.meta import classify
 from doc_assistant.application.ports.models import AdapterBusy, AdapterError
@@ -27,7 +29,6 @@ from doc_assistant.domain.answers.partial_json import FieldStreamer
 from doc_assistant.infra.models.http import HttpLLM
 from doc_assistant.infra.storage.chunks import ChunkStore
 from doc_assistant.ingest import save_and_ingest_pdf
-from doc_assistant.model_fakes import FakeEmbedder, FakeLLM, FakeReranker
 from doc_assistant.sources import list_sources
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -49,7 +50,7 @@ def seed(config_path: Path, synthetic_pdf: Path) -> dict[str, Any]:
 
 def use_fakes(monkeypatch: pytest.MonkeyPatch, llm: Any) -> None:
     monkeypatch.setattr(
-        ask_module, "build_adapters", lambda cfg, fake=False: (FakeEmbedder(), FakeReranker(), llm)
+        bootstrap_module, "build_adapters", lambda cfg: (FakeEmbedder(), FakeReranker(), llm)
     )
 
 
@@ -240,7 +241,7 @@ def test_meta_answers_come_from_index_and_cite_literal_headings(
     def no_model(*a: Any, **k: Any) -> Any:
         raise AssertionError("una pregunta meta no debe llamar a los modelos")
 
-    monkeypatch.setattr(ask_module, "build_adapters", no_model)
+    monkeypatch.setattr(bootstrap_module, "build_adapters", no_model)
     evs = stream(config_path, question)
     done = evs[-1][1]
     assert done["ok"] is True and done["reason"] == reason
@@ -279,8 +280,8 @@ def test_sources_list_delete_reindex(
 ) -> None:
     seeded = seed(config_path, synthetic_pdf)
     monkeypatch.setattr(
-        "doc_assistant.ingest.build_adapters",
-        lambda cfg, fake=False: (FakeEmbedder(), FakeReranker(), FakeLLM()),
+        "doc_assistant.bootstrap.build_adapters",
+        lambda cfg: (FakeEmbedder(), FakeReranker(), FakeLLM()),
     )
     cfg = load_config(config_path)
     with TestClient(create_app(config_path)) as client:

@@ -8,7 +8,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from doc_assistant.adapters import build_adapters, build_ocr
+from doc_assistant import bootstrap
 from doc_assistant.application.invoices.answers import format_answer
 from doc_assistant.application.invoices.query import (
     is_invoice_question,
@@ -46,9 +46,9 @@ def upload_invoice(
     """Extract, persist SQL row, index chunks+image in the same retrieval store."""
     cfg = load_config(config_path)
     if ocr is None:
-        ocr = build_ocr(cfg)
+        ocr = bootstrap.build_ocr(cfg)
     if embedder is None or llm is None:
-        emb, _, default_llm = build_adapters(cfg, fake=False)
+        emb, _, default_llm = bootstrap.build_adapters(cfg)
         embedder = embedder or emb
         llm = llm or default_llm
 

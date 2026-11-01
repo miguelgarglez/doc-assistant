@@ -1,6 +1,7 @@
 """Structured invoice path: plan validation, resolution and answer shape."""
 
 import pytest
+from doubles import FakeLLM
 
 from doc_assistant.application.invoices.query import (
     is_invoice_question,
@@ -13,7 +14,6 @@ from doc_assistant.application.ports.models import AdapterError
 from doc_assistant.domain.invoices.fields import FIELD_SPECS
 from doc_assistant.infra.invoices.reader import SqliteInvoiceReader
 from doc_assistant.infra.invoices.sqlite import InvoiceDB
-from doc_assistant.model_fakes import FakeLLM
 
 LUCIA = {
     "numero": "FAC-2026-0042",

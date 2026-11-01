@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from doc_assistant.adapters import build_adapters
+from doc_assistant import bootstrap
 from doc_assistant.application.answers.meta import (
     answer_meta,
     classify,
@@ -234,7 +234,7 @@ def _ask_events(
         return
 
     if embedder is None or reranker is None or llm is None:
-        e, r, l = build_adapters(cfg, fake=False)
+        e, r, l = bootstrap.build_adapters(cfg)
         embedder = embedder or e
         reranker = reranker or r
         llm = llm or l
