@@ -493,3 +493,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - El almacén genera líneas JSON para feedback revisado con respuesta esperada no vacía, limitado a una conversación. Incluyen la copia de la traza y siguen siendo borradores, no gold aprobado. Falta un comando de usuario y una política de acceso.
 - Pasan 13 pruebas de historial, Ruff, formato y mypy. Las trazas exportadas pueden contener información confidencial.
 - Suite completa del servicio: 355 pruebas pasan y 35 live se omiten. La advertencia de deprecación de Starlette sigue presente; esta suite no sustituye el check de entrega ni e2e.
+
+## 01-Nov 11:12 CET · Exportación local de feedback
+- El módulo `doc_assistant.feedback_export` escribe JSONL en stdout para una conversación y exige una base existente. Solo incluye feedback revisado con respuesta esperada; puede contener datos confidenciales y no aprueba gold. Al abrir la base puede aplicar migraciones.
+- Pasan 15 pruebas de historial y exportación, Ruff y mypy. La persistencia sigue desconectada de la API.
