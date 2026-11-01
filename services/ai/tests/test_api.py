@@ -16,7 +16,7 @@ def test_upload_error_reasons_and_transient_models(config_path, tmp_path, monkey
     from reportlab.lib.pdfencrypt import StandardEncryption
     from reportlab.pdfgen.canvas import Canvas
 
-    from doc_assistant.model_ports import AdapterBusy, AdapterTimeout
+    from doc_assistant.application.ports.models import AdapterBusy, AdapterTimeout
 
     cfg = yaml.safe_load(config_path.read_text())
     cfg["upload_pdf_max_bytes"] = 100000

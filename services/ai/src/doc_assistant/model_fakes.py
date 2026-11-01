@@ -4,7 +4,7 @@ import math
 from collections.abc import Iterator
 from typing import Any
 
-from doc_assistant.model_ports import AdapterError
+from doc_assistant.application.ports.models import AdapterError
 
 
 class FakeEmbedder:

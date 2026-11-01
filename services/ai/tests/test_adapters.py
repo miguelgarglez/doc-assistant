@@ -8,8 +8,8 @@ import yaml
 
 from doc_assistant.adapters import build_adapters
 from doc_assistant.config import load_config
+from doc_assistant.infra.models.http import HttpEmbedder
 from doc_assistant.model_fakes import FakeEmbedder, FakeLLM, FakeReranker
-from doc_assistant.model_http import HttpEmbedder
 
 
 def test_fake_embedder_dim() -> None:

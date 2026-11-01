@@ -11,7 +11,7 @@ import pytest
 
 from doc_assistant.adapters import build_ocr
 from doc_assistant.config import load_config
-from doc_assistant.model_http import LlamaOCR, OllamaOCR
+from doc_assistant.infra.models.http import LlamaOCR, OllamaOCR
 
 ROOT = Path(__file__).resolve().parents[3]
 

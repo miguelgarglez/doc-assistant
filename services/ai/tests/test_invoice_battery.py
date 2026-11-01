@@ -17,10 +17,10 @@ from typing import Any
 import pytest
 
 from doc_assistant.config import load_config
+from doc_assistant.infra.models.http import HttpLLM
 from doc_assistant.invoice_fields import format_eur
 from doc_assistant.invoices import InvoiceDB, ask_invoices
 from doc_assistant.model_fakes import FakeLLM
-from doc_assistant.model_http import HttpLLM
 
 AMOUNT_FIELDS = (
     "base_imponible_total",

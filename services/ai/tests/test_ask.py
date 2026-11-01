@@ -315,7 +315,7 @@ def test_invoice_trace_survives_planner_failure(config_path, fake_embedder, monk
 
     import pytest
 
-    from doc_assistant.model_ports import AdapterBusy
+    from doc_assistant.application.ports.models import AdapterBusy
 
     module = importlib.import_module("doc_assistant.ask")
     monkeypatch.setattr(module, "list_sources", lambda cfg: [{"kind": "invoice"}])

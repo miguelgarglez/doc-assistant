@@ -1,9 +1,9 @@
 import os
 
+from doc_assistant.application.ports.models import LLM, Embedder, OcrPort, Reranker
 from doc_assistant.config import AppConfig
+from doc_assistant.infra.models.http import HttpEmbedder, HttpLLM, HttpReranker, LlamaOCR, OllamaOCR
 from doc_assistant.model_fakes import FakeEmbedder, FakeLLM, FakeOCR, FakeReranker
-from doc_assistant.model_http import HttpEmbedder, HttpLLM, HttpReranker, LlamaOCR, OllamaOCR
-from doc_assistant.model_ports import LLM, Embedder, OcrPort, Reranker
 
 
 def build_ocr(cfg: AppConfig, *, fake: bool = False, text: str = "") -> OcrPort:

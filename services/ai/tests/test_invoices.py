@@ -2,6 +2,7 @@
 
 import pytest
 
+from doc_assistant.application.ports.models import AdapterError
 from doc_assistant.invoice_fields import FIELD_SPECS
 from doc_assistant.invoice_query import (
     is_invoice_question,
@@ -12,7 +13,6 @@ from doc_assistant.invoice_query import (
 )
 from doc_assistant.invoices import InvoiceDB
 from doc_assistant.model_fakes import FakeLLM
-from doc_assistant.model_ports import AdapterError
 
 LUCIA = {
     "numero": "FAC-2026-0042",

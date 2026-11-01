@@ -6,7 +6,7 @@ from typing import Any
 
 import requests
 
-from doc_assistant.model_ports import AdapterBusy, AdapterError, AdapterTimeout
+from doc_assistant.application.ports.models import AdapterBusy, AdapterError, AdapterTimeout
 
 
 def http_adapter_error(error: requests.HTTPError, url: str) -> AdapterError:

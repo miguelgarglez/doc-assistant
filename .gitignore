@@ -11,6 +11,7 @@ kit/
 !.env.example
 vendor/
 models/
+!services/ai/src/doc_assistant/infra/models/
 _agents/
 _dist/
 evidence/live/start.log

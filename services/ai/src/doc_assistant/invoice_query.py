@@ -20,6 +20,7 @@ from dataclasses import asdict, dataclass, field
 from decimal import Decimal
 from typing import Any
 
+from doc_assistant.application.ports.models import AdapterBusy, AdapterError, AdapterTimeout
 from doc_assistant.chunking import invoice_doc_id
 from doc_assistant.invoice_fields import (
     FIELD_SPECS,
@@ -44,7 +45,6 @@ from doc_assistant.invoice_index import (
     resolve_number,
     resolve_party,
 )
-from doc_assistant.model_ports import AdapterBusy, AdapterError, AdapterTimeout
 
 FIELDS = {key: spec.label for key, spec in FIELD_SPECS.items()}
 NUMERIC = set(AMOUNT_COLS)
