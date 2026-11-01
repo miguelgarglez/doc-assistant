@@ -235,6 +235,16 @@
               }
             }
           },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {

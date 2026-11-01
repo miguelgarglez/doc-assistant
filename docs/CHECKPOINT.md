@@ -273,7 +273,14 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Tres pasadas del build corregido: 182 pruebas aprobadas y 4 live omitidas en cada una, con axe en las rutas cubiertas. El build se generó con la raíz temporal ampliada y dependencias existentes. Las capturas sintéticas del fallo se inspeccionaron.
 - El servidor propio se cerró por PID. Se retiraron a `_trash/` los enlaces y la configuración temporal. Continúan pendientes la cola y el cierre de versión.
 
-## 01-Nov 03:17 CET · Cola acotada de consultas
+## 01-Nov 03:16 CET · Cola acotada de consultas
 - Cada proceso admite dos consultas activas y cuatro en espera durante un máximo de 60 segundos. El flujo indica la espera con un paso existente; al llenarse o agotarse devuelve un error recuperable. `/ask` devuelve HTTP 503 para ambos casos.
 - Cuatro pruebas deterministas cubren espera, capacidad, desconexión, timeout y el endpoint sin streaming. Pasaron 36 pruebas focalizadas y mypy. La cola es local al proceso y no limita ingestas; falta repetir carga con modelos y las verificaciones de entrega.
+
+## 01-Nov 03:16 CET · Corrección sobre el check anterior
+- El entorno Python reutilizado tiene una instalación editable que apunta al worktree anterior. El `mise run check` de las 03:09 probó ese código del servicio, no el de este worktree. Las pruebas focalizadas sí utilizaron `PYTHONPATH` explícito. Se regenera el contrato y se repetirá el check con la ruta del código actual.
+
+## 01-Nov 03:17 CET · Carga con cola
+- Con modelos locales, 12 consultas y 4 PDF en hasta 8 tareas: 6 consultas devolvieron respuesta verificada, 6 recibieron `queue_full` y los 4 PDF se indexaron. Cuatro consultas mostraron el paso de espera. El HTTP 200 de SSE no representa por sí solo el resultado del flujo.
+- Los procesos de la prueba se cerraron por PID. La prueba no mide equidad ni comportamiento sostenido y no reproduce la carga de facturas.
 
