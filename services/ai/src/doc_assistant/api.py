@@ -425,7 +425,7 @@ def ask_stream_events(config_path: Path, question: str) -> Iterator[str]:
                 timings["total"] = round(sum(timings.values()), 4)
                 yield sse(DoneEvent(**response.model_dump(), timings=timings))
     except AdapterError as exc:
-        yield sse(ErrorEvent(code="adapter_error", message=str(exc)))
+        yield sse(ErrorEvent(code=exc.code, message=exc.public_message))
     except Exception:  # noqa: BLE001 - the stream must always end with done or error
         yield sse(ErrorEvent(code="internal_error", message="Error interno al responder"))
 
@@ -459,7 +459,7 @@ def tracked(
         result = run(progress)
     except AdapterError as exc:
         if job:
-            jobs.fail(job, "adapter_error", str(exc))
+            jobs.fail(job, exc.code, exc.public_message)
         raise
     except Exception:
         if job:
@@ -515,7 +515,8 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
     @app.exception_handler(AdapterError)
     async def adapter_error(request: Request, exc: AdapterError) -> JSONResponse:
         return JSONResponse(
-            status_code=502, content=ErrorBody(code="adapter_error", message=str(exc)).model_dump()
+            status_code=502,
+            content=ErrorBody(code=exc.code, message=exc.public_message).model_dump(),
         )
 
     @app.get("/health")

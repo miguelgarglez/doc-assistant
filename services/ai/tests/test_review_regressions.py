@@ -6,6 +6,45 @@ from doc_assistant.invoice_query import run_plan
 from doc_assistant.invoices import InvoiceDB
 
 
+def test_model_overload_and_timeout_are_preserved_at_transport_boundary(monkeypatch):
+    import pytest
+    import requests
+
+    from doc_assistant.adapters import AdapterBusy, AdapterTimeout, _request_json
+
+    for status in (429, 503):
+        response = requests.Response()
+        response.status_code = status
+        monkeypatch.setattr("requests.request", lambda *a, result=response, **k: result)
+        with pytest.raises(AdapterBusy) as caught:
+            _request_json("POST", "http://model", timeout=1)
+        assert caught.value.code == "model_busy"
+        assert "http://" not in caught.value.public_message
+
+    def timeout(*args, **kwargs):
+        raise requests.Timeout()
+
+    monkeypatch.setattr("requests.request", timeout)
+    with pytest.raises(AdapterTimeout) as caught:
+        _request_json("POST", "http://model", timeout=1)
+    assert caught.value.code == "model_timeout"
+
+
+def test_invoice_planner_propagates_model_overload():
+    import pytest
+
+    from doc_assistant.adapters import AdapterBusy, AdapterTimeout
+    from doc_assistant.invoice_query import plan_and_run
+
+    for error in (AdapterBusy("busy"), AdapterTimeout("timeout")):
+
+        def fail(*args, error=error):
+            raise error
+
+        with pytest.raises(type(error)):
+            plan_and_run(InvoiceDB().con, "facturas", fail)
+
+
 def test_decimal_requires_complete_valid_value():
     assert parse_es_decimal("1.234,56") == Decimal("1234.56")
     assert parse_es_decimal("abc123") is None

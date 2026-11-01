@@ -16,7 +16,14 @@ import yaml
 from fastapi.testclient import TestClient
 
 from doc_assistant import ask as ask_module
-from doc_assistant.adapters import AdapterError, FakeEmbedder, FakeLLM, FakeReranker, HttpLLM
+from doc_assistant.adapters import (
+    AdapterBusy,
+    AdapterError,
+    FakeEmbedder,
+    FakeLLM,
+    FakeReranker,
+    HttpLLM,
+)
 from doc_assistant.api import ask_stream_events, create_app
 from doc_assistant.config import load_config
 from doc_assistant.ingest import save_and_ingest_pdf
@@ -167,6 +174,28 @@ def test_stream_adapter_failure_ends_with_error(
         {"code": "adapter_error", "message": "No responde el servidor en x"},
     )
     assert "done" not in [k for k, _ in evs]
+
+
+def test_stream_busy_model_reports_retryable_error(
+    config_path: Path, synthetic_pdf: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seed(config_path, synthetic_pdf)
+
+    class Busy(FakeLLM):
+        def chat_stream(self, messages: Any, schema: Any) -> Any:
+            raise AdapterBusy("HTTP 503 en http://localhost:8191")
+            yield  # pragma: no cover
+
+    use_fakes(monkeypatch, Busy())
+    evs = stream(config_path, "¿A qué voltaje opera el robot?")
+    assert evs[-1] == (
+        "error",
+        {
+            "code": "model_busy",
+            "message": "El modelo está ocupado o no está disponible. Inténtalo de nuevo en unos segundos.",
+        },
+    )
+    assert "done" not in [kind for kind, _ in evs]
 
 
 @pytest.mark.parametrize(

@@ -19,6 +19,34 @@ from doc_assistant.config import AppConfig
 class AdapterError(RuntimeError):
     """Error claro cuando un servidor no responde o falla."""
 
+    code = "adapter_error"
+
+    @property
+    def public_message(self) -> str:
+        return str(self)
+
+
+class AdapterBusy(AdapterError):
+    code = "model_busy"
+
+    @property
+    def public_message(self) -> str:
+        return "El modelo está ocupado o no está disponible. Inténtalo de nuevo en unos segundos."
+
+
+class AdapterTimeout(AdapterError):
+    code = "model_timeout"
+
+    @property
+    def public_message(self) -> str:
+        return "El modelo tardó demasiado en responder. Inténtalo de nuevo."
+
+
+def http_adapter_error(error: requests.HTTPError, url: str) -> AdapterError:
+    status = error.response.status_code
+    detail = f"HTTP {status} en {url}"
+    return AdapterBusy(detail) if status in (429, 503) else AdapterError(detail)
+
 
 @runtime_checkable
 class OcrPort(Protocol):
@@ -195,11 +223,11 @@ def _request_json(method: str, url: str, *, timeout: float, **kwargs: Any) -> An
         r.raise_for_status()
         return r.json()
     except requests.Timeout as e:
-        raise AdapterError(f"Timeout al contactar {url} ({timeout}s)") from e
+        raise AdapterTimeout(f"Timeout al contactar {url} ({timeout}s)") from e
     except requests.ConnectionError as e:
         raise AdapterError(f"No responde el servidor en {url}") from e
     except requests.HTTPError as e:
-        raise AdapterError(f"HTTP {e.response.status_code} en {url}") from e
+        raise http_adapter_error(e, url) from e
     except ValueError as e:
         raise AdapterError(f"Respuesta no JSON desde {url}") from e
 
@@ -331,11 +359,11 @@ class HttpLLM:
                     if isinstance(content, str) and content:
                         yield content
         except requests.Timeout as e:
-            raise AdapterError(f"Timeout al contactar {self.url} ({self.timeout_s}s)") from e
+            raise AdapterTimeout(f"Timeout al contactar {self.url} ({self.timeout_s}s)") from e
         except requests.ConnectionError as e:
             raise AdapterError(f"No responde el servidor en {self.url}") from e
         except requests.HTTPError as e:
-            raise AdapterError(f"HTTP {e.response.status_code} en {self.url}") from e
+            raise http_adapter_error(e, self.url) from e
 
 
 def build_ocr(cfg: AppConfig, *, fake: bool = False, text: str = "") -> OcrPort:

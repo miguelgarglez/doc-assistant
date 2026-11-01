@@ -155,3 +155,5 @@ Propuesta: `GET /health/components` devuelve `{ "components": [{ "id": "web" | "
 Las citas SQL corresponden al dato extraído y almacenado en InvoiceDB. `chunk_id` identifica número y campo, `quote` y `fragment` muestran el mismo formato determinista que la celda. No acreditan una posición literal del OCR. El visor de imagen de factura informa de la ausencia de posiciones y permite contrastar el original.
 
 El contrato público se exporta desde Pydantic a `services/ai/openapi.json` y de ahí a `schema.d.ts`. `blocks_version: 1` versiona la representación nueva sin cambiar la versión histórica global del API. `mise run check` comprueba su deriva.
+
+Los errores del modelo terminan el flujo con `error`, sin `done`. El código `model_busy` indica una respuesta HTTP 429 o 503 del modelo; `model_timeout` indica que se agotó la espera. El mensaje propone reintentar y no incluye la dirección del modelo. Estos códigos también pueden aparecer en errores de ingesta. No garantizan que el servicio mantenga una cola propia.

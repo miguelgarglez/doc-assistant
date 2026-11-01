@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any
 
-from doc_assistant.adapters import AdapterError
+from doc_assistant.adapters import AdapterBusy, AdapterError, AdapterTimeout
 from doc_assistant.chunking import invoice_doc_id
 from doc_assistant.invoice_fields import (
     FIELD_SPECS,
@@ -849,6 +849,8 @@ def plan_and_run(
     for attempt in range(2):
         try:
             raw = chat(messages, PLAN_SCHEMA)
+        except (AdapterBusy, AdapterTimeout):
+            raise
         except AdapterError as e:  # transport or JSON failure counts as an invalid plan
             raw, errors = None, [f"error del modelo: {e}"]
             plan = None

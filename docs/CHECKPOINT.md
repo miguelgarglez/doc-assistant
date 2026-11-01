@@ -248,3 +248,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Pendiente autorización expresa para instalar dependencias locales. También debe resolverse el cierre por grupos de los scripts antes de ejecutar el recorrido en esta sesión, que exige solo PID. No se han ejecutado check completo, tres pasadas e2e con axe, capturas nuevas, ni auditoría de tag. Historial y feedback no se han iniciado.
 - Gold y revisión privados: `gold-v2-borrador.jsonl`, `gold-v2-revision.md` y `recoger-evaluacion.py`. La recogida solo se probó con transporte simulado; no es una evaluación puntuada ni se ejecutó con fuentes reales.
 
+## 01-Nov 03:03 CET · Errores de modelo
+- Los errores HTTP 429 y 503 y los tiempos de espera tienen códigos y mensajes para reintentar. El planificador de facturas propaga estos errores en lugar de tratarlos como planes inválidos. El contrato conserva los campos existentes.
+- Pasaron 102 pruebas focalizadas y Ruff. Pendientes cola, carga ampliada, check completo y auditoría de la versión.
+
