@@ -13,13 +13,13 @@ import re
 import unicodedata
 from typing import Any
 
-from doc_assistant.answer_markup import (
+from doc_assistant.config import AppConfig
+from doc_assistant.domain.answers.answer_markup import (
     AnswerBuilder,
     md_escape,
     section_label,
     split_heading,
 )
-from doc_assistant.config import AppConfig
 from doc_assistant.invoice_fields import display_value
 from doc_assistant.store import ChunkStore
 

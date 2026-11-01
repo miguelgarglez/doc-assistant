@@ -11,14 +11,14 @@ from markup import make_pdf
 
 from doc_assistant.ask import ask, place_inline_citations
 from doc_assistant.config import load_config
-from doc_assistant.ingest import ingest_pdfs
-from doc_assistant.inline import (
+from doc_assistant.domain.answers.inline import (
     assign_by_rules,
     overlap,
     split_sentences,
     supports,
     validate_model_segments,
 )
+from doc_assistant.ingest import ingest_pdfs
 from doc_assistant.model_fakes import FakeEmbedder, FakeLLM, FakeReranker
 from doc_assistant.store import ChunkStore
 

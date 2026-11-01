@@ -21,12 +21,12 @@ from doc_assistant import ask_stream as stream_module
 from doc_assistant.api import create_app
 from doc_assistant.ask_stream import ask_stream_events
 from doc_assistant.config import load_config
+from doc_assistant.domain.answers.partial_json import FieldStreamer
 from doc_assistant.ingest import save_and_ingest_pdf
 from doc_assistant.meta import classify
 from doc_assistant.model_fakes import FakeEmbedder, FakeLLM, FakeReranker
 from doc_assistant.model_http import HttpLLM
 from doc_assistant.model_ports import AdapterBusy, AdapterError
-from doc_assistant.partial_json import FieldStreamer
 from doc_assistant.sources import list_sources
 from doc_assistant.store import ChunkStore
 

@@ -14,7 +14,7 @@ import re
 import unicodedata
 from typing import Any
 
-from doc_assistant.verifier import quantities_supported
+from doc_assistant.domain.answers.verifier import quantities_supported
 
 Segment = dict[str, Any]
 

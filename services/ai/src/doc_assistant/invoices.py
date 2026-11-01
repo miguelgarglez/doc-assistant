@@ -13,9 +13,9 @@ from pathlib import Path
 from typing import Any
 
 from doc_assistant.adapters import build_adapters, build_ocr
-from doc_assistant.answer_markup import AnswerBuilder, md_escape
 from doc_assistant.chunking import chunk_invoice, invoice_doc_id
 from doc_assistant.config import load_config
+from doc_assistant.domain.answers.answer_markup import AnswerBuilder, md_escape
 from doc_assistant.invoice_blocks import build_blocks, follow_ups
 from doc_assistant.invoice_extract import extract_invoice
 from doc_assistant.invoice_fields import display_value

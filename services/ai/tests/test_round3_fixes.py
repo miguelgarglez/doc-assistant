@@ -1,4 +1,4 @@
-from doc_assistant.verifier import verify
+from doc_assistant.domain.answers.verifier import verify
 
 CH = {
     "c": "Campo de visión: HFOV 87° x VFOV 58°. Guarda los últimos 5.000 eventos. Carrera de 18 mm a 45 °C."
