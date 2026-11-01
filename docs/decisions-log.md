@@ -247,3 +247,12 @@ Se elige la opción B de [respuestas enriquecidas](design/respuestas-enriquecida
 El Markdown completo es la alternativa de compatibilidad. Una versión desconocida o un bloque que no cumpla las invariantes de evidencia hace que la web degrade a esa respuesta. El evento final `done` prevalece sobre el evento `blocks` anticipado. Cada celda presente enlaza su evidencia y los agregados enlazan sus operandos.
 
 El WIP 59474c0 precedió a este ADR y queda sujeto a revisión. Se mantienen sus componentes y el flujo de datos, pendientes de cerrar las brechas descritas en el diseño y de verificar con fixtures sintéticas. Los datos generales de una factura se muestran solo ante una petición general; una pregunta por el total conserva únicamente el total. No se abre trabajo de historial ni feedback.
+
+## D-HIST-1..4: historial y feedback (2026-11-01)
+
+Decisiones aprobadas para la versión inicial; su registro no implica que ya estén implementadas.
+
+- **D-HIST-1.** Cada instalación conserva su historial sin cuentas. Las rutas de historial y feedback solo aceptan conexiones locales y requieren un token local generado al arrancar, inyectado por el proxy de servidor. Las conversaciones tienen propietario local por defecto. La interfaz de almacén debe permitir sustituir SQLite por Postgres con particiones por fecha, índice por usuario y SSO en una fase posterior.
+- **D-HIST-2.** El historial está activo por defecto, con aviso discreto en el chat y configuración administrativa para desactivarlo. Guarda pregunta, respuesta, citas y request_id. El feedback no copia documentos ni importes de facturas sin selección explícita. La validación legal y de protección de datos para cada despliegue queda abierta a la organización.
+- **D-HIST-3.** La retención predeterminada es de 30 días y configurable; se purga al arrancar y periódicamente. Hay borrado completo mediante comando y botón con confirmación. El feedback pasa de pendiente a revisión humana, que confirma el fallo y la ausencia de datos sensibles, y después a revisado. Solo los revisados se exportan a JSONL para ampliar la evaluación.
+- **D-HIST-4.** El guardado se realiza fuera del camino de respuesta, mediante una cola con reintentos y backoff. Un fallo no modifica el stream ni su evento final y no se muestra al usuario. Los fallos persistentes se registran con request_id y aparecen en Sistema. La marca de respuesta incorrecta confirma su envío al usuario.
