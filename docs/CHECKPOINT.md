@@ -215,3 +215,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - CHANGELOG y cobertura distinguen el trabajo sin publicar de v0.14.0 e incluyen el resumen de tres líneas. Corregido el recuento de procesos descrito en escalado.
 - `git diff --check` correcto. No se declara cierre de fase ni tag sin los checks solicitados.
 
+
+## 01-Nov 02:02 CET · Auditoría preliminar
+- Clon limpio de `feat/core-v0.15` en 7801718: `audit-preliminar.txt` informa TOTAL 0. El clon propio se movió a `_trash/audit-night-preliminar-*`.
+- Es una auditoría previa, no sustituye la auditoría del tag definitivo. No hay tag nuevo.
+
