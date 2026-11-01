@@ -13,7 +13,6 @@ import re
 import unicodedata
 from typing import Any
 
-from doc_assistant.config import AppConfig
 from doc_assistant.domain.answers.answer_markup import (
     AnswerBuilder,
     md_escape,
@@ -21,7 +20,6 @@ from doc_assistant.domain.answers.answer_markup import (
     split_heading,
 )
 from doc_assistant.domain.invoices.fields import display_value
-from doc_assistant.infra.storage.chunks import ChunkStore
 
 
 def normalize(text: str) -> str:
@@ -107,24 +105,6 @@ def _scope_sentence(chunks: list[dict[str, Any]]) -> tuple[dict[str, Any], str] 
     return None
 
 
-def _all_chunks(cfg: AppConfig) -> dict[str, list[dict[str, Any]]]:
-    """Chunks with a verbatim heading, per document, in section order."""
-    from doc_assistant.sources import _section_key
-
-    store = ChunkStore(cfg.db, cfg.embeddings.dim or 8)
-    try:
-        rows = [store._row(r) for r in store.db.execute("SELECT * FROM chunks")]
-    finally:
-        store.db.close()
-    by_doc: dict[str, list[dict[str, Any]]] = {}
-    for c in rows:
-        if c.get("heading") and c["heading"] in c["text"]:
-            by_doc.setdefault(c["doc"], []).append(c)
-    for chunks in by_doc.values():
-        chunks.sort(key=lambda c: _section_key(c["section"]))
-    return by_doc
-
-
 def _count(n: int, one: str, many: str) -> str:
     return f"{n} {one if n == 1 else many}"
 
@@ -188,7 +168,7 @@ def _empty() -> dict[str, Any]:
 
 
 def answer_meta(
-    cfg: AppConfig,
+    chunks: dict[str, list[dict[str, Any]]],
     intent: str,
     docs: list[dict[str, Any]],
     sources: list[dict[str, Any]],
@@ -196,7 +176,6 @@ def answer_meta(
 ) -> dict[str, Any]:
     pdfs = [s for s in sources if s["kind"] == "pdf" and s["n_chunks"]]
     invoices = [s for s in sources if s["kind"] == "invoice"]
-    chunks = _all_chunks(cfg)
     out = AnswerBuilder()
 
     if intent == "document":

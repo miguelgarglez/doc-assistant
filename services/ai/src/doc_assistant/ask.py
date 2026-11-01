@@ -12,6 +12,12 @@ from pathlib import Path
 from typing import Any
 
 from doc_assistant.adapters import build_adapters
+from doc_assistant.application.answers.meta import (
+    answer_meta,
+    classify,
+    related_follow_ups,
+    suggestions_from,
+)
 from doc_assistant.application.ports.models import (
     LLM,
     AdapterError,
@@ -25,8 +31,7 @@ from doc_assistant.domain.answers.partial_json import FieldStreamer
 from doc_assistant.domain.answers.verifier import verify
 from doc_assistant.infra.storage.chunks import ChunkStore
 from doc_assistant.invoices import ask_invoices
-from doc_assistant.meta import answer_meta, classify, related_follow_ups, suggestions_from
-from doc_assistant.sources import list_sources
+from doc_assistant.sources import list_sources, meta_chunks
 
 ANSWER_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -213,7 +218,7 @@ def _ask_events(
     if intent != "rag":
         t = time.perf_counter()
         yield _step("meta", "running", "Leyendo el índice de fuentes")
-        result = answer_meta(cfg, intent, matched, sources, question)
+        result = answer_meta(meta_chunks(cfg), intent, matched, sources, question)
         latencies["meta"] = round(time.perf_counter() - t, 4)
         yield _step(
             "meta",

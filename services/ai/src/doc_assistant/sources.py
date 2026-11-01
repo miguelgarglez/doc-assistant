@@ -147,3 +147,19 @@ def source_page(cfg: AppConfig, doc_id: str, n: int) -> bytes | None:
         return png
     finally:
         store.db.close()
+
+
+def meta_chunks(cfg: AppConfig) -> dict[str, list[dict[str, Any]]]:
+    """Chunks with a verbatim heading, per document, in section order."""
+    store = ChunkStore(cfg.db, cfg.embeddings.dim or 8)
+    try:
+        rows = [store._row(r) for r in store.db.execute("SELECT * FROM chunks")]
+    finally:
+        store.db.close()
+    by_doc: dict[str, list[dict[str, Any]]] = {}
+    for c in rows:
+        if c.get("heading") and c["heading"] in c["text"]:
+            by_doc.setdefault(c["doc"], []).append(c)
+    for chunks in by_doc.values():
+        chunks.sort(key=lambda c: _section_key(c["section"]))
+    return by_doc

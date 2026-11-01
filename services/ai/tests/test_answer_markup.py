@@ -9,12 +9,12 @@ from typing import Any
 import pytest
 from markup import SECTIONS, assert_segments_tile, assert_valid_markdown, make_pdf
 
+from doc_assistant.application.answers.meta import answer_meta, classify
 from doc_assistant.config import load_config
 from doc_assistant.domain.answers.answer_markup import md_escape, section_label, split_heading
 from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
-from doc_assistant.meta import answer_meta, classify
 from doc_assistant.model_fakes import FakeEmbedder
-from doc_assistant.sources import list_sources
+from doc_assistant.sources import list_sources, meta_chunks
 
 
 @pytest.mark.parametrize(
@@ -54,7 +54,7 @@ def meta(config_path: Path, question: str) -> dict[str, Any]:
     sources = list_sources(cfg)
     intent, matched = classify(question, sources)
     assert intent != "rag", question
-    return answer_meta(cfg, intent, matched, sources, question)
+    return answer_meta(meta_chunks(cfg), intent, matched, sources, question)
 
 
 QUESTIONS = [

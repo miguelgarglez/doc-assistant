@@ -19,6 +19,7 @@ from fastapi.testclient import TestClient
 from doc_assistant import ask as ask_module
 from doc_assistant import ask_stream as stream_module
 from doc_assistant.api import create_app
+from doc_assistant.application.answers.meta import classify
 from doc_assistant.application.ports.models import AdapterBusy, AdapterError
 from doc_assistant.ask_stream import ask_stream_events
 from doc_assistant.config import load_config
@@ -26,7 +27,6 @@ from doc_assistant.domain.answers.partial_json import FieldStreamer
 from doc_assistant.infra.models.http import HttpLLM
 from doc_assistant.infra.storage.chunks import ChunkStore
 from doc_assistant.ingest import save_and_ingest_pdf
-from doc_assistant.meta import classify
 from doc_assistant.model_fakes import FakeEmbedder, FakeLLM, FakeReranker
 from doc_assistant.sources import list_sources
 
@@ -348,7 +348,7 @@ def test_stream_end_to_end_over_http_adapters(
 
 
 def test_scope_sentence_is_verbatim_first_sentence() -> None:
-    from doc_assistant.meta import _scope_sentence
+    from doc_assistant.application.answers.meta import _scope_sentence
 
     body = "Este documento define la instalación. Incluye cableado."
     chunk = {"heading": "1. Alcance", "body": body, "text": f"[d · t · 1. Alcance] {body}"}
