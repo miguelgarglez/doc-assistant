@@ -517,3 +517,6 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 11:16 CET · Revisión de respuestas esperadas
 - Cambiar la respuesta esperada devuelve el feedback a `nuevo`; conservar el mismo texto mantiene su estado. Así la exportación no incluye un texto modificado hasta revisarlo de nuevo.
 - La regresión falló antes de la corrección; pasan 21 pruebas focalizadas, Ruff, formato y mypy.
+
+## 01-Nov 11:17 CET · Suite del servicio
+- Suite completa con el código de este worktree: 364 pruebas pasadas, 35 live omitidas y una advertencia conocida de Starlette. No sustituye `mise run check`, e2e ni auditoría de una versión nueva.
