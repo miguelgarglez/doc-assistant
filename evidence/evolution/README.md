@@ -683,3 +683,7 @@ Antes y después de la tarjeta de rechazo con el mismo guion y backend simulado:
 ![v0.13.3 chat-rechazo-390x844-industrial-light](v0.13.3/chat-rechazo-390x844-industrial-light.png)
 ![v0.13.3 chat-rechazo-390x844-neutral-dark](v0.13.3/chat-rechazo-390x844-neutral-dark.png)
 ![v0.13.3 chat-rechazo-390x844-neutral-light](v0.13.3/chat-rechazo-390x844-neutral-light.png)
+
+## v0.14.0 · 2026-11-01
+
+Fichas y tablas citadas desde el servicio. [Galería de v0.14.0](v0.14.0/README.md) y [comparación con v0.13.3](../comparison-v0.13.3-v0.14.0/README.md).
