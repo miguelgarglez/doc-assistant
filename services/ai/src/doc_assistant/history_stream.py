@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from doc_assistant.application.ask.capacity import AskCapacity
-from doc_assistant.application.history.outbox import HistoryOutbox, HistoryWriter
+from doc_assistant.application.history.outbox import HistoryOutbox
+from doc_assistant.application.ports.history import HistoryWriter
 from doc_assistant.ask_stream import queued_ask_stream
 
 

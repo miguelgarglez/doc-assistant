@@ -3,7 +3,11 @@
 from collections.abc import Iterator
 from typing import Any, Protocol
 
-from doc_assistant.application.history.outbox import HistoryWriter
+
+class HistoryWriter(Protocol):
+    def record(
+        self, request_id: str, conversation_id: str, created_at: str, trace: dict[str, Any]
+    ) -> None: ...
 
 
 class HistoryRepository(HistoryWriter, Protocol):

@@ -11,8 +11,6 @@ from typing import Any
 
 import sqlite_vec
 
-from doc_assistant.config import load_config
-
 _STOP = {
     "el",
     "la",
@@ -93,12 +91,6 @@ class ChunkStore:
         self.db.row_factory = sqlite3.Row
         self._init_schema()
         self.db.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
-
-    @classmethod
-    def from_config(cls, config_path: str | Path) -> ChunkStore:
-        cfg = load_config(config_path)
-        dim = cfg.embeddings.dim or 8
-        return cls(cfg.db, dim=dim)
 
     def _init_schema(self) -> None:
         self.db.execute(

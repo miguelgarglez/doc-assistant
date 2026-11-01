@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from doc_assistant.config import load_config
 from doc_assistant.infra.pdf.extract import chunk_pdf
 from doc_assistant.infra.storage.chunks import ChunkStore
 from doc_assistant.ingest import ingest_pdfs
@@ -41,7 +42,8 @@ def test_ingest_idempotent(
     assert r1["chunk_ids"] == r2["chunk_ids"]
     assert r1["n_chunks"] > 0
 
-    store = ChunkStore.from_config(config_path)
+    cfg = load_config(config_path)
+    store = ChunkStore(cfg.db, cfg.embeddings.dim or 8)
     assert store.count() == r1["n_chunks"]
 
 

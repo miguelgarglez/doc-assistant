@@ -1,7 +1,7 @@
 import sqlite3
 from typing import Any
 
-from doc_assistant.application.invoices.types import Plan, Selection
+from doc_assistant.application.ports.invoice_reader import Plan, Selection
 from doc_assistant.domain.invoices.fields import FIELD_SPECS
 from doc_assistant.domain.invoices.query_types import AMOUNT_COLS, DATE_COLS, Party
 from doc_assistant.infra.invoices import index

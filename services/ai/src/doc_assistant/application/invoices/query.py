@@ -19,8 +19,7 @@ from dataclasses import asdict
 from decimal import Decimal
 from typing import Any
 
-from doc_assistant.application.invoices.types import Plan, Selection
-from doc_assistant.application.ports.invoice_reader import InvoiceReader
+from doc_assistant.application.ports.invoice_reader import InvoiceReader, Plan, Selection
 from doc_assistant.application.ports.models import AdapterBusy, AdapterError, AdapterTimeout
 from doc_assistant.domain.documents.ids import invoice_doc_id
 from doc_assistant.domain.invoices.fields import (
