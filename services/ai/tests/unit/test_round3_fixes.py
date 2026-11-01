@@ -31,6 +31,25 @@ def test_absent_number_rejected():
     assert not verify("6000", cit("Guarda los últimos 5.000 eventos"), CH).ok
 
 
+def test_non_numeric_claim_needs_lexical_support():
+    result = verify(
+        "El sensor explota.",
+        [{"chunk_id": "c", "quote": "Alcance: 4 m."}],
+        {"c": "Manual del sensor. Alcance: 4 m."},
+    )
+    assert not result.ok
+    assert result.details["unsupported_statement"] == "El sensor explota."
+
+
+def test_supported_non_numeric_claim_is_accepted():
+    result = verify(
+        "El sensor tiene protección IP67.",
+        [{"chunk_id": "c", "quote": "Protección del sensor: IP67."}],
+        {"c": "Protección del sensor: IP67."},
+    )
+    assert result.ok
+
+
 def test_invoice_header_chunk_has_issuer_and_taxid():
     ch = chunk_invoice(
         {"numero": "F-1", "emisor": "ACME S.L.", "nif_emisor": "B123", "importe_total": "10 EUR"}

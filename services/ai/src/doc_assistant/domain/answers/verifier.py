@@ -37,6 +37,48 @@ _INJECTION = re.compile(
     r"|\b(?:responde|respond|answer|devuelve|return)\s+(?:solo\s+|only\s+)?[+-]?\d",
     re.IGNORECASE,
 )
+_SENTENCE = re.compile(r"(?<=[.!?;])\s+|\n+")
+_CONTENT_STOPWORDS = frozenset(
+    {
+        "aunque",
+        "como",
+        "con",
+        "cuando",
+        "debe",
+        "deben",
+        "del",
+        "desde",
+        "donde",
+        "el",
+        "ella",
+        "ellas",
+        "ellos",
+        "esta",
+        "estas",
+        "este",
+        "estos",
+        "hasta",
+        "las",
+        "los",
+        "para",
+        "pero",
+        "porque",
+        "por",
+        "que",
+        "segun",
+        "sin",
+        "son",
+        "sus",
+        "tambien",
+        "tiene",
+        "tienen",
+        "una",
+        "unas",
+        "uno",
+        "unos",
+    }
+)
+_MIN_CONTENT_OVERLAP = 0.6
 _NUMBER = (
     r"[+-]?(?:\d{1,3}(?: \d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)*|[.,]\d+)"
     r"(?:[eE][+-]?\d+)?"
@@ -204,6 +246,34 @@ def _safe_support(text: str) -> str:
     return " ".join(sentence for sentence in sentences if not _INJECTION.search(sentence))
 
 
+def _content_stems(text: str) -> set[str]:
+    folded = unicodedata.normalize("NFKD", text.casefold())
+    folded = "".join(char for char in folded if not unicodedata.combining(char))
+    words = re.findall(r"[a-z0-9]+", folded)
+    return {
+        word[:5]
+        for word in words
+        if len(word) >= 4 and word not in _CONTENT_STOPWORDS and not word.isdigit()
+    }
+
+
+def _statements_supported(answer: str, chunks: list[str]) -> tuple[bool, str | None]:
+    chunk_stems = [_content_stems(chunk) for chunk in chunks]
+    for statement in _SENTENCE.split(answer):
+        wanted = _content_stems(statement)
+        if not wanted:
+            if _quantities(_normalize(statement, lowercase=False)):
+                continue
+            return False, statement
+        best = max(
+            (len(wanted & available) / len(wanted) for available in chunk_stems),
+            default=0.0,
+        )
+        if best < _MIN_CONTENT_OVERLAP:
+            return False, statement
+    return True, None
+
+
 def verify(
     answer: str | None,
     citations: list[Any],
@@ -213,7 +283,7 @@ def verify(
 ) -> Result:
     """Validate citations and numeric support in their complete retrieved chunks.
 
-    A successful result checks form, numeric membership and limited guards.
+    A successful result checks form, numeric membership, lexical support and limited guards.
     It does not establish semantic truth, fact attribution, or range ordering.
     ``details['citation_modes']`` follows the order of validated citations.
     """
@@ -232,6 +302,7 @@ def verify(
         return reject("answer requires citations")
 
     support = set()
+    normalized_chunks: list[str] = []
     for index, citation in enumerate(citations):
         if not isinstance(citation, dict):
             return reject(f"malformed citation {index}")
@@ -258,6 +329,7 @@ def verify(
         if mode is None:
             return reject(f"quote missing, altered, or omits negation in citation {index}")
         details["citation_modes"].append(mode)
+        normalized_chunks.append(text)
         try:
             numeric_text = _normalize(chunk, lowercase=False)
             support.update(_quantities(_safe_support(numeric_text)))
@@ -279,6 +351,10 @@ def verify(
         if (value, unit) not in support:
             details["unsupported_quantity"] = {"value": str(value), "unit": unit}
             return reject(f"unsupported quantity: {value} {unit}".rstrip())
+    statements_ok, unsupported = _statements_supported(answer, normalized_chunks)
+    if not statements_ok:
+        details["unsupported_statement"] = unsupported
+        return reject("answer statement lacks lexical support in retrieved sources")
     return Result(True, "verified", details)
 
 
