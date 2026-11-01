@@ -381,3 +381,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:14 CET · Traza opcional en SSE
 - El traductor SSE acepta un colector interno opcional y cierra el generador al finalizar o interrumpirse. Una prueba cierra el flujo después del primer evento y comprueba que la traza queda finalizada como interrumpida. Ningún endpoint activa el colector ni guarda datos todavía.
 - Pasan 45 pruebas de consulta, streaming y cola, además de Ruff y mypy. La integración del almacén y los errores de admisión siguen pendientes.
+
+## 01-Nov 07:21 CET · Coste exploratorio de la huella
+- Recorrido de fragmentos sintéticos en SQLite en memoria, diez muestras tras calentamiento: p50/p95 5,23/5,40 ms para 1.000 filas, 55,40/56,64 ms para 10.000 y 561,73/565,47 ms para 100.000. Script y muestras en `_agents/night2/`.
+- No incluye disco, concurrencia ni petición completa. El coste creció aproximadamente con el tamaño en esta muestra; la persistencia sigue sin activarse y falta medir índices representativos.

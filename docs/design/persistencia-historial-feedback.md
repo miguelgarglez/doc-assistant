@@ -27,6 +27,8 @@ El servicio dispone de un colector opcional en memoria y de un almacén SQLite a
 
 La huella `chunk_index_sha256` cubre las filas de fragmentos documentales en la misma transacción de lectura que la búsqueda. No cubre vectores, facturas ni archivos de origen. Calcularla recorre todos los fragmentos: falta medir su coste con índices representativos antes de conectar la persistencia. Los nombres de modelos son los de configuración, no una prueba de qué archivos están cargados. La traza todavía no contiene todas las versiones ni la selección entre aclaraciones.
 
+Una prueba exploratoria ejecutó el mismo recorrido y serialización de la huella sobre SQLite en memoria, con fragmentos sintéticos de texto repetido. Tras una pasada de calentamiento, diez mediciones dieron p50/p95 de 5,23/5,40 ms para 1.000 filas, 55,40/56,64 ms para 10.000 y 561,73/565,47 ms para 100.000. El coste creció aproximadamente con el número de filas en esta muestra. No incluye lectura desde disco, búsquedas, concurrencia ni una petición completa; tampoco representa la distribución de textos de un índice real. El script y las muestras están en `_agents/night2/`. Antes de activar la traza hay que medir índices representativos y decidir cómo evitar un recorrido completo por petición si el coste resulta excesivo.
+
 El almacén y el colector son piezas aisladas. Antes de activar la persistencia faltan la política de privacidad y retención, el tratamiento de errores y desconexiones de extremo a extremo, los endpoints, la interfaz y la medición del coste sobre una petición completa.
 
 ## 2. Qué debe guardar una petición
