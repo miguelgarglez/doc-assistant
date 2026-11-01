@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import atexit
 import os
+import secrets
 import shutil
 import signal
 import subprocess
@@ -81,6 +82,7 @@ def llama(name: str, port: int, model: str, *extra: str) -> Proc:
 
 def plan(dev: bool, ports: dict[str, int], with_llm: bool) -> list[Proc]:
     ai_port, web_port = ports["ai"], ports["web"]
+    history_token = secrets.token_urlsafe(32)
     node = shutil.which("node")
     if node is None:
         raise SystemExit("[dev] no encuentro node. ¿Has ejecutado 'mise install'?")
@@ -174,7 +176,10 @@ def plan(dev: bool, ports: dict[str, int], with_llm: bool) -> list[Proc]:
             ai_port,
             f"http://{LOOPBACK}:{ai_port}/health",
             ROOT / "services" / "ai",
-            {PORT_ENV[name]: str(port) for name, port in ports.items()},
+            {
+                **{PORT_ENV[name]: str(port) for name, port in ports.items()},
+                "DOC_ASSISTANT_HISTORY_TOKEN": history_token,
+            },
         ),
         Proc(
             "web",
@@ -182,7 +187,10 @@ def plan(dev: bool, ports: dict[str, int], with_llm: bool) -> list[Proc]:
             web_port,
             f"http://{LOOPBACK}:{web_port}/",
             ROOT / "apps" / "web",
-            {"AI_SERVICE_URL": f"http://{LOOPBACK}:{ai_port}"},
+            {
+                "AI_SERVICE_URL": f"http://{LOOPBACK}:{ai_port}",
+                "DOC_ASSISTANT_HISTORY_TOKEN": history_token,
+            },
         ),
     ]
 

@@ -19,10 +19,23 @@ type RouteContext = {
 
 async function proxyRequest(request: Request, context: RouteContext) {
   const { path } = await context.params
+  if (path[0] === "history") {
+    const url = new URL(request.url)
+    const localHost = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
+    const origin = request.headers.get("origin")
+    const crossSite = request.headers.get("sec-fetch-site") === "cross-site"
+    const mutating = !["GET", "HEAD"].includes(request.method)
+    if (!localHost || crossSite || (origin !== null && origin !== url.origin) || (mutating && !origin)) {
+      return Response.json({ code: "forbidden", message: "Origen no permitido" }, { status: 403 })
+    }
+  }
   const base = new URL(ensureTrailingSlash(AI_SERVICE_URL))
   // Cada segmento se recodifica: un segmento como "http%3A%2F%2Fx" no puede
   // convertirse en URL absoluta ni salir del servicio de IA (SSRF).
   const target = new URL(path.map(encodeURIComponent).join("/"), base)
+  if (path[0] === "history" && !["localhost", "127.0.0.1", "[::1]"].includes(target.hostname)) {
+    return Response.json({ code: "forbidden", message: "Destino no permitido" }, { status: 403 })
+  }
   if (target.origin !== base.origin || !target.pathname.startsWith(base.pathname)) {
     return Response.json(
       { code: "invalid_path", message: "Ruta no permitida" },
@@ -35,6 +48,9 @@ async function proxyRequest(request: Request, context: RouteContext) {
   for (const name of FORWARDED_REQUEST_HEADERS) {
     const value = request.headers.get(name)
     if (value) headers.set(name, value)
+  }
+  if (path[0] === "history" && process.env.DOC_ASSISTANT_HISTORY_TOKEN) {
+    headers.set("x-history-token", process.env.DOC_ASSISTANT_HISTORY_TOKEN)
   }
 
   const init: RequestInit = {

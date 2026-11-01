@@ -6,7 +6,7 @@ import hmac
 import ipaddress
 import uuid
 from datetime import UTC, datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
@@ -32,7 +32,7 @@ def authorize(request: Request, x_history_token: Annotated[str | None, Header()]
 
 def get_store(request: Request) -> HistoryStore:
     store = getattr(request.app.state, "history_store", None)
-    if store is None:
+    if not isinstance(store, HistoryStore):
         raise HTTPException(status_code=503, detail="History unavailable")
     return store
 
@@ -61,7 +61,7 @@ def conversations(
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     search: str = "",
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     return store.conversations_page(limit=limit, offset=offset, search=search)
 
 
@@ -72,7 +72,7 @@ def conversation(
     limit: int = Query(default=50, ge=1, le=100),
     before_at: str | None = None,
     before_id: str | None = None,
-) -> dict:
+) -> dict[str, Any]:
     if (before_at is None) != (before_id is None):
         raise HTTPException(status_code=422, detail="Both cursor fields are required")
     before = (before_at, before_id) if before_at is not None and before_id is not None else None
@@ -98,7 +98,7 @@ def delete_all(request: Request, store: Store) -> dict[str, int]:
 
 
 @router.get("/status")
-def status(request: Request) -> dict:
+def status(request: Request) -> dict[str, Any]:
     store = getattr(request.app.state, "history_store", None)
     outbox = getattr(request.app.state, "history_outbox", None)
     return {
@@ -130,7 +130,7 @@ def feedback(
     status: Literal["nuevo", "revisado", "descartado", "convertido a caso"] = "nuevo",
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     return store.feedback_by_status(status, limit=limit, offset=offset)
 
 

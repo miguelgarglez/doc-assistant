@@ -97,3 +97,75 @@ def test_conversation_cursor_and_deletion_cancel_old_stream(tmp_path):
         assert client.get("/history/status", headers=headers).json()["retention_days"] == 30
     finally:
         client.app.state.history_outbox.close()
+
+
+def test_application_records_stream_and_purges_expired(config_path, tmp_path, monkeypatch):
+    import time
+
+    from doc_assistant.api import create_app
+
+    monkeypatch.setenv("DOC_ASSISTANT_HISTORY_TOKEN", "secret")
+    store = HistoryStore(tmp_path / "history.db")
+    store.record("old", "old", "2000-01-01T00:00:00+00:00", {"question": "expired"})
+    with TestClient(create_app(config_path), client=("127.0.0.1", 1234)) as client:
+        response = client.post("/ask/stream", json={"question": " ", "conversation_id": "test"})
+        assert response.status_code == 200
+        assert "event: done" in response.text
+        request_id = response.headers["x-request-id"]
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline:
+            if store.get("test", request_id) is not None and store.get("old", "old") is None:
+                break
+            time.sleep(0.01)
+        assert store.get("old", "old") is None
+        trace = store.get("test", request_id)
+        assert trace is not None and trace["request_id"] == request_id
+        assert (
+            client.get(
+                "/history/conversations/test", headers={"x-history-token": "secret"}
+            ).status_code
+            == 200
+        )
+
+
+def test_history_start_failure_does_not_change_stream(config_path, monkeypatch):
+    from doc_assistant.api import create_app
+
+    def broken_init(self, path):
+        raise OSError("storage offline")
+
+    monkeypatch.setattr(HistoryStore, "__init__", broken_init)
+    monkeypatch.setenv("DOC_ASSISTANT_HISTORY_TOKEN", "secret")
+    with TestClient(create_app(config_path), client=("127.0.0.1", 1234)) as client:
+        response = client.post("/ask/stream", json={"question": " "})
+        assert response.status_code == 200
+        assert "event: done" in response.text
+        assert (
+            client.get("/history/status", headers={"x-history-token": "secret"}).json()["active"]
+            is False
+        )
+
+
+def test_storage_write_failure_is_reported_without_changing_stream(config_path, monkeypatch):
+    import time
+
+    from doc_assistant.api import create_app
+
+    monkeypatch.setenv("DOC_ASSISTANT_HISTORY_TOKEN", "secret")
+    with TestClient(create_app(config_path), client=("127.0.0.1", 1234)) as client:
+
+        def fail(*args):
+            raise OSError("unavailable")
+
+        monkeypatch.setattr(client.app.state.history_store, "record", fail)
+        response = client.post("/ask/stream", json={"question": " "})
+        assert "event: done" in response.text
+        request_id = response.headers["x-request-id"]
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline:
+            status = client.get("/history/status", headers={"x-history-token": "secret"}).json()
+            if status["failures"]:
+                break
+            time.sleep(0.01)
+        assert status["pending"] == 1
+        assert status["failures"][0]["request_id"] == request_id

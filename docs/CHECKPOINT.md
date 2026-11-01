@@ -344,3 +344,9 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Añadidos el índice documental, las rutas de lectura y las notas de v0.14.0 a v0.15.2. Arquitectura, estructura, huecos, pendientes y versionado contrastados con el árbol v0.15.2 y su historial.
 - El comprobador local revisó README y los Markdown de docs: 28 documentos y 135 enlaces internos, sin enlaces rotos. Se repararon rutas de la revisión histórica y se conservaron sus referencias a líneas originales.
 - Este cierre solo cambia documentación. No repite pruebas de código ni instala dependencias; los límites de evaluación y entorno de v0.15.2 siguen vigentes.
+
+## 01-Nov 13:16 CET · Conexión inicial del historial
+
+- Conectados el stream, la cola de reintentos y las rutas locales de historial y revisión. El arranque comparte un token efímero entre la API y el proxy; la retención se ejecuta al arrancar y cada hora. El historial se puede desactivar mediante configuración del administrador.
+- Las pruebas de integración cubren purga, autorización y fallos de almacenamiento sin alterar el evento final. Pasaron 381 pruebas del servicio y se omitieron 35 live; después pasó la prueba adicional de fallo de escritura. El contrato generado conserva las propiedades anteriores. La cola pendiente está en memoria y se pierde al reiniciar.
+- Quedan pendientes la interfaz, las capturas y las verificaciones de entrega. La base actual es local y no proporciona aislamiento multiusuario.

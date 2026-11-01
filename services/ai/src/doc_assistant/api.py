@@ -1,12 +1,16 @@
 """HTTP interface to the document and invoice workflows."""
 
+import asyncio
 import copy
 import json
+import logging
+import os
+import secrets
 import time
 import uuid
 from collections.abc import AsyncIterator, Callable, Generator, Iterator
 from contextlib import asynccontextmanager, closing
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -63,6 +67,7 @@ class DocumentUploadResponse(BaseModel):
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=1000)
+    conversation_id: str | None = Field(default=None, min_length=1, max_length=200)
 
 
 class Citation(BaseModel):
@@ -629,9 +634,54 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         app.state.jobs = IngestJobs()
         app.state.ask_capacity = AskCapacity()
         app.state.config.db.parent.mkdir(parents=True, exist_ok=True)
-        yield
+        app.state.history_token = os.environ.get(
+            "DOC_ASSISTANT_HISTORY_TOKEN"
+        ) or secrets.token_urlsafe(32)
+        app.state.history_retention_days = max(
+            1, int(os.environ.get("DOC_ASSISTANT_HISTORY_RETENTION_DAYS", "30"))
+        )
+        app.state.history_store = None
+        app.state.history_outbox = None
+        purge_task = None
+        if os.environ.get("DOC_ASSISTANT_HISTORY_ENABLED", "1") != "0":
+            from doc_assistant.history import HistoryStore
+            from doc_assistant.history_outbox import HistoryOutbox
+
+            try:
+                store = HistoryStore(app.state.config.db.parent / "history.db")
+                app.state.history_store = store
+                app.state.history_outbox = HistoryOutbox(store)
+
+                async def purge() -> None:
+                    while True:
+                        try:
+                            cutoff = (
+                                datetime.now(UTC) - timedelta(days=app.state.history_retention_days)
+                            ).isoformat()
+                            await asyncio.to_thread(store.purge_before, cutoff)
+                        except Exception:
+                            logging.getLogger(__name__).exception("History retention failed")
+                        await asyncio.sleep(3600)
+
+                purge_task = asyncio.create_task(purge())
+            except Exception:
+                logging.getLogger(__name__).exception("History initialization failed")
+        try:
+            yield
+        finally:
+            if purge_task is not None:
+                purge_task.cancel()
+                try:
+                    await purge_task
+                except asyncio.CancelledError:
+                    pass
+            if app.state.history_outbox is not None:
+                app.state.history_outbox.close()
 
     app = FastAPI(title="Doc Assistant AI", version="0.1.0", lifespan=lifespan)
+    from doc_assistant.history_api import router as history_router
+
+    app.include_router(history_router)
 
     def openapi() -> dict[str, Any]:
         if app.openapi_schema is None:
@@ -803,10 +853,26 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
     )
     def query_stream(payload: AskRequest, request: Request) -> StreamingResponse:
         request_id = str(uuid.uuid4())
+        outbox = request.app.state.history_outbox
+        stream: Iterator[str] = queued_ask_stream(
+            request.app.state.ask_capacity, config_path, payload.question, request_id
+        )
+        if outbox is not None:
+            from doc_assistant.history_stream import outbox_ask_stream
+
+            conversation_id = payload.conversation_id or request_id
+            ticket = outbox.ticket(conversation_id)
+            stream = outbox_ask_stream(
+                request.app.state.ask_capacity,
+                config_path,
+                payload.question,
+                request_id,
+                conversation_id,
+                outbox,
+                ticket=ticket,
+            )
         return StreamingResponse(
-            queued_ask_stream(
-                request.app.state.ask_capacity, config_path, payload.question, request_id
-            ),
+            stream,
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
