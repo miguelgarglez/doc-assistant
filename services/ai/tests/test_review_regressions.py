@@ -1,8 +1,9 @@
 from decimal import Decimal
 
 from doc_assistant.application.invoices.extract import extract_invoice, parse_es_decimal
+from doc_assistant.application.invoices.query import run_plan
+from doc_assistant.infra.invoices.reader import SqliteInvoiceReader
 from doc_assistant.infra.invoices.sqlite import InvoiceDB
-from doc_assistant.invoice_query import run_plan
 from doc_assistant.model_fakes import FakeLLM, FakeOCR
 
 
@@ -34,8 +35,8 @@ def test_model_overload_and_timeout_are_preserved_at_transport_boundary(monkeypa
 def test_invoice_planner_propagates_model_overload():
     import pytest
 
+    from doc_assistant.application.invoices.query import plan_and_run
     from doc_assistant.application.ports.models import AdapterBusy, AdapterTimeout
-    from doc_assistant.invoice_query import plan_and_run
 
     for error in (AdapterBusy("busy"), AdapterTimeout("timeout")):
 
@@ -43,7 +44,7 @@ def test_invoice_planner_propagates_model_overload():
             raise error
 
         with pytest.raises(type(error)):
-            plan_and_run(InvoiceDB().con, "facturas", fail)
+            plan_and_run(SqliteInvoiceReader(InvoiceDB().con), "facturas", fail)
 
 
 def test_decimal_requires_complete_valid_value():
@@ -67,16 +68,21 @@ def test_exact_invoice_precedes_normalized_and_ambiguous_refuses():
     db.upsert({"numero": "F-1", "emisor": "A"})
     db.upsert({"numero": "F/1", "emisor": "B"})
     plan = {"intent": "valor", "campos": ["emisor"]}
-    assert "A" in run_plan(db.con, {**plan, "numero": "F-1"})["answer"]
-    assert run_plan(db.con, {**plan, "numero": "f1"})["reason"] == "factura_ambigua"
+    assert "A" in run_plan(SqliteInvoiceReader(db.con), {**plan, "numero": "F-1"})["answer"]
+    assert (
+        run_plan(SqliteInvoiceReader(db.con), {**plan, "numero": "f1"})["reason"]
+        == "factura_ambigua"
+    )
 
 
 def test_sum_refuses_incomplete_coverage_and_full_name_beats_partial():
     db = InvoiceDB()
     db.upsert({"numero": "1", "emisor": "ACME Logística SA", "importe_total": "100"})
     db.upsert({"numero": "2", "emisor": "ACME", "importe_total": "bad"})
-    assert not run_plan(db.con, {"intent": "sumar", "campos": ["importe_total"]})["ok"]
-    result = run_plan(db.con, {"intent": "lista", "parte": "acme"})
+    assert not run_plan(
+        SqliteInvoiceReader(db.con), {"intent": "sumar", "campos": ["importe_total"]}
+    )["ok"]
+    result = run_plan(SqliteInvoiceReader(db.con), {"intent": "lista", "parte": "acme"})
     assert result["answer"].startswith("Facturas de ACME: 2")
 
 
@@ -204,15 +210,16 @@ def test_review_status_is_exposed_and_warns(config_path):
     from fastapi.testclient import TestClient
 
     from doc_assistant.api import create_app
+    from doc_assistant.application.invoices.query import run_plan
     from doc_assistant.config import load_config
     from doc_assistant.infra.invoices.sqlite import InvoiceDB
-    from doc_assistant.invoice_query import run_plan
 
     db = InvoiceDB(str(load_config(config_path).db))
     db.upsert({"numero": "A/120", "importe_total": "10"}, cuadra="0", motivo="suma_no_cuadra")
     for intent in ("valor", "lista", "contar", "sumar"):
         result = run_plan(
-            db.con, {"intent": intent, "numero": "A/120", "campos": ["importe_total"]}
+            SqliteInvoiceReader(db.con),
+            {"intent": intent, "numero": "A/120", "campos": ["importe_total"]},
         )
         assert "revisión" in result["answer"] and "A/120" in result["answer"]
     db.con.close()

@@ -14,12 +14,13 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-import sqlite3
 from copy import deepcopy
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict
 from decimal import Decimal
 from typing import Any
 
+from doc_assistant.application.invoices.types import Plan, Selection
+from doc_assistant.application.ports.invoice_reader import InvoiceReader
 from doc_assistant.application.ports.models import AdapterBusy, AdapterError, AdapterTimeout
 from doc_assistant.domain.documents.ids import invoice_doc_id
 from doc_assistant.domain.invoices.fields import (
@@ -31,21 +32,13 @@ from doc_assistant.domain.invoices.fields import (
     noun_phrase,
     prune_unasked,
 )
+from doc_assistant.domain.invoices.query_types import AMOUNT_COLS, DATE_COLS
 from doc_assistant.domain.invoices.values import (
     NIF_RE,
     fold,
     norm_key,
     parse_amount,
     parse_date_range,
-)
-from doc_assistant.infra.invoices.index import (
-    AMOUNT_COLS,
-    DATE_COLS,
-    Party,
-    party_tokens,
-    resolve_nif,
-    resolve_number,
-    resolve_party,
 )
 
 FIELDS = {key: spec.label for key, spec in FIELD_SPECS.items()}
@@ -182,36 +175,23 @@ def role_cue(question: str) -> str | None:
     return kept.pop() if len(kept) == 1 else None
 
 
-def is_invoice_question(question: str, con: sqlite3.Connection) -> bool:
+def is_invoice_question(question: str, con: InvoiceReader) -> bool:
     """SQL path if the question names invoices, an invoice number, a NIF or a known party."""
     q = f" {fold(question)} "
     if " factur" in q or any(f" {w} " in q for w in ROUTE_WORDS):
         return True
-    if NIF_RE.search(question) and resolve_nif(con, NIF_RE.search(question).group(0)):  # type: ignore[union-attr]
+    if NIF_RE.search(question) and con.resolve_nif(NIF_RE.search(question).group(0)):  # type: ignore[union-attr]
         return True
     for tok in re.findall(r"[0-9A-Za-z][0-9A-Za-z/\-]*\d[0-9A-Za-z/\-]*", question):
-        if re.search(r"[A-Za-z/\-]", tok) and resolve_number(con, tok):
+        if re.search(r"[A-Za-z/\-]", tok) and con.resolve_number(tok):
             return True
-    if set(q.split()) & party_tokens(con):
+    if set(q.split()) & con.party_tokens():
         return True
     # typos in a name ('Lucai Martn'): two fuzzy token hits on one party
-    return any(p.matched >= 2 for p in resolve_party(con, question))
+    return any(p.matched >= 2 for p in con.resolve_party(question))
 
 
 # --- plan validation -------------------------------------------------------------
-
-
-@dataclass
-class Plan:
-    intent: str
-    numero: str | None = None
-    parte: str | None = None
-    campos: list[str] = field(default_factory=list)
-    filtros: list[tuple[str, str, Any]] = field(default_factory=list)  # (col, op, typed value)
-    desde: str | None = None
-    hasta: str | None = None
-    tiene: list[str] = field(default_factory=list)
-    sin_anio: bool = False  # dates compare on MM-DD only
 
 
 def validate_plan(raw: Any) -> tuple[Plan | None, list[str]]:
@@ -279,16 +259,6 @@ def validate_plan(raw: Any) -> tuple[Plan | None, list[str]]:
 # --- selection ---------------------------------------------------------------------
 
 
-@dataclass
-class Selection:
-    numeros: list[str] | None = None  # None = no restriction
-    party: Party | None = None
-    rol: str | None = None
-    label: str = ""
-    selector_fields: list[str] = field(default_factory=list)
-    stop: dict[str, Any] | None = None  # clarification or refusal decided while resolving
-
-
 def _looks_numberish(s: str) -> bool:
     return bool(re.search(r"\d", s))
 
@@ -320,7 +290,7 @@ def followup_question(fields: list[str], numero: str, question: str = "") -> str
 
 
 def _candidates_answer(
-    con: sqlite3.Connection,
+    con: InvoiceReader,
     numeros: list[str],
     text: str,
     why: str,
@@ -329,7 +299,7 @@ def _candidates_answer(
     question: str = "",
 ) -> dict[str, Any]:
     """Ambiguity: the real candidate invoices, as structured data plus a plain-text fallback."""
-    rows = _rows(con, numeros[:MAX_CANDIDATES])
+    rows = con.rows(numeros[:MAX_CANDIDATES])
     opts = "; ".join(_describe(r) for r in rows)
     more = f" (y {len(numeros) - MAX_CANDIDATES} más)" if len(numeros) > MAX_CANDIDATES else ""
     return {
@@ -372,7 +342,7 @@ def _refuse(why: str, text: str = "") -> dict[str, Any]:
     return {"ok": False, "reason": why, "answer": text, "citations": []}
 
 
-def select(con: sqlite3.Connection, plan: Plan, question: str) -> Selection:
+def select(con: InvoiceReader, plan: Plan, question: str) -> Selection:
     sel = Selection()
     numero, parte = plan.numero, plan.parte
     if numero and not _looks_numberish(numero):
@@ -381,21 +351,21 @@ def select(con: sqlite3.Connection, plan: Plan, question: str) -> Selection:
     nif_text = None
     for cand in (parte, numero, question):
         m = NIF_RE.search(cand or "")
-        if m and resolve_nif(con, m.group(0)):
+        if m and con.resolve_nif(m.group(0)):
             nif_text = m.group(0)
             break
     if numero and (nif_text and norm_key(numero) == norm_key(nif_text)):
         numero = None
     if numero is None and not parte and not nif_text:
         for tok in re.findall(r"[0-9A-Za-z][0-9A-Za-z/\-]*\d[0-9A-Za-z/\-]*", question):
-            if re.search(r"[A-Za-z/\-]", tok) and resolve_number(con, tok):
+            if re.search(r"[A-Za-z/\-]", tok) and con.resolve_number(tok):
                 numero = tok
                 break
     cue = role_cue(question)
-    if numero and parte and not resolve_number(con, numero):
+    if numero and parte and not con.resolve_number(numero):
         numero = None  # a stray number next to a name: the name decides
     if numero:
-        hits = resolve_number(con, numero)
+        hits = con.resolve_number(numero)
         if not hits:
             sel.stop = _refuse(
                 "factura_no_encontrada", f"No hay ninguna factura con número {numero}."
@@ -410,22 +380,22 @@ def select(con: sqlite3.Connection, plan: Plan, question: str) -> Selection:
         sel.numeros, sel.label = hits, f"Factura {hits[0]}"
         return sel
     if nif_text:
-        parties = list(resolve_nif(con, nif_text).values())
+        parties = list(con.resolve_nif(nif_text).values())
     elif parte:
-        parties = resolve_party(con, parte)
+        parties = con.resolve_party(parte)
         if not parties:
             sel.stop = _refuse("parte_no_encontrada", f"No hay facturas de «{parte}».")
             return sel
     else:
-        parties = resolve_party(con, question)
+        parties = con.resolve_party(question)
         if not parties:
             return sel  # no party at all: filters alone decide
     if len(parties) > 1 and (plan.filtros or plan.desde or plan.hasta or plan.tiene):
         fitting = [
             p
             for p in parties
-            if query_numeros(
-                con, plan, Selection(numeros=sorted(p.numeros(cue) or p.numeros(None)))
+            if con.matching_numbers(
+                plan, Selection(numeros=sorted(p.numeros(cue) or p.numeros(None)))
             )
         ]
         if len(fitting) == 1:
@@ -455,57 +425,6 @@ def select(con: sqlite3.Connection, plan: Plan, question: str) -> Selection:
 
 
 # --- execution ----------------------------------------------------------------------
-
-
-def _rows(con: sqlite3.Connection, numeros: list[str]) -> list[dict[str, Any]]:
-    if not numeros:
-        return []
-    cur = con.execute(
-        f"SELECT f.*, q.fecha_emision_iso FROM facturas f JOIN facturas_q q USING(numero) "
-        f"WHERE numero IN ({','.join('?' * len(numeros))}) "
-        "ORDER BY q.fecha_emision_iso, numero",
-        numeros,
-    )
-    names = [d[0] for d in cur.description]
-    return [dict(zip(names, r)) for r in cur.fetchall()]
-
-
-def query_numeros(
-    con: sqlite3.Connection, plan: Plan, sel: Selection, trace: dict[str, Any] | None = None
-) -> list[str]:
-    """Builds the WHERE from whitelisted columns only; every value is a parameter."""
-    where, params = [], []
-    if sel.numeros is not None:
-        if not sel.numeros:
-            return []
-        where.append(f"q.numero IN ({','.join('?' * len(sel.numeros))})")
-        params += sel.numeros
-    allowed = set(AMOUNT_COLS.values()) | set(DATE_COLS.values())
-    for col, op, val in plan.filtros:
-        assert col in allowed and op in OPS
-        where.append(f"q.{col} {OPS[op]} ?")
-        params.append(val)
-    date = "substr(q.fecha_emision_iso, 6)" if plan.sin_anio else "q.fecha_emision_iso"
-    cut = 5 if plan.sin_anio else 0
-    if plan.desde:
-        where.append(f"{date} >= ?")
-        params.append(plan.desde[cut:])
-    if plan.hasta:
-        where.append(f"{date} <= ?")
-        params.append(plan.hasta[cut:])
-    for c in plan.tiene:
-        assert c in FIELDS
-        col = f"q.{AMOUNT_COLS[c]}" if c in AMOUNT_COLS else f"f.{c}"
-        where.append(f"{col} IS NOT NULL" + (" AND " + col + " != 0" if c in AMOUNT_COLS else ""))
-    sql = (
-        "SELECT q.numero FROM facturas_q q JOIN facturas f USING(numero)"
-        + (" WHERE " + " AND ".join(where) if where else "")
-        + " ORDER BY q.fecha_emision_iso, q.numero"
-    )
-    if trace is not None:
-        trace["sql"] = sql
-        trace["params"] = params.copy()
-    return [r[0] for r in con.execute(sql, params)]
 
 
 def _warning(rows: list[dict[str, Any]]) -> str:
@@ -579,7 +498,7 @@ def fix_years(plan: Plan, question: str) -> None:
 
 
 def execute(
-    con: sqlite3.Connection, plan: Plan, question: str, trace: dict[str, Any] | None = None
+    con: InvoiceReader, plan: Plan, question: str, trace: dict[str, Any] | None = None
 ) -> dict[str, Any]:
     fix_years(plan, question)
     if trace is not None:
@@ -599,9 +518,9 @@ def execute(
     has_selector = sel.numeros is not None or bool(
         plan.filtros or plan.desde or plan.hasta or plan.tiene
     )
-    numeros = query_numeros(con, plan, sel, trace)
+    numeros = con.matching_numbers(plan, sel, trace)
     if trace is not None:
-        trace["rows"] = _rows(con, numeros)
+        trace["rows"] = con.rows(numeros)
     result = _shape(con, plan, sel, numeros, has_selector, question)
     if trace is not None and result.get("clarification"):
         trace["selection"]["stop_reason"] = result.get("reason")
@@ -667,7 +586,7 @@ def _record_view(
 
 
 def _shape(
-    con: sqlite3.Connection,
+    con: InvoiceReader,
     plan: Plan,
     sel: Selection,
     numeros: list[str],
@@ -692,7 +611,7 @@ def _shape(
             return _candidates_answer(
                 con, numeros, text, "aclaracion", followup_fields(plan, question), text, question
             )
-        rows = _rows(con, numeros)
+        rows = con.rows(numeros)
         asked = prune_unasked(
             plan.campos or lexical_fields(question, sel.rol), question, party_role=sel.rol
         )
@@ -744,7 +663,7 @@ def _shape(
             "citations": cits,
         }
     if plan.intent == "contar":
-        rows = _rows(con, numeros[:50])
+        rows = con.rows(numeros[:50])
         n = len(numeros)
         headline = f"{n} factura{'s' if n != 1 else ''}{scope}"
         return {
@@ -764,7 +683,7 @@ def _shape(
             return _refuse("campo_no_numerico")
         if not numeros:
             return _refuse("sin_resultados", "Ninguna factura cumple la condición.")
-        rows = _rows(con, numeros)
+        rows = con.rows(numeros)
         vals = [parse_amount(r.get(c)) for r in rows]
         if any(v is None for v in vals):
             return _refuse("suma_datos_incompletos", "Alguna factura no tiene ese importe.")
@@ -805,7 +724,7 @@ def _shape(
             "headline": "Ninguna factura cumple la condición",
             "citations": [],
         }
-    rows = _rows(con, numeros[:MAX_LIST])
+    rows = con.rows(numeros[:MAX_LIST])
     asked = prune_unasked([c for c in plan.campos if c != "numero"], question)
     filt = [
         f
@@ -868,7 +787,7 @@ def check_grounding(result: dict[str, Any]) -> dict[str, Any]:
 
 
 def plan_and_run(
-    con: sqlite3.Connection, question: str, chat: Any, trace: dict[str, Any] | None = None
+    con: InvoiceReader, question: str, chat: Any, trace: dict[str, Any] | None = None
 ) -> tuple[dict[str, Any] | None, list[Any]]:
     """Returns (result or None for 'documentos', raw plans). One retry on invalid plans."""
     if trace is not None:
@@ -906,7 +825,7 @@ def plan_and_run(
     return _refuse("plan_invalido"), raws
 
 
-def run_plan(con: sqlite3.Connection, raw: dict[str, Any], question: str = "") -> dict[str, Any]:
+def run_plan(con: InvoiceReader, raw: dict[str, Any], question: str = "") -> dict[str, Any]:
     """Validate and execute one plan without the LLM (tests, evals)."""
     base: dict[str, Any] = {
         "numero": None,

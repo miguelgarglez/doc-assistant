@@ -9,6 +9,11 @@ from pathlib import Path
 from typing import Any
 
 from doc_assistant.adapters import build_adapters, build_ocr
+from doc_assistant.application.invoices.query import (
+    followup_question,
+    is_invoice_question,
+    plan_and_run,
+)
 from doc_assistant.application.invoices.upload import upload
 from doc_assistant.application.ports.invoice_writer import InvoiceWriter
 from doc_assistant.application.ports.models import LLM, Embedder, OcrPort
@@ -17,14 +22,10 @@ from doc_assistant.domain.answers.answer_markup import AnswerBuilder, md_escape
 from doc_assistant.domain.documents.ids import invoice_doc_id
 from doc_assistant.domain.invoices.blocks import build_blocks, follow_ups
 from doc_assistant.domain.invoices.fields import display_value
+from doc_assistant.infra.invoices.reader import SqliteInvoiceReader
 from doc_assistant.infra.invoices.sqlite import InvoiceDB
 from doc_assistant.infra.invoices.writer import SqliteInvoiceWriter
 from doc_assistant.infra.storage.chunks import ChunkStore
-from doc_assistant.invoice_query import (
-    followup_question,
-    is_invoice_question,
-    plan_and_run,
-)
 
 
 def list_invoices(path: str | Path) -> list[dict[str, Any]]:
@@ -167,9 +168,9 @@ def ask_invoices(
     cfg = load_config(config_path)
     db = InvoiceDB(str(cfg.db))
     try:
-        if not is_invoice_question(question, db.con):
+        if not is_invoice_question(question, SqliteInvoiceReader(db.con)):
             return None
-        result, raws = plan_and_run(db.con, question, llm.chat, trace)
+        result, raws = plan_and_run(SqliteInvoiceReader(db.con), question, llm.chat, trace)
     finally:
         db.con.close()
     if result is None:

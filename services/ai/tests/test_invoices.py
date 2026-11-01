@@ -2,16 +2,17 @@
 
 import pytest
 
-from doc_assistant.application.ports.models import AdapterError
-from doc_assistant.domain.invoices.fields import FIELD_SPECS
-from doc_assistant.infra.invoices.sqlite import InvoiceDB
-from doc_assistant.invoice_query import (
+from doc_assistant.application.invoices.query import (
     is_invoice_question,
     plan_and_run,
     role_cue,
     run_plan,
     validate_plan,
 )
+from doc_assistant.application.ports.models import AdapterError
+from doc_assistant.domain.invoices.fields import FIELD_SPECS
+from doc_assistant.infra.invoices.reader import SqliteInvoiceReader
+from doc_assistant.infra.invoices.sqlite import InvoiceDB
 from doc_assistant.model_fakes import FakeLLM
 
 LUCIA = {
@@ -53,7 +54,7 @@ def make(*rows):
     db = InvoiceDB()
     for r in rows:
         db.upsert(r)
-    return db.con
+    return SqliteInvoiceReader(db.con)
 
 
 def nums(result):
@@ -560,7 +561,7 @@ def test_clarification_truncates_to_five_and_counts_all(config_path):
 
 
 def test_followup_question_is_built_from_the_fields_asked():
-    from doc_assistant.invoice_query import FIELDS, followup_question
+    from doc_assistant.application.invoices.query import FIELDS, followup_question
 
     assert set(FIELD_SPECS) == set(FIELDS)
     assert (
@@ -605,7 +606,7 @@ def test_invoice_trace_captures_validated_plan_and_parameterized_selection(confi
     assert result is not None and result["ok"]
     from hashlib import sha256
 
-    from doc_assistant.invoice_query import PLAN_PROMPT
+    from doc_assistant.application.invoices.query import PLAN_PROMPT
 
     assert trace["plan_prompt_sha256"] == sha256(PLAN_PROMPT.encode()).hexdigest()
     assert trace["plan"]["numero"] == "FAC-2026-0042"
@@ -643,8 +644,8 @@ def test_invoice_trace_records_clarification_candidates(config_path):
 
 
 def test_invoice_selection_trace_is_independent_of_result(config_path):
+    from doc_assistant.application.invoices.query import Plan, execute
     from doc_assistant.config import load_config
-    from doc_assistant.invoice_query import Plan, execute
 
     db = InvoiceDB(str(load_config(config_path).db))
     try:
@@ -652,7 +653,7 @@ def test_invoice_selection_trace_is_independent_of_result(config_path):
         db.upsert(TECNO)
         trace = {}
         result = execute(
-            db.con,
+            SqliteInvoiceReader(db.con),
             Plan(intent="valor", campos=["importe_total"]),
             "¿cuál es el importe total de la factura?",
             trace,
