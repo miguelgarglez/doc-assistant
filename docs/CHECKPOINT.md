@@ -315,3 +315,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 03:31 CET · Auditoría v0.15.2
 - La auditoría del tag `76aa037` en un clon limpio terminó con TOTAL 0. Igual que en la versión anterior, los archivos temporales se aislaron y el clon propio se movió a `_trash/`.
 
+
+## 01-Nov 07:05 CET · Latencias sintéticas
+- Diez muestras válidas por operación en serie y con concurrencia 2. `docs/modelos-hardware.md` recoge p50 y p95 por interpolación inclusiva y las limitaciones. El informe y los resultados completos están fuera del repositorio.
+- La ejecución terminó y cerró los procesos propios. Los servidores ajenos no se inspeccionaron, por lo que su estado durante la prueba no está acreditado.

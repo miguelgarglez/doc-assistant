@@ -54,3 +54,18 @@ DOC_ASSISTANT_MODELS_DIR=/ruta/a/modelos uv run --frozen --project services/ai p
 ```
 
 Usa el puerto 8181 y cierra por PID los servidores que crea. Se puede seleccionar otro ejecutable mediante `DOC_ASSISTANT_LLAMA_SERVER`; las cifras dependen de su versión y de la carga del equipo.
+
+## Latencia de una carga sintética local
+
+En el mismo Mac se midieron diez peticiones válidas por operación, primero en serie y después con dos peticiones concurrentes. Se usaron los modelos locales, `llama-server` con dos slots para el LLM y HTTP local. Las consultas se comprobaron con un oráculo simple y una cita cuando correspondía; las ingestas verificaron la creación y los campos esperados.
+
+| Operación | Serie p50 / p95 (s) | Concurrencia 2 p50 / p95 (s) |
+|---|---:|---:|
+| Documento | 3,115 / 3,922 | 4,775 / 6,599 |
+| Factura | 1,747 / 3,256 | 3,352 / 6,221 |
+| Aclaración | 1,833 / 1,969 | 3,122 / 3,187 |
+| Rechazo | 2,126 / 3,606 | 3,315 / 6,389 |
+| Ingesta PDF | 0,054 / 0,246 | 0,068 / 0,084 |
+| Ingesta imagen | 15,057 / 16,922 | 29,131 / 31,338 |
+
+El p95 usa interpolación inclusiva. Diez muestras producen una estimación inestable. Los modos se ejecutaron por bloques, sin calentamiento separado, y no se midió el pico de memoria ni la capacidad sostenida. La actividad de otros procesos no se controló. Estos datos no permiten atribuir diferencias a una causa ni extrapolarlas a documentos reales.
