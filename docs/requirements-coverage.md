@@ -15,7 +15,7 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 | R1.2 / A3 | Citar el documento y la sección o página | `Citation` en el contrato (`doc`, `section`, `pages`, `doc_id`); marcadores numéricos pegados a la frase y solo las citas que se usan (`segments`, ADR-011) | Cumplido | Tests de API, de `inline` y de las plantillas (una cita por elemento listado; «¿qué facturas tengo?» pasa de 44 citas a 5); e2e de marcadores y vista previa; todas las respuestas con cita llevan marcador (24/24 en la medida). |
 | R1.3 | Mostrar el fragmento recuperado | Visor a pantalla completa (`SourceViewer`): página con el fragmento resaltado (`GET /sources/{id}/pages/{n}/highlight`), zoom, arrastre y navegación entre citas | Cumplido | Tests del localizador (`test_highlight.py`), del zoom (`pan-zoom`) y e2e; resaltado comprobado con un PDF real. Las facturas (imagen con OCR) no tienen posiciones: se enseña el campo extraído y el visor lo dice. Capturas `chat-visor-*` y `chat-visor-factura-*` en `evidence/screenshots`. |
 | R1.4 / R1.6 | No dar información ajena a los documentos | Rechazo cuando el verificador o el plan SQL no pasan | Parcial | 2 rechazos reales (fuera de dominio y dato ausente) y tests de rechazo. Sin conjunto adversarial ni métrica. |
-| R1.5 | Decir explícitamente "no dispongo" | `RefusalNotice` + `reason`; rechazos con `suggestions` (fuentes cercanas reales) y `empty_index` (ADR-009). Desde v0.13.1 una ambigüedad de factura ya no se muestra como rechazo (ADR-013) | Cumplido | e2e "rechazo"; capturas reales `chat-rechazo-*`; `e2e/live.spec.ts` contra el stack; e2e y tests de servicio de que una aclaración no es un rechazo. |
+| R1.5 | Decir explícitamente "no dispongo" | `RefusalNotice` + `reason`; rechazos con `suggestions` (fuentes cercanas reales) y `empty_index` (ADR-009). Desde v0.13.1 una ambigüedad de factura ya no se muestra como rechazo (ADR-013) | Cumplido | e2e "rechazo"; capturas `chat-rechazo-*` (simuladas desde v0.13.3); `e2e/live.spec.ts` contra el stack; e2e y tests de servicio de que una aclaración no es un rechazo. |
 | R1.7 | Acreditar la ausencia de alucinaciones | `evidence/` | **No** | El gold está en borrador y no aprobado; las cifras antiguas no valen. Hoy solo hay pruebas de humo. |
 | A1 | Ingesta y troceado propios | `ingest.py`, `chunking.py` (por sección, `chunk_id` determinista) | Cumplido | Tests de chunking (secciones, pie de página fuera); ingesta real: 44 fragmentos en 1,8 s. |
 | A2 | Justificar el troceado y medirlo | `architecture.md` (solo describe) | **No** | No hay una comparación medida de estrategias de troceado en este repo. |
@@ -62,6 +62,11 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 | N2 | Documentar las elecciones | `decisions-log.md` | Cumplido | — |
 | N3 | Huecos del enunciado decididos | `docs/open-gaps.md` | Cumplido | — |
 | N5 | ZIP con código, README y arquitectura | `mise run package` | Parcial | Solo se ha probado el smoke falso, sin modelos. El paquete completo con smoke real está pendiente. |
+
+**v0.13.3.**
+- Mejoran R1.5 (rechazo con lenguaje llano, sin códigos internos), B3 y B5 (importes es-ES y solo los campos pedidos, con una batería sintética de 35 casos y 0 falsas) y E-B3 (capturas nuevas). No cambia el estado de ninguna fila.
+- Pendientes: B5 sigue parcial hasta tener un gold aprobado; E-B1 sigue en "no"; las fechas se muestran como están guardadas.
+- Recuento final de 31 filas: 17 cumplidas, 10 parciales y 4 no.
 
 **v0.13.2.**
 - Mejoran E-A3/E-A4 y R1.5: la vista previa de una cita ya no tapa el composer cuando la cita está al final del hilo (límite de colisión en el hilo, tests de geometría). E-B3 suma las capturas antes y después. No cambia el estado de ninguna fila.

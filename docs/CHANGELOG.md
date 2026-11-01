@@ -2,6 +2,14 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
+## v0.13.3 · 2026-11-01
+- Los importes de las facturas salen siempre en es-ES, «1.706,60 €», con el formateo hecho en el servicio y no en el modelo. El valor guardado no cambia; la cita enseña lo mismo que el texto.
+- La respuesta usa el término de la pregunta («precio final», «importe total», «IVA») y solo los campos pedidos: ya no añade el emisor ni otros datos que nadie preguntó. Una tabla cerrada de campos (`invoice_fields.py`) sustituye a los diccionarios sueltos.
+- La tarjeta de rechazo ya no enseña «motivo: llm_unanswerable». Titula lo que pasó y dice qué hacer. El código interno queda en Sistema, en la traza.
+- Los puertos de los modelos se configuran con variables de entorno (`DOC_ASSISTANT_LLM_PORT`, `_EMBEDDINGS_PORT`, `_RERANKER_PORT`, `_OCR_PORT`, por defecto 8081-8084) en `scripts/dev.py`, `config/config.yaml`, el humo de `package.py` y `evidence.py`. Un puerto ocupado o inválido corta con un mensaje que dice quién lo usa y qué variable cambiar. README, sección «Puertos».
+- Sin cambios de contrato.
+- Probado: `mise run check` OK con 298 tests del servicio (la batería sintética de facturas añade 35 casos, con 0 respuestas falsas; con el modelo real 35/35) y 26 de scripts. Playwright 148/148 en tres pasadas con axe sin violaciones serias ni críticas. Capturas `chat-rechazo-*` y `chat-factura-*` con backend simulado.
+
 ## v0.13.2 · 2026-10-31
 - La vista previa de una cita ya no tapa el composer. Calculaba las colisiones contra la ventana y el composer queda fuera del hilo pero dentro de la ventana, así que una cita al final del hilo se abría hacia abajo y lo cubría (40 px medidos con el kit real, 46 o 47 px en las capturas sintéticas). Ahora el límite de colisión es el elemento de scroll del hilo: la tarjeta se abre hacia arriba, sigue centrada en el marcador y se oculta si este sale del hilo. Si ni arriba ni abajo cabe entera, se ciñe al hilo y desplaza su contenido.
 - Sin cambios de contrato ni del servicio.
