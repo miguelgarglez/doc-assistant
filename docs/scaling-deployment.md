@@ -3,7 +3,7 @@
 La propuesta ampliada de aislamiento, permisos, colas, operación y fases está en [arquitectura multiusuario](design/arquitectura-multiusuario.md). Cuando este resumen y esa propuesta difieran, prevalece la propuesta ampliada.
 
 ## Hoy
-Un portátil (M4, 16 GB): 5 procesos locales, SQLite en un fichero. Pensado para un usuario.
+Un portátil (M4, 16 GB): web, servicio de IA y cuatro servidores de modelos; SQLite en un fichero. Pensado para un usuario.
 
 ## Qué escala y cómo
 | Pieza | Límite actual | Siguiente paso |

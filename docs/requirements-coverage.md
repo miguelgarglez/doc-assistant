@@ -63,6 +63,11 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 | N3 | Huecos del enunciado decididos | `docs/open-gaps.md` | Cumplido | — |
 | N5 | ZIP con código, README y arquitectura | `mise run package` | Parcial | Solo se ha probado el smoke falso, sin modelos. El paquete completo con smoke real está pendiente. |
 
+**Trabajo sin publicar.**
+- Mejoran C3 con hardware consultado en el equipo, C4/C5/E-C1 con inventario aún incompleto, y S1–S3 con una propuesta multiusuario detallada.
+- Pendientes: gold aprobado, comparación de troceado y modelos, memoria en ejecución, portabilidad y comprobaciones completas; el workflow no se ha ejecutado.
+- Recuento de 31 filas: 18 cumplidas, 9 parciales y 4 no. C3 cambia de parcial a cumplido.
+
 **v0.14.0.**
 - Mejoran B3, B4, B5 y E-A3/E-A4 con fichas y tablas derivadas de evidencia, contrato versionado, copia fiel y degradación; E-B3 incorpora comparación y galería. 180 e2e ×3 y batería propia de 35 casos live sin respuestas falsas.
 - Pendientes: B5 sigue parcial y E-B1 en "no" hasta el gold aprobado; faltan posiciones OCR y prueba de teclado virtual real. Las fechas conservan su representación almacenada.

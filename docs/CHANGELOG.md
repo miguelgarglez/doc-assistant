@@ -2,6 +2,13 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
+## Sin publicar
+
+- Registrados el hardware medido, el inventario de modelos y sus límites, y las decisiones pendientes de aprobación.
+- Propuesta multiusuario con permisos por documento, ingesta durable y fases de despliegue. No está implementada.
+- La matriz multiplataforma configura puertos aislados. Su workflow no se ha ejecutado.
+- Revisión privada del gold en borrador, sin evaluación final. Ninguna fase tiene tag nuevo ni sus comprobaciones de cierre completas.
+
 ## v0.14.0 · 2026-11-01
 - Respuestas enriquecidas desde el servicio. Ficha general con emisor, cliente, número, fecha y total; preguntas específicas con los campos pedidos. Listados y comparativas como tablas, números y valores con su cita, sumas con operación y referencias de operandos.
 - Contrato aditivo `blocks_version: 1`, evento SSE `blocks` y data part tipado. OpenAPI y cliente generados. `done` conserva la instantánea completa; ante una versión desconocida o bloques inválidos, la web muestra el Markdown verificado.

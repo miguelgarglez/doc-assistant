@@ -210,3 +210,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - El workflow manual configura 3180, 8180 y 8181–8184 y comprueba esos puertos al cerrar. Sigue sin ejecutarse en GitHub; el OCR falso no arranca un proceso.
 - Verificación estática: YAML leído, variables comprobadas y bloque Python compilado con el entorno existente. Sin instalaciones ni servicios iniciados para esta comprobación.
 
+
+## 01-Nov 02:00 CET · Estado sin publicar
+- CHANGELOG y cobertura distinguen el trabajo sin publicar de v0.14.0 e incluyen el resumen de tres líneas. Corregido el recuento de procesos descrito en escalado.
+- `git diff --check` correcto. No se declara cierre de fase ni tag sin los checks solicitados.
+
