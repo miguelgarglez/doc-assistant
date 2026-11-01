@@ -334,3 +334,4 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:09 CET · Puntuaciones en traza interna
 - El pipeline admite un colector opcional en memoria para candidatos, puntuaciones vectoriales, BM25 y reranking, selección y verificación de citas. No se envía en el stream ni se almacena por sí solo; aún faltan datos de facturas, versiones y conexión con el almacén.
 - Pasan 38 pruebas de consulta y streaming, Ruff y mypy. No se han ejecutado todavía las verificaciones de entrega de v0.16.0.
+- Suite completa del servicio tras ambas piezas: 328 pasadas y 35 live omitidas. No sustituye `mise run check` ni la prueba de navegador.
