@@ -409,7 +409,7 @@ def ask_stream_events(
         trace["transport_status"] = "interrupted"
     try:
         with closing(ask_events(config_path, question, stream=True, trace=trace)) as events:
-            yield from _translate_ask_events(events, request_id)
+            yield from _translate_ask_events(events, request_id, trace=trace)
         if trace is not None:
             trace["transport_status"] = "completed"
     except AdapterError as exc:
@@ -425,7 +425,10 @@ def ask_stream_events(
 
 
 def _translate_ask_events(
-    events: Iterator[tuple[str, dict[str, Any]]], request_id: str
+    events: Iterator[tuple[str, dict[str, Any]]],
+    request_id: str,
+    *,
+    trace: dict[str, Any] | None = None,
 ) -> Iterator[str]:
     emitted = False
     for kind, data in events:
@@ -455,7 +458,10 @@ def _translate_ask_events(
                 )
             timings = dict(data.get("latencies") or {})
             timings["total"] = round(sum(timings.values()), 4)
-            yield sse(DoneEvent(**response.model_dump(), timings=timings, request_id=request_id))
+            frame = sse(DoneEvent(**response.model_dump(), timings=timings, request_id=request_id))
+            if trace is not None:
+                trace["transport_status"] = "completed"
+            yield frame
 
 
 def queued_ask_stream(

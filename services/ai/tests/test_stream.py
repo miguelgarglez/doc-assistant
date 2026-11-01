@@ -518,6 +518,16 @@ def test_stream_can_interrupt_after_pipeline_result(config_path: Path) -> None:
     assert trace["transport_status"] == "interrupted"
 
 
+def test_stream_close_after_done_keeps_transport_completed(config_path: Path) -> None:
+    trace: dict = {}
+    iterator = ask_stream_events(config_path, "", trace=trace)
+    assert events(next(iterator))[0][0] == "refusal"
+    assert events(next(iterator))[0][0] == "done"
+    iterator.close()
+    assert trace["status"] == "completed"
+    assert trace["transport_status"] == "completed"
+
+
 def test_stream_trace_records_translation_failure_without_exception_details(
     config_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

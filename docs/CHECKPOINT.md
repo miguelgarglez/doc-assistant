@@ -429,3 +429,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:28 CET · Conversación conservada en feedback
 - El almacén aislado copia la conversación al crear feedback, incluso si luego se elimina la petición. Migra bases anteriores sin perder registros; los feedback huérfanos antiguos quedan con conversación desconocida. La migración se serializa entre inicializaciones.
 - Cinco pruebas de historial, Ruff y mypy pasan. El identificador no autentica y el almacén sigue sin conexión a endpoints.
+
+## 01-Nov 07:28 CET · Estado al entregar done al transporte
+- La traza marca el transporte completado al ceder la trama `done`, también si el consumidor cierra el generador inmediatamente después. Antes quedaba como interrumpido; una regresión reproduce el caso. Esto no acredita la recepción por la red.
+- Pasan 43 pruebas de streaming y cola, Ruff y mypy. La traza sigue sin persistir.
