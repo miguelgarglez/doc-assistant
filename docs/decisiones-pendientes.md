@@ -23,9 +23,9 @@ Estas decisiones requieren la aprobación de Miguel. Las pruebas sintéticas no 
 - **Recomendación:** para varios usuarios, SSO y control de acceso en el servicio y en la recuperación de documentos. Elegir el aislamiento físico o lógico tras definir los límites de confianza.
 - **Impacto:** determina el modelo de datos, la operación y las pruebas de aislamiento. El servicio actual no autentica usuarios.
 
-## Binarios para verificar el ZIP de entrega
+## Arquitecturas fuera del ZIP
 
-- **Decidir:** autorizar la descarga y el uso de los archivos fijados de llama.cpp para el recorrido del ZIP, o facilitar los tres archivos `b12020` ya descargados.
-- **Opciones:** permitir al empaquetador descargar los archivos y verificarlos por SHA256; colocar los archivos correspondientes en `vendor/archives/`; aplazar la prueba completa.
-- **Recomendación:** usar los archivos fijados y verificar su SHA256 antes de ejecutar el recorrido en puertos propios.
-- **Impacto:** la autorización nocturna limita las instalaciones a dependencias de lockfiles. El empaquetador descarga automáticamente binarios ausentes y el setup los instala; por eso no se ha ejecutado el ZIP completo. El `llama-server` disponible en el equipo es de otra compilación y no demuestra el contenido del ZIP.
+- **Decidir:** qué arquitecturas deben poder instalarse sin conexión.
+- **Opciones:** mantener el paquete para macOS ARM64, Linux x64 y Windows x64; incluir también macOS x64, Linux ARM64 y Windows ARM64 tras validar sus binarios y dependencias.
+- **Recomendación:** fijar la matriz según los equipos de destino y probar cada combinación antes de ampliarla.
+- **Impacto:** el ZIP incluye solo los tres primeros archivos b12020. En las demás arquitecturas `setup` necesita descargar el archivo correspondiente; Windows ARM64 tiene además la limitación de `sqlite-vec` documentada. Linux y Windows no se han ejecutado en esta sesión.
