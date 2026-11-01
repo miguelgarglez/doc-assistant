@@ -11,6 +11,7 @@ from doc_assistant.application.invoices.query import (
     validate_plan,
 )
 from doc_assistant.application.ports.models import AdapterError
+from doc_assistant.bootstrap import ask_invoices
 from doc_assistant.domain.invoices.fields import FIELD_SPECS
 from doc_assistant.infra.invoices.reader import SqliteInvoiceReader
 from doc_assistant.infra.invoices.sqlite import InvoiceDB
@@ -388,7 +389,6 @@ def test_v2_answers_keep_inline_citations_and_valid_markdown(config_path, intent
     from markup import assert_segments_tile, assert_valid_markdown
 
     from doc_assistant.config import load_config
-    from doc_assistant.invoices import ask_invoices
 
     db = InvoiceDB(str(load_config(config_path).db))
     try:
@@ -426,7 +426,6 @@ def test_v2_value_escapes_data_and_retains_clarification(config_path):
     from markup import assert_segments_tile, assert_valid_markdown
 
     from doc_assistant.config import load_config
-    from doc_assistant.invoices import ask_invoices
 
     db = InvoiceDB(str(load_config(config_path).db))
     try:
@@ -459,7 +458,6 @@ def test_v2_value_escapes_data_and_retains_clarification(config_path):
 
 def test_v2_list_keeps_truncation_visible(config_path):
     from doc_assistant.config import load_config
-    from doc_assistant.invoices import ask_invoices
 
     db = InvoiceDB(str(load_config(config_path).db))
     try:
@@ -475,7 +473,6 @@ def test_v2_list_keeps_truncation_visible(config_path):
 
 def test_v2_list_with_missing_fields_still_cites_each_invoice(config_path):
     from doc_assistant.config import load_config
-    from doc_assistant.invoices import ask_invoices
 
     db = InvoiceDB(str(load_config(config_path).db))
     try:
@@ -492,7 +489,6 @@ def test_v2_list_with_missing_fields_still_cites_each_invoice(config_path):
 
 def clarify(config_path, rows, question, plan):
     from doc_assistant.config import load_config
-    from doc_assistant.invoices import ask_invoices
 
     db = InvoiceDB(str(load_config(config_path).db))
     try:
@@ -588,7 +584,6 @@ def test_only_ambiguity_is_a_clarification_not_absence(config_path):
 
 def test_invoice_trace_captures_validated_plan_and_parameterized_selection(config_path):
     from doc_assistant.config import load_config
-    from doc_assistant.invoices import ask_invoices
 
     db = InvoiceDB(str(load_config(config_path).db))
     try:
@@ -618,7 +613,6 @@ def test_invoice_trace_captures_validated_plan_and_parameterized_selection(confi
 
 def test_invoice_trace_records_clarification_candidates(config_path):
     from doc_assistant.config import load_config
-    from doc_assistant.invoices import ask_invoices
 
     db = InvoiceDB(str(load_config(config_path).db))
     try:

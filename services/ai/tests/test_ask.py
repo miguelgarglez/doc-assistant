@@ -330,7 +330,7 @@ def test_invoice_trace_survives_planner_failure(config_path, fake_embedder, monk
         trace["plan_prompt_sha256"] = "planner-hash"
         raise AdapterBusy("busy")
 
-    monkeypatch.setattr(module, "ask_invoices", fail)
+    monkeypatch.setattr(module.bootstrap, "ask_invoices", fail)
     trace = {}
     with pytest.raises(AdapterBusy):
         list(

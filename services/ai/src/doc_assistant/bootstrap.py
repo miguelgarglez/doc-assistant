@@ -14,11 +14,15 @@ from fastapi import FastAPI
 from doc_assistant.application.ask.capacity import AskCapacity
 from doc_assistant.application.health import check_components
 from doc_assistant.application.ingest.jobs import IngestJobs
+from doc_assistant.application.invoices.service import InvoiceService
 from doc_assistant.application.ports.health import ProbeResult
+from doc_assistant.application.ports.invoice_writer import InvoiceWriter
 from doc_assistant.application.ports.models import LLM, Embedder, OcrPort, Reranker
 from doc_assistant.application.sources import SourceService
 from doc_assistant.config import AppConfig, load_config
 from doc_assistant.infra.health.probes import probe_index, probe_llama
+from doc_assistant.infra.invoices.catalog import SqliteInvoiceCatalog
+from doc_assistant.infra.invoices.writer import SqliteInvoiceWriter
 from doc_assistant.infra.models.http import HttpEmbedder, HttpLLM, HttpReranker, LlamaOCR, OllamaOCR
 from doc_assistant.infra.pdf.service import PdfService
 from doc_assistant.infra.sources.sqlite import SqliteSourceRepository
@@ -57,6 +61,57 @@ def component_health(cfg: AppConfig) -> list[ProbeResult]:
 
 def source_service(cfg: AppConfig) -> SourceService:
     return SourceService(SqliteSourceRepository(cfg.db, cfg.data_dir, cfg.embeddings.dim or 8))
+
+
+def invoice_service(cfg: AppConfig) -> InvoiceService:
+    return InvoiceService(SqliteInvoiceCatalog(cfg.db, cfg.data_dir, cfg.embeddings.dim or 8))
+
+
+def upload_invoice(
+    config_path: str | Path,
+    image: bytes,
+    filename: str,
+    *,
+    ocr: OcrPort | None = None,
+    llm: LLM | None = None,
+    embedder: Embedder | None = None,
+    progress: Callable[..., None] | None = None,
+) -> dict[str, Any]:
+    cfg = load_config(config_path)
+    if ocr is None:
+        ocr = build_ocr(cfg)
+    if embedder is None or llm is None:
+        default_embedder, _, default_llm = build_adapters(cfg)
+        embedder = embedder or default_embedder
+        llm = llm or default_llm
+
+    def writer_factory(model: Embedder) -> InvoiceWriter:
+        dim = getattr(model, "dim", None) or cfg.embeddings.dim or 8
+        return SqliteInvoiceWriter(cfg.db, cfg.data_dir, dim)
+
+    return invoice_service(cfg).upload(
+        image,
+        filename,
+        ocr=ocr,
+        llm=llm,
+        embedder=embedder,
+        writer_factory=writer_factory,
+        progress=progress,
+    )
+
+
+def invoice_image(config_path: str | Path, invoice_id: str) -> bytes | None:
+    return invoice_service(load_config(config_path)).image(invoice_id)
+
+
+def ask_invoices(
+    config_path: str | Path,
+    question: str,
+    *,
+    llm: LLM,
+    trace: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    return invoice_service(load_config(config_path)).ask(question, llm=llm, trace=trace)
 
 
 def lifespan_for(config_path: Path) -> Callable[[FastAPI], AbstractAsyncContextManager[None]]:

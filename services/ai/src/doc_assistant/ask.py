@@ -30,7 +30,6 @@ from doc_assistant.domain.answers.inline import assign_by_rules, validate_model_
 from doc_assistant.domain.answers.partial_json import FieldStreamer
 from doc_assistant.domain.answers.verifier import verify
 from doc_assistant.infra.storage.chunks import ChunkStore
-from doc_assistant.invoices import ask_invoices
 
 ANSWER_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -245,7 +244,7 @@ def _ask_events(
         invoice_trace: dict[str, Any] | None = {} if trace is not None else None
         if trace is not None:
             trace["invoice"] = invoice_trace
-        invoice_result = ask_invoices(config_path, question, llm=llm, trace=invoice_trace)
+        invoice_result = bootstrap.ask_invoices(config_path, question, llm=llm, trace=invoice_trace)
         latencies["invoices"] = round(time.perf_counter() - t, 4)
         yield _step(
             "invoices",

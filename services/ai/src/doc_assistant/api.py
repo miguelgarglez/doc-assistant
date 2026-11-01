@@ -20,9 +20,15 @@ from doc_assistant.application.ports.pdf import PdfPort
 from doc_assistant.ask import ask
 from doc_assistant.ask_schemas import AskRequest, AskResponse
 from doc_assistant.ask_stream import STREAM_SCHEMA, queued_ask_stream
-from doc_assistant.bootstrap import component_health, lifespan_for, source_service
+from doc_assistant.bootstrap import (
+    component_health,
+    invoice_image,
+    invoice_service,
+    lifespan_for,
+    source_service,
+    upload_invoice,
+)
 from doc_assistant.ingest import ingest_pdfs, save_and_ingest_pdf
-from doc_assistant.invoices import invoice_image, list_invoices, upload_invoice
 
 DEFAULT_CONFIG = Path(__file__).resolve().parents[4] / "config/config.yaml"
 ASK_QUEUE_TIMEOUT_S = 60.0
@@ -570,7 +576,7 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
             InvoiceListItem.model_validate(
                 {**row, "estado": "ok" if row["cuadra"] == "1" else "revisar"}
             )
-            for row in list_invoices(request.app.state.config.db)
+            for row in invoice_service(request.app.state.config).list_invoices()
         ]
 
     @app.post(
