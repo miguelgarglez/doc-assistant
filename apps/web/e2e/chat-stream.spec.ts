@@ -217,8 +217,13 @@ test.describe("lector SSE", () => {
     const out = await frames(['event: token\r\ndata: {"te', 'xt":"hola"}\r\n\r\nevent: done\ndata: {"ok":true}\n\n'])
     expect(out).toEqual([
       { event: "token", data: '{"text":"hola"}' },
-      { event: "done", request_id: "test-request", data: '{"ok":true}' },
+      { event: "done", data: '{"ok":true}' },
     ])
+  })
+
+  test("conserva el identificador dentro de los datos del evento", async () => {
+    const out = await frames(['event: done\ndata: {"ok":true,"request_id":"r-1"}\n\n'])
+    expect(out).toEqual([{ event: "done", data: '{"ok":true,"request_id":"r-1"}' }])
   })
 
   test("ignora tramas sin datos y une datos de varias líneas", async () => {
