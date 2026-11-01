@@ -11,6 +11,7 @@ writes the answer from the selected rows. Rules:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sqlite3
@@ -868,6 +869,8 @@ def plan_and_run(
     con: sqlite3.Connection, question: str, chat: Any, trace: dict[str, Any] | None = None
 ) -> tuple[dict[str, Any] | None, list[Any]]:
     """Returns (result or None for 'documentos', raw plans). One retry on invalid plans."""
+    if trace is not None:
+        trace["plan_prompt_sha256"] = hashlib.sha256(PLAN_PROMPT.encode()).hexdigest()
     messages = [{"role": "system", "content": PLAN_PROMPT}, {"role": "user", "content": question}]
     raws: list[Any] = []
     for attempt in range(2):

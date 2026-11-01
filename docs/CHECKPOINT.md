@@ -468,3 +468,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 11:07 CET · Estado de revisión del feedback
 - El almacén conserva los cuatro estados de revisión y permite cambiarlos por conversación. Las bases anteriores reciben el estado `nuevo` durante la migración; la copia de la traza permanece intacta. El identificador de conversación no autentica y el almacén sigue aislado de la API.
 - Once pruebas de historial, Ruff y mypy pasan con el entorno existente.
+
+## 01-Nov 11:07 CET · Huella del planificador de facturas
+- El colector de facturas registra SHA256 del prompt de planificación usado por el modelo. La huella identifica ese texto, no la versión completa del modelo o del código; el colector sigue sin persistir.
+- Sesenta pruebas de facturas, Ruff y mypy pasan.

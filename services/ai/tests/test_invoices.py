@@ -602,6 +602,11 @@ def test_invoice_trace_captures_validated_plan_and_parameterized_selection(confi
         trace=trace,
     )
     assert result is not None and result["ok"]
+    from hashlib import sha256
+
+    from doc_assistant.invoice_query import PLAN_PROMPT
+
+    assert trace["plan_prompt_sha256"] == sha256(PLAN_PROMPT.encode()).hexdigest()
     assert trace["plan"]["numero"] == "FAC-2026-0042"
     assert "?" in trace["sql"] and "FAC-2026-0042" not in trace["sql"]
     assert trace["params"] == ["FAC-2026-0042"]
