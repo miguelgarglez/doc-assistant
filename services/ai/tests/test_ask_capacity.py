@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from doc_assistant import api
+from doc_assistant import ask_stream as stream_module
 from doc_assistant.ask_capacity import AskCapacity
 
 
@@ -45,14 +46,14 @@ def test_queue_waits_rejects_overflow_and_releases_on_disconnect(monkeypatch):
     capacity.running.release()
     capacity.admitted.release()
 
-    monkeypatch.setattr(api, "ask_stream_events", lambda *_: iter(["finished"]))
+    monkeypatch.setattr(stream_module, "ask_stream_events", lambda *_: iter(["finished"]))
     assert list(api.queued_ask_stream(capacity, Path("unused"), "question")) == ["finished"]
 
 
 def test_queued_request_continues_when_slot_frees(monkeypatch):
     capacity = AskCapacity(running=1, waiting=1)
     capacity.running.acquire()
-    monkeypatch.setattr(api, "ask_stream_events", lambda *_: iter(["finished"]))
+    monkeypatch.setattr(stream_module, "ask_stream_events", lambda *_: iter(["finished"]))
     stream = api.queued_ask_stream(capacity, Path("unused"), "question")
     assert event(next(stream))[1]["status"] == "running"
     capacity.running.release()
@@ -66,7 +67,7 @@ def test_queued_request_continues_when_slot_frees(monkeypatch):
 def test_wait_timeout_is_recoverable_and_releases_admission(monkeypatch):
     capacity = AskCapacity(running=1, waiting=1)
     capacity.running.acquire()
-    monkeypatch.setattr(api, "ASK_QUEUE_TIMEOUT_S", 0.01)
+    monkeypatch.setattr(stream_module, "ASK_QUEUE_TIMEOUT_S", 0.01)
     trace: dict = {}
     stream = api.queued_ask_stream(capacity, Path("unused"), "question", trace=trace)
     assert event(next(stream))[1]["status"] == "running"

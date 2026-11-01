@@ -17,6 +17,7 @@ import yaml
 from fastapi.testclient import TestClient
 
 from doc_assistant import ask as ask_module
+from doc_assistant import ask_stream as stream_module
 from doc_assistant.adapters import (
     AdapterBusy,
     AdapterError,
@@ -25,7 +26,8 @@ from doc_assistant.adapters import (
     FakeReranker,
     HttpLLM,
 )
-from doc_assistant.api import ask_stream_events, create_app
+from doc_assistant.api import create_app
+from doc_assistant.ask_stream import ask_stream_events
 from doc_assistant.config import load_config
 from doc_assistant.ingest import save_and_ingest_pdf
 from doc_assistant.meta import classify
@@ -531,12 +533,10 @@ def test_stream_close_after_done_keeps_transport_completed(config_path: Path) ->
 def test_stream_trace_records_translation_failure_without_exception_details(
     config_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from doc_assistant import api
-
     def invalid_events(*args, **kwargs):
         yield "step", {"private": "secret"}
 
-    monkeypatch.setattr(api, "ask_events", invalid_events)
+    monkeypatch.setattr(stream_module, "ask_events", invalid_events)
     trace: dict = {}
     frames = list(ask_stream_events(config_path, "pregunta", trace=trace))
     assert events("".join(frames))[-1][1]["code"] == "internal_error"
@@ -548,12 +548,10 @@ def test_stream_trace_records_translation_failure_without_exception_details(
 def test_stream_without_pipeline_result_ends_with_error(
     config_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from doc_assistant import api
-
     def incomplete_events(*args, **kwargs):
         yield "token", {"text": "Respuesta incompleta"}
 
-    monkeypatch.setattr(api, "ask_events", incomplete_events)
+    monkeypatch.setattr(stream_module, "ask_events", incomplete_events)
     trace: dict = {}
     frames = list(ask_stream_events(config_path, "pregunta", trace=trace))
     parsed = events("".join(frames))
