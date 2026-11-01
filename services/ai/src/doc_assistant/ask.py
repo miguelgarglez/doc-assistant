@@ -417,10 +417,10 @@ def _ask_events(
     checked = verify(answer, citations, retrieved_text)
     if trace is not None:
         trace["verification"] = {
-            "citations": citations,
+            "citations": deepcopy(citations),
             "ok": checked.ok,
             "reason": checked.reason,
-            "details": checked.details,
+            "details": deepcopy(checked.details),
         }
     latencies["verify"] = round(time.perf_counter() - t4, 4)
 

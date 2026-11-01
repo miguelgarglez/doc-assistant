@@ -105,6 +105,8 @@ def test_private_trace_captures_scores_without_changing_events(
     assert events[-1][1]["ok"] is True
     events[-1][1]["citations"][0]["quote"] = "modificada por el consumidor"
     assert trace["result"]["citations"][0]["quote"] == "24 V"
+    events[-1][1]["raw"]["citations"][0]["quote"] = "otra modificación"
+    assert trace["verification"]["citations"][0]["quote"] == "24 V"
     store.db.execute("UPDATE chunks SET title = ? WHERE chunk_id = ?", ("nuevo", chunk["chunk_id"]))
     store.db.commit()
     changed: dict = {}

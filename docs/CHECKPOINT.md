@@ -409,3 +409,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:24 CET · Aislamiento de eventos en la traza
 - Las copias de pasos y resultado de la traza son profundas. Una regresión modifica una cita del evento consumido y comprueba que la traza conserva la cita original.
 - Nueve pruebas de consulta y Ruff pasan. La traza sigue en memoria y no está conectada al almacén.
+
+## 01-Nov 07:24 CET · Aislamiento de la verificación
+- Las citas y detalles de verificación también se copian: el resultado bruto puede compartir objetos con el verificador. La regresión modifica la cita bruta y comprueba que la verificación registrada no cambia.
+- Nueve pruebas de consulta y Ruff pasan. No se activa persistencia.
