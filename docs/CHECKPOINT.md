@@ -225,3 +225,10 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Documentados plataformas empaquetadas, rutas, procesos y límites de la matriz. Detectada incompatibilidad entre la regla de esta sesión de usar solo PID y el cierre por grupo de `dev.py` y `package.py`; no se ejecutaron esos scripts. El ZIP no incluye binarios para todas las arquitecturas de `assets.json`.
 - Revisión estática y `git diff --check`; no sustituye pruebas en macOS, Windows o Linux.
 
+
+## 01-Nov 02:02 CET · Estado de continuación
+- No hay tags nuevos. Rama `feat/core-v0.15`; no se ha hecho push ni merge. Auditoría preliminar TOTAL 0 sobre el commit indicado arriba, no sobre este cierre.
+- Mejoran C3, el inventario de C4/C5/E-C1 y la propuesta de S1–S3. Pendientes gold aprobado, comparación de troceado y modelos, memoria de ejecución y pruebas de portabilidad. Recuento 18 cumplidas, 9 parciales y 4 no.
+- Pendiente autorización expresa para instalar dependencias locales. También debe resolverse el cierre por grupos de los scripts antes de ejecutar el recorrido en esta sesión, que exige solo PID. No se han ejecutado check completo, tres pasadas e2e con axe, capturas nuevas, ni auditoría de tag. Historial y feedback no se han iniciado.
+- Gold y revisión privados: `gold-v2-borrador.jsonl`, `gold-v2-revision.md` y `recoger-evaluacion.py`. La recogida solo se probó con transporte simulado; no es una evaluación puntuada ni se ejecutó con fuentes reales.
+
