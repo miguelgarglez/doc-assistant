@@ -173,6 +173,7 @@ def test_trace_marks_completion_and_interruption(config_path: Path) -> None:
     assert completed["status"] == "completed"
     assert completed["result"] == events[-1][1]
     assert completed["trace_schema_version"] == 1
+    assert completed["started_at"] <= completed["finished_at"]
     interrupted: dict = {}
     stream = ask_events(config_path, "Una pregunta", trace=interrupted)
     next(stream)
@@ -194,4 +195,6 @@ def test_trace_marks_pipeline_error(config_path: Path, monkeypatch) -> None:
     with pytest.raises(RuntimeError, match="failure"):
         list(ask_events(config_path, "pregunta", trace=trace))
     assert trace["status"] == "error"
+    assert trace["error_code"] == "internal_error"
+    assert trace["started_at"] <= trace["finished_at"]
     assert "elapsed_s" in trace

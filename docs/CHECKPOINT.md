@@ -357,3 +357,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:13 CET · Huella de candidatos
 - La traza opcional incluye el SHA256 del texto de cada candidato recuperado. Permite detectar cambios en ese texto, pero no reconstruirlo ni identificar una revisión completa del índice. No activa persistencia.
 - Siete pruebas de consulta y Ruff pasan. La política de texto y retención sigue pendiente.
+
+## 01-Nov 07:14 CET · Fechas y errores en la traza
+- La traza opcional registra inicio y fin UTC y el código de error, sin incluir el mensaje de una excepción interna. También registra el fin cuando se interrumpe el generador.
+- Siete pruebas de consulta y Ruff pasan. La traza sigue en memoria y aún no incluye errores de admisión a la cola.

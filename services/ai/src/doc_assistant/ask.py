@@ -6,6 +6,7 @@ import hashlib
 import json
 import time
 from collections.abc import Generator, Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -484,6 +485,7 @@ def ask_events(
         return
     trace.update({"trace_schema_version": 1, "question": question, "steps": []})
     started = time.perf_counter()
+    trace["started_at"] = datetime.now(UTC).isoformat()
     trace["status"] = "interrupted"
     try:
         for kind, data in events:
@@ -493,11 +495,13 @@ def ask_events(
                 trace["result"] = data.copy()
                 trace["status"] = "completed"
             yield kind, data
-    except Exception:
+    except Exception as exc:
         trace["status"] = "error"
+        trace["error_code"] = exc.code if isinstance(exc, AdapterError) else "internal_error"
         raise
     finally:
         events.close()
+        trace["finished_at"] = datetime.now(UTC).isoformat()
         trace["elapsed_s"] = round(time.perf_counter() - started, 4)
 
 
