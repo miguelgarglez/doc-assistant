@@ -444,3 +444,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:29 CET · Traza documental en almacén aislado
 - Una prueba guarda y recupera íntegra una traza documental producida por el pipeline con adaptadores simulados y crea feedback a partir de ella. Comprueba la serialización de la estructura real, no solo un diccionario de ejemplo.
 - Nueve pruebas de consulta y Ruff pasan. La API sigue sin activar el almacén.
+
+## 01-Nov 07:30 CET · Contención al activar WAL
+- Una serie de inicializaciones simultáneas reprodujo `database is locked` al activar WAL antes de migrar. Se reintenta únicamente `SQLITE_BUSY` hasta un límite de 10 segundos; otros errores se propagan. Una prueba fuerza el fallo y confirma escritura y lectura posteriores.
+- Seis pruebas de historial, Ruff y mypy pasan; 50 inicializaciones de cuatro hilos terminaron sin error tras el cambio. La primera prueba con bloqueo real no forzó el reintento por el timeout de SQLite y se sustituyó.

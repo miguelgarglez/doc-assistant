@@ -82,3 +82,25 @@ def test_existing_feedback_gains_conversation_without_losing_orphans(tmp_path):
     with sqlite3.connect(path) as db:
         rows = dict(db.execute("SELECT feedback_id, conversation_id FROM feedback"))
     assert rows == {"f": "c", "orphan": None}
+
+
+def test_wal_initialization_retries_when_database_is_locked(tmp_path, monkeypatch):
+    real_connect = sqlite3.connect
+    attempts = []
+
+    class BusyOnce(sqlite3.Connection):
+        def execute(self, sql, parameters=()):
+            if sql == "PRAGMA journal_mode=WAL" and not attempts:
+                attempts.append(sql)
+                error = sqlite3.OperationalError("database is locked")
+                error.sqlite_errorcode = sqlite3.SQLITE_BUSY
+                raise error
+            return super().execute(sql, parameters)
+
+    monkeypatch.setattr(
+        sqlite3, "connect", lambda *args, **kwargs: real_connect(*args, **kwargs, factory=BusyOnce)
+    )
+    store = HistoryStore(tmp_path / "history.db")
+    store.record("r", "c", "now", {"answer": "ok"})
+    assert store.get("c", "r") == {"answer": "ok"}
+    assert len(attempts) == 1

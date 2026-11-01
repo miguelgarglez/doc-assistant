@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import time
 from collections.abc import Iterator
 from contextlib import closing, contextmanager
 from pathlib import Path
@@ -16,7 +17,15 @@ class HistoryStore:
     def __init__(self, path: Path) -> None:
         self.path = path
         with self._connect() as db:
-            db.execute("PRAGMA journal_mode=WAL")
+            deadline = time.monotonic() + 10
+            while True:
+                try:
+                    db.execute("PRAGMA journal_mode=WAL")
+                    break
+                except sqlite3.OperationalError as exc:
+                    if exc.sqlite_errorcode != sqlite3.SQLITE_BUSY or time.monotonic() >= deadline:
+                        raise
+                    time.sleep(0.01)
             db.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS requests (
