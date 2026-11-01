@@ -10,7 +10,7 @@ from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from doc_assistant.history import HistoryStore
 
@@ -79,6 +79,14 @@ def conversation(
     items, cursor = store.list_page(conversation_id, limit=limit, before=before)
     if not items and before is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
+    from doc_assistant.api import AskResponse
+
+    for item in items:
+        if "result" in item:
+            try:
+                item["result"] = AskResponse.model_validate(item["result"]).model_dump(mode="json")
+            except ValidationError:
+                del item["result"]
     return {"items": items, "next_cursor": cursor}
 
 

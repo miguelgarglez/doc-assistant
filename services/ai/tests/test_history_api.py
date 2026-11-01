@@ -169,3 +169,34 @@ def test_storage_write_failure_is_reported_without_changing_stream(config_path, 
             time.sleep(0.01)
         assert status["pending"] == 1
         assert status["failures"][0]["request_id"] == request_id
+
+
+def test_conversation_validates_stored_results_before_serving(tmp_path):
+    client, store = client_for(tmp_path)
+    store.record(
+        "bad",
+        "c",
+        "2026-01-01",
+        {
+            "request_id": "bad",
+            "question": "bad",
+            "result": {"ok": True, "answer": "bad", "citations": "not a list"},
+        },
+    )
+    store.record(
+        "good",
+        "c",
+        "2026-01-02",
+        {
+            "request_id": "good",
+            "question": "good",
+            "result": {"ok": True, "answer": "answer", "citations": [], "reason": ""},
+        },
+    )
+    response = client.get("/history/conversations/c", headers={"x-history-token": "secret"})
+    assert response.status_code == 200
+    good, bad = response.json()["items"]
+    assert good["result"]["answer"] == "answer"
+    assert good["result"]["blocks"] == []
+    assert "result" not in bad
+    assert bad["question"] == "bad"
