@@ -114,11 +114,88 @@ class Clarification(BaseModel):
     candidates: list[ClarificationCandidate]
 
 
+CellKind = Literal["text", "date", "amount", "percent", "id"]
+
+
+class Cell(BaseModel):
+    """One stored value as the answer shows it. `text` is None when the invoice has no such value.
+
+    `cite` is the position in `citations` of the citation that carries the same stored value.
+    """
+
+    text: str | None = None
+    kind: CellKind
+    cite: int | None = None
+
+
+class KeyDatum(Cell):
+    field: str
+    label: str
+
+
+class KeyDataBlock(BaseModel):
+    """The data of one invoice, each with its citation."""
+
+    type: Literal["key_data"] = "key_data"
+    title: str
+    doc_id: str
+    items: list[KeyDatum]
+    note: str | None = None
+
+
+class TableColumn(BaseModel):
+    key: str
+    label: str
+    kind: CellKind
+
+
+class TableRow(BaseModel):
+    """`cells` follow `columns`. `question` asks for the data of this row's invoice."""
+
+    doc_id: str
+    question: str
+    cells: list[Cell]
+
+
+class TableSummary(BaseModel):
+    """Calculated total, with the citation positions of every operand."""
+
+    operation: Literal["sum"] = "sum"
+    refs: list[int]
+    label: str
+    text: str
+    kind: Literal["amount"] = "amount"
+
+
+class TableBlock(BaseModel):
+    """Invoices as rows. The first column is the invoice number."""
+
+    type: Literal["table"] = "table"
+    title: str | None = None
+    columns: list[TableColumn]
+    rows: list[TableRow]
+    summary: TableSummary | None = None
+    note: str | None = None
+
+
+Block = Annotated[KeyDataBlock | TableBlock, Field(discriminator="type")]
+
+
+class FollowUp(BaseModel):
+    """A question the service can answer from what it found: a field of the same invoice, or a nearby section."""
+
+    label: str
+    question: str
+
+
 class AskResponse(BaseModel):
     ok: bool
     answer: str
     citations: list[Citation]
     segments: list[Segment] = Field(default_factory=list)
+    blocks_version: Literal[1] = 1
+    blocks: list[Block] = Field(default_factory=list)
+    follow_ups: list[FollowUp] = Field(default_factory=list)
     inline: Literal["model", "rules", "template", "none"] = "none"
     reason: str
     suggestions: list[Suggestion] = Field(default_factory=list)
@@ -145,6 +222,13 @@ class TokenEvent(BaseModel):
 class CitationsEvent(BaseModel):
     event: Literal["citations"] = "citations"
     citations: list[Citation]
+
+
+class BlocksEvent(BaseModel):
+    event: Literal["blocks"] = "blocks"
+    blocks_version: Literal[1] = 1
+    blocks: list[Block]
+    follow_ups: list[FollowUp] = Field(default_factory=list)
 
 
 class RefusalEvent(BaseModel):
@@ -176,6 +260,7 @@ StreamEvent = Annotated[
     StepEvent
     | TokenEvent
     | CitationsEvent
+    | BlocksEvent
     | RefusalEvent
     | ClarificationEvent
     | DoneEvent
@@ -317,6 +402,10 @@ def ask_stream_events(config_path: Path, question: str) -> Iterator[str]:
                 response = AskResponse.model_validate(data)
                 if response.ok:
                     yield sse(CitationsEvent(citations=response.citations))
+                    if response.blocks or response.follow_ups:
+                        yield sse(
+                            BlocksEvent(blocks=response.blocks, follow_ups=response.follow_ups)
+                        )
                 elif response.clarification:
                     yield sse(
                         ClarificationEvent(

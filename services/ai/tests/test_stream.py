@@ -95,7 +95,7 @@ def test_stream_verified_answer(
         ),
     )
     evs = stream(config_path, "¿A qué voltaje opera el robot?")
-    kinds = [k for k, _ in evs]
+    kinds = [k for k, _ in evs if k != "blocks"]
     assert kinds[-2:] == ["citations", "done"]
     assert "".join(d["text"] for k, d in evs if k == "token") == answer
     steps = [(d["id"], d["status"]) for k, d in evs if k == "step"]
@@ -104,6 +104,12 @@ def test_stream_verified_answer(
     done = evs[-1][1]
     assert done["ok"] is True and done["answer"] == answer and done["reason"] == "verified"
     assert done["timings"]["total"] >= 0
+    cited = {(c["doc_id"], c["section"]) for c in done["citations"]}
+    for follow_up in done["follow_ups"]:
+        assert follow_up["question"].startswith("¿Qué dice ")
+    assert len(done["follow_ups"]) <= 2 and cited
+    blocks = [d for k, d in evs if k == "blocks"]
+    assert bool(blocks) == bool(done["follow_ups"])
     # Los tokens solo llegan después de recuperar: nunca antes de tener fragmentos.
     assert kinds.index("token") > steps.index(("rerank", "done"))
 
@@ -361,3 +367,63 @@ def test_stream_ambiguous_invoice_is_a_clarification_not_a_refusal(
             "/ask", json={"question": "¿cuál es el importe total de la factura?"}
         ).json()
     assert plain["clarification"] == event["clarification"] and "¿Te refieres" in plain["answer"]
+
+
+def seed_invoice(config_path: Path, record: dict[str, str]) -> None:
+    from doc_assistant.chunking import chunk_invoice
+    from doc_assistant.invoices import InvoiceDB
+
+    cfg = load_config(config_path)
+    db = InvoiceDB(str(cfg.db))
+    store = ChunkStore(cfg.db, 8)
+    try:
+        db.upsert(record)
+        chunks = chunk_invoice({"numero": record["numero"], "total": record["importe_total"]})
+        store.replace_document(
+            chunks[0]["doc"], chunks, FakeEmbedder().embed([c["text"] for c in chunks]), []
+        )
+    finally:
+        db.con.close()
+        store.db.close()
+
+
+def test_stream_invoice_answer_sends_blocks_after_citations_and_in_done(
+    config_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seed_invoice(
+        config_path,
+        {
+            "numero": "F-7",
+            "emisor": "Emisor Uno",
+            "cliente": "Cliente Dos",
+            "fecha_emision": "2026-03-01",
+            "fecha_vencimiento": "2026-04-01",
+            "importe_total": "1706.60",
+        },
+    )
+    use_fakes(
+        monkeypatch,
+        FakeLLM({"intent": "valor", "numero": "F-7", "campos": ["importe_total"]}),
+    )
+    evs = stream(config_path, "¿cuál es el importe total de la factura F-7?")
+    kinds = [k for k, _ in evs]
+    assert kinds[-3:] == ["citations", "blocks", "done"]
+    blocks, done = evs[-2][1], evs[-1][1]
+    assert blocks["blocks"][0]["type"] == "key_data"
+    assert blocks["blocks"][0]["items"][0]["text"] == "1.706,60 €"
+    assert blocks["blocks"] == done["blocks"] and blocks["follow_ups"] == done["follow_ups"]
+    assert [f["label"] for f in done["follow_ups"]] == [
+        "Fecha de vencimiento",
+        "Fecha de emisión",
+        "Emisor",
+    ]
+
+
+def test_stream_answer_without_blocks_sends_no_blocks_event(
+    config_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seed_invoice(config_path, {"numero": "F-8", "importe_total": "10.00"})
+    use_fakes(monkeypatch, FakeLLM({"intent": "contar"}))
+    evs = stream(config_path, "¿cuántas facturas hay?")
+    assert "blocks" not in [k for k, _ in evs]
+    assert evs[-1][1]["blocks"] == [] and evs[-1][1]["follow_ups"] == []

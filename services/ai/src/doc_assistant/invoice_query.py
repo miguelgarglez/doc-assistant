@@ -19,6 +19,7 @@ from decimal import Decimal
 from typing import Any
 
 from doc_assistant.adapters import AdapterError
+from doc_assistant.chunking import invoice_doc_id
 from doc_assistant.invoice_fields import (
     FIELD_SPECS,
     display_value,
@@ -289,6 +290,7 @@ def _looks_numberish(s: str) -> bool:
 
 MAX_CANDIDATES = 5
 SUMMARY_FIELDS = ["importe_total", "fecha_emision", "emisor", "cliente"]
+KEY_DATA_FIELDS = ["emisor", "cliente", "numero", "fecha_emision", "importe_total"]
 CLARIFY_PROMPT = "¿De qué factura?"
 
 
@@ -589,6 +591,52 @@ def _pairs(r: dict[str, Any], fields: list[str], labels: dict[str, str]) -> str:
     return "; ".join(f"{labels[c]}: {_shown(r, c)}" for c in fields if _shown(r, c) is not None)
 
 
+def _row_view(r: dict[str, Any], fields: list[str]) -> dict[str, Any]:
+    return {
+        "numero": r["numero"],
+        "doc_id": invoice_doc_id(r["numero"]),
+        "question": followup_question([], r["numero"]),
+        "values": {c: r.get(c) for c in fields},
+    }
+
+
+def _table_view(
+    rows: list[dict[str, Any]],
+    fields: list[str],
+    labels: dict[str, str],
+    title: str | None,
+    *,
+    total: dict[str, str] | None = None,
+    truncated: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "kind": "table",
+        "title": title,
+        "fields": fields,
+        "labels": labels,
+        "rows": [_row_view(r, fields) for r in rows],
+        "total": total,
+        "truncated": truncated,
+        "review": [r["numero"] for r in rows if r.get("cuadra") == "0"],
+    }
+
+
+def _record_view(
+    r: dict[str, Any], fields: list[str], labels: dict[str, str], summary: bool
+) -> dict[str, Any]:
+    return {
+        "kind": "record",
+        "title": "Datos clave" if summary else f"Factura {r['numero']}",
+        "numero": r["numero"],
+        "doc_id": invoice_doc_id(r["numero"]),
+        "fields": fields,
+        "labels": labels,
+        "values": {c: r.get(c) for c in fields},
+        "available": {c: r.get(c) for c in FIELDS},
+        "review": [r["numero"]] if r.get("cuadra") == "0" else [],
+    }
+
+
 def _shape(
     con: sqlite3.Connection,
     plan: Plan,
@@ -619,14 +667,15 @@ def _shape(
         asked = prune_unasked(
             plan.campos or lexical_fields(question, sel.rol), question, party_role=sel.rol
         )
-        campos = _role_fields(asked, sel.rol, question) or SUMMARY_FIELDS
-        campos = [c for c in campos if c != "numero"] or ["importe_total"]
+        picked = _role_fields(asked, sel.rol, question)
+        campos = picked or (KEY_DATA_FIELDS if len(rows) == 1 else SUMMARY_FIELDS)
         labels = labels_for(campos, question)
-        lines, cits, elements = [], [], []
+        lines, cits, elements, shown_rows = [], [], [], []
         for r in rows:
             got = [c for c in campos if _shown(r, c) is not None]
             if not got:
                 continue
+            shown_rows.append(r)
             missing = [labels[c] for c in campos if c not in got]
             lines.append(
                 f"Factura {r['numero']}: "
@@ -640,11 +689,18 @@ def _shape(
             missing_keys = ",".join(campos)
             return _refuse("campo_ausente:" + missing_keys, "Ese dato no consta en la factura.")
         head = f"{sel.label} tiene {len(rows)} facturas. " if sel.party and len(rows) > 1 else ""
+        if len(shown_rows) == 1:
+            summary = not picked
+            fields = KEY_DATA_FIELDS if summary else campos
+            view = _record_view(shown_rows[0], fields, {**FIELDS, **labels}, summary)
+        else:
+            view = _table_view(shown_rows, campos, labels, head.strip() or None)
         return {
             "ok": True,
             "reason": "sql",
             "answer": head + "\n".join(lines) + _warning(rows),
             "headline": head.strip(),
+            "view": view,
             "elements": elements,
             "review": [r["numero"] for r in rows if r.get("cuadra") == "0"],
             "citations": cits,
@@ -685,6 +741,13 @@ def _shape(
             "reason": "sql",
             "answer": headline + _warning(rows),
             "headline": headline,
+            "view": _table_view(
+                rows,
+                [c],
+                {c: label},
+                f"Suma de {label}{scope}",
+                total={"label": "Total", "text": format_eur(total) or ""},
+            ),
             "elements": [
                 {
                     "text": f"Factura {r['numero']}: {label}: {_shown(r, c)}",
@@ -725,9 +788,17 @@ def _shape(
         for r in rows
         for c in ([c for c in shown if _shown(r, c) is not None] or ["numero"])
     ]
+    list_view = _table_view(
+        rows,
+        shown,
+        labels,
+        f"Facturas{scope}",
+        truncated=f"Se muestran {len(rows)} de {len(numeros)}." if more else None,
+    )
     return {
         "ok": True,
         "reason": "sql",
+        "view": list_view,
         "answer": f"Facturas{scope}: " + ", ".join(parts) + more + _warning(rows),
         "headline": f"Facturas{scope}:"
         + (f" Se muestran {len(rows)} de {len(numeros)}." if more else ""),
@@ -748,6 +819,12 @@ def check_grounding(result: dict[str, Any]) -> dict[str, Any]:
         return result
     allowed = set(result.get("selected") or [])
     if any(c["numero"] not in allowed or c.get("valor") in (None, "") for c in cits):
+        return _refuse("cita_fuera_de_seleccion")
+    view = result.get("view") or {}
+    shown = [row["numero"] for row in view.get("rows", [])] + (
+        [view["numero"]] if "numero" in view else []
+    )
+    if any(numero not in allowed for numero in shown):
         return _refuse("cita_fuera_de_seleccion")
     return result
 

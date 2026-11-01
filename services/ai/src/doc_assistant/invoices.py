@@ -16,10 +16,16 @@ from doc_assistant.adapters import LLM, Embedder, OcrPort, build_adapters, build
 from doc_assistant.answer_markup import AnswerBuilder, md_escape
 from doc_assistant.chunking import chunk_invoice, invoice_doc_id
 from doc_assistant.config import load_config
+from doc_assistant.invoice_blocks import build_blocks, follow_ups
 from doc_assistant.invoice_extract import extract_invoice
 from doc_assistant.invoice_fields import display_value
 from doc_assistant.invoice_index import norm_key, sync_derived
-from doc_assistant.invoice_query import FIELDS, is_invoice_question, plan_and_run
+from doc_assistant.invoice_query import (
+    FIELDS,
+    followup_question,
+    is_invoice_question,
+    plan_and_run,
+)
 from doc_assistant.store import SCHEMA_VERSION, ChunkStore, ensure_schema
 
 
@@ -190,10 +196,27 @@ def invoice_image(config_path: str | Path, invoice_id: str) -> bytes | None:
     return None
 
 
+def invoice_citation(numero: str, campo: str, valor: Any) -> dict[str, Any]:
+    """The citation of one stored field; its text is the value as the answer shows it."""
+    fragment = "" if valor is None else display_value(campo, valor)
+    return {
+        "chunk_id": f"{numero}:{campo}",
+        "quote": fragment,
+        "doc": numero or "",
+        "doc_id": invoice_doc_id(numero or ""),
+        "section": campo or "",
+        "pages": [1],
+        "fragment": fragment,
+    }
+
+
 def render_plan_answer(
     result: dict[str, Any], citations: list[dict[str, Any]]
-) -> tuple[str, list[dict[str, Any]], list[dict[str, Any]]]:
-    """Markdown for a SQL answer: a headline and one cited bullet per invoice or field."""
+) -> tuple[
+    str, list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, str]]
+]:
+    """Markdown for a SQL answer (a headline and one cited bullet per invoice or field), plus
+    the same rows as blocks and the follow-up questions they allow."""
     out = AnswerBuilder()
     if result.get("headline"):
         out.paragraph(md_escape(result["headline"]))
@@ -206,7 +229,22 @@ def render_plan_answer(
         out.paragraph(
             "Nota: facturas pendientes de revisión: " + ", ".join(md_escape(n) for n in review)
         )
-    return out.build()
+    answer, _cites, segments = out.build()
+
+    def cite(numero: str, campo: str, valor: Any) -> int:
+        citation = by_field.get(f"{numero}:{campo}")
+        if citation is None:
+            if campo != "numero" or valor != numero:
+                raise ValueError("Block value has no selected evidence")
+            citation = invoice_citation(numero, campo, numero)
+        if citation["quote"] != display_value(campo, valor):
+            raise ValueError("Block value differs from selected evidence")
+        return out.cite(citation)
+
+    view = result.get("view")
+    blocks = build_blocks(view, cite)
+    asks = follow_ups(view, lambda fields, numero: followup_question(fields, numero))
+    return answer, list(out.citations), segments, blocks, asks
 
 
 CLARIFY = {
@@ -239,20 +277,10 @@ def ask_invoices(
     if result is None:
         return None
     raw = raws[-1] if raws else None
-    citations = []
-    for cit in result.get("citations") or []:
-        fragment = "" if cit.get("valor") is None else display_value(cit["campo"], cit.get("valor"))
-        citations.append(
-            {
-                "chunk_id": f"{cit.get('numero')}:{cit.get('campo')}",
-                "quote": fragment,
-                "doc": cit.get("numero") or "",
-                "doc_id": invoice_doc_id(cit.get("numero") or ""),
-                "section": cit.get("campo") or "",
-                "pages": [1],
-                "fragment": fragment,
-            }
-        )
+    citations = [
+        invoice_citation(cit.get("numero") or "", cit.get("campo") or "", cit.get("valor"))
+        for cit in result.get("citations") or []
+    ]
     clarification = result.get("clarification")
     if clarification:
         clarification = {
@@ -267,12 +295,14 @@ def ask_invoices(
             ],
         }
     if result.get("ok"):
-        answer, citations, segments = render_plan_answer(result, citations)
+        answer, citations, segments, blocks, asks = render_plan_answer(result, citations)
         return {
             "ok": True,
             "answer": answer,
             "citations": citations,
             "segments": segments,
+            "blocks": blocks,
+            "follow_ups": asks,
             "inline": "template",
             "reason": result.get("reason") or "sql",
             "suggestions": [],

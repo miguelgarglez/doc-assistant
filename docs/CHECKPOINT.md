@@ -132,3 +132,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 ## 01-Nov 01:33 CET · Diseño de respuestas enriquecidas
 - Comparadas A cliente/Markdown, B bloques del servicio y C híbrido. Elegida B en ADR-014 por evidencia por dato y degradación al Markdown; contrato con versión explícita. Documentado qué había en el WIP y qué falta verificar/corregir.
+
+## 01-Nov 01:35 CET · Servicio y contrato de bloques
+- Fichas/listas/comparativas derivadas de SQL, número de fila citado y sumas con operación y citas de operandos. Versionado explícito `blocks_version: 1`; OpenAPI y cliente regenerados. Corregida pregunta por número que devolvía total y formato de importes en inventario. Markdown conserva los datos generales, incluido número.
+- Verificación: suite del servicio 307 passed / 35 live omitidos antes de añadir dos regresiones; batería y streaming repetidos con las nuevas invariantes.

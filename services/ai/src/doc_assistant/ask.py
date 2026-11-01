@@ -19,7 +19,7 @@ from doc_assistant.adapters import (
 from doc_assistant.config import load_config
 from doc_assistant.inline import assign_by_rules, validate_model_segments
 from doc_assistant.invoices import ask_invoices
-from doc_assistant.meta import answer_meta, classify, suggestions_from
+from doc_assistant.meta import answer_meta, classify, related_follow_ups, suggestions_from
 from doc_assistant.partial_json import FieldStreamer
 from doc_assistant.sources import list_sources
 from doc_assistant.store import ChunkStore
@@ -405,6 +405,7 @@ def ask_events(
             "citations": enriched,
             "segments": segments,
             "inline": inline_source,
+            "follow_ups": related_follow_ups(suggestions, enriched),
             "reason": "verified",
             "suggestions": [],
             "latencies": latencies,

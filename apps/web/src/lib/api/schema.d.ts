@@ -296,6 +296,16 @@ export interface components {
             /** Segments */
             segments?: components["schemas"]["Segment"][];
             /**
+             * Blocks Version
+             * @default 1
+             * @constant
+             */
+            blocks_version: 1;
+            /** Blocks */
+            blocks?: (components["schemas"]["KeyDataBlock"] | components["schemas"]["TableBlock"])[];
+            /** Follow Ups */
+            follow_ups?: components["schemas"]["FollowUp"][];
+            /**
              * Inline
              * @default none
              * @enum {string}
@@ -316,6 +326,29 @@ export interface components {
         Body_upload_document_documents_post: {
             /** File */
             file: string;
+        };
+        /**
+         * Cell
+         * @description One stored value as the answer shows it. `text` is None when the invoice has no such value.
+         *
+         *     `cite` is the position in `citations` of the citation that carries the same stored value.
+         */
+        Cell: {
+            /**
+             * Text
+             * @default null
+             */
+            text: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "text" | "date" | "amount" | "percent" | "id";
+            /**
+             * Cite
+             * @default null
+             */
+            cite: number | null;
         };
         /** Citation */
         Citation: {
@@ -436,6 +469,16 @@ export interface components {
             /** Message */
             message: string;
         };
+        /**
+         * FollowUp
+         * @description A question the service can answer from what it found: a field of the same invoice, or a nearby section.
+         */
+        FollowUp: {
+            /** Label */
+            label: string;
+            /** Question */
+            question: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -545,6 +588,50 @@ export interface components {
             };
             /** Fichero */
             fichero?: string | null;
+        };
+        /**
+         * KeyDataBlock
+         * @description The data of one invoice, each with its citation.
+         */
+        KeyDataBlock: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "key_data";
+            /** Title */
+            title: string;
+            /** Doc Id */
+            doc_id: string;
+            /** Items */
+            items: components["schemas"]["KeyDatum"][];
+            /**
+             * Note
+             * @default null
+             */
+            note: string | null;
+        };
+        /** KeyDatum */
+        KeyDatum: {
+            /**
+             * Text
+             * @default null
+             */
+            text: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "text" | "date" | "amount" | "percent" | "id";
+            /**
+             * Cite
+             * @default null
+             */
+            cite: number | null;
+            /** Field */
+            field: string;
+            /** Label */
+            label: string;
         };
         /**
          * PageHighlight
@@ -659,6 +746,81 @@ export interface components {
             /** Pages */
             pages: number[];
         };
+        /**
+         * TableBlock
+         * @description Invoices as rows. The first column is the invoice number.
+         */
+        TableBlock: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "table";
+            /**
+             * Title
+             * @default null
+             */
+            title: string | null;
+            /** Columns */
+            columns: components["schemas"]["TableColumn"][];
+            /** Rows */
+            rows: components["schemas"]["TableRow"][];
+            /** @default null */
+            summary: components["schemas"]["TableSummary"] | null;
+            /**
+             * Note
+             * @default null
+             */
+            note: string | null;
+        };
+        /** TableColumn */
+        TableColumn: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "text" | "date" | "amount" | "percent" | "id";
+        };
+        /**
+         * TableRow
+         * @description `cells` follow `columns`. `question` asks for the data of this row's invoice.
+         */
+        TableRow: {
+            /** Doc Id */
+            doc_id: string;
+            /** Question */
+            question: string;
+            /** Cells */
+            cells: components["schemas"]["Cell"][];
+        };
+        /**
+         * TableSummary
+         * @description Calculated total, with the citation positions of every operand.
+         */
+        TableSummary: {
+            /**
+             * Operation
+             * @default sum
+             * @constant
+             */
+            operation: "sum";
+            /** Refs */
+            refs: number[];
+            /** Label */
+            label: string;
+            /** Text */
+            text: string;
+            /**
+             * Kind
+             * @default amount
+             * @constant
+             */
+            kind: "amount";
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -671,6 +833,24 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** BlocksEvent */
+        BlocksEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event: "blocks";
+            /**
+             * Blocks Version
+             * @default 1
+             * @constant
+             */
+            blocks_version: 1;
+            /** Blocks */
+            blocks: (components["schemas"]["KeyDataBlock"] | components["schemas"]["TableBlock"])[];
+            /** Follow Ups */
+            follow_ups?: components["schemas"]["FollowUp"][];
         };
         /** CitationsEvent */
         CitationsEvent: {
@@ -703,6 +883,16 @@ export interface components {
             citations: components["schemas"]["Citation"][];
             /** Segments */
             segments?: components["schemas"]["Segment"][];
+            /**
+             * Blocks Version
+             * @default 1
+             * @constant
+             */
+            blocks_version: 1;
+            /** Blocks */
+            blocks?: (components["schemas"]["KeyDataBlock"] | components["schemas"]["TableBlock"])[];
+            /** Follow Ups */
+            follow_ups?: components["schemas"]["FollowUp"][];
             /**
              * Inline
              * @default none
@@ -792,7 +982,7 @@ export interface components {
             /** Text */
             text: string;
         };
-        StreamEvent: components["schemas"]["StepEvent"] | components["schemas"]["TokenEvent"] | components["schemas"]["CitationsEvent"] | components["schemas"]["RefusalEvent"] | components["schemas"]["ClarificationEvent"] | components["schemas"]["DoneEvent"] | components["schemas"]["ErrorEvent"];
+        StreamEvent: components["schemas"]["StepEvent"] | components["schemas"]["TokenEvent"] | components["schemas"]["CitationsEvent"] | components["schemas"]["BlocksEvent"] | components["schemas"]["RefusalEvent"] | components["schemas"]["ClarificationEvent"] | components["schemas"]["DoneEvent"] | components["schemas"]["ErrorEvent"];
         /**
          * IngestStageEvent
          * @description One step of an upload being processed (`event: stage`).

@@ -20,6 +20,7 @@ from doc_assistant.answer_markup import (
     split_heading,
 )
 from doc_assistant.config import AppConfig
+from doc_assistant.invoice_fields import display_value
 from doc_assistant.store import ChunkStore
 
 
@@ -158,7 +159,7 @@ def _invoice_item(s: dict[str, Any], header: dict[str, Any] | None) -> str:
     fields = dict(_FIELD.findall((header or {}).get("body") or ""))
     parts = [fields.get("emisor"), fields.get("fecha_emision")]
     if fields.get("importe_total"):
-        parts.append(f"total {fields['importe_total']}")
+        parts.append(f"total {display_value('importe_total', fields['importe_total'])}")
     detail = ", ".join(md_escape(p.strip()) for p in parts if p)
     review = " (marcada para revisar)" if s["status"] == "review" else ""
     return f"**{md_escape(s['name'])}**" + (f": {detail}" if detail else "") + review
@@ -350,4 +351,25 @@ def suggestions_from(chunks: list[dict[str, Any]], limit: int = 3) -> list[dict[
                 "pages": c.get("pages") or [],
             }
         )
+    return out
+
+
+def related_follow_ups(
+    suggestions: list[dict[str, Any]], cited: list[dict[str, Any]], limit: int = 2
+) -> list[dict[str, str]]:
+    """Nearby sections the answer did not cite, as questions the index can answer."""
+    seen = {(c.get("doc_id"), c.get("section")) for c in cited}
+    out: list[dict[str, str]] = []
+    for item in suggestions:
+        if (item["doc_id"], item["section"]) in seen:
+            continue
+        topic = item.get("heading") or f"la sección {item['section']}"
+        out.append(
+            {
+                "label": f"{item['doc']} · {topic}",
+                "question": f"¿Qué dice {item['doc']} sobre {topic}?",
+            }
+        )
+        if len(out) == limit:
+            break
     return out

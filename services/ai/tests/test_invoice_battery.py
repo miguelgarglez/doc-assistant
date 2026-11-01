@@ -405,6 +405,46 @@ def assert_no_false_answer(question: str, result: dict[str, Any]) -> None:
         assert_asked_fields_only(question, result)
 
 
+def assert_blocks_grounded(result: dict[str, Any]) -> None:
+    """Blocks are another rendering of the answer: every cell is a value the text states,
+    and a cell with a citation shows exactly what that citation quotes."""
+    text = result["answer"].replace("\\", "")
+    citations = result["citations"]
+
+    def check(cell: dict[str, Any], doc_id: str, field: str | None) -> None:
+        if cell["text"] is None:
+            assert cell["cite"] is None
+            return
+        assert cell["text"] in text, f"{cell['text']!r} not in the answer {text!r}"
+        if cell["kind"] == "amount":
+            assert cell["text"] in stored_amounts() or re.search(r"(?i)\bsuma\b", text)
+        assert cell["cite"] is not None
+        if cell["cite"] is not None:
+            cited = citations[cell["cite"]]
+            assert cited["fragment"] == cell["text"]
+            assert cited["doc_id"] == doc_id
+            if field:
+                assert cited["section"] == field
+
+    for block in result.get("blocks") or []:
+        if block["type"] == "key_data":
+            for item in block["items"]:
+                check(item, block["doc_id"], item["field"])
+        else:
+            width = len(block["columns"])
+            for row in block["rows"]:
+                assert len(row["cells"]) == width
+                assert row["question"]
+                for column, cell in zip(block["columns"], row["cells"], strict=True):
+                    check(cell, row["doc_id"], None if column["key"] == "numero" else column["key"])
+            if block["summary"]:
+                assert block["summary"]["text"] in text
+                assert block["summary"]["operation"] == "sum"
+                assert block["summary"]["refs"] == [
+                    row["cells"][-1]["cite"] for row in block["rows"]
+                ]
+
+
 def assert_asked_fields_only(question: str, result: dict[str, Any]) -> None:
     from doc_assistant.invoice_fields import asks_for
 
@@ -467,3 +507,128 @@ def test_battery_with_a_real_model(battery_config, case: Case):
     if case.kind == "answer" and result["ok"]:
         for piece in case.forbid:
             assert piece not in result["answer"], f"{piece!r} in {result['answer']!r}"
+
+
+# --- structured blocks (ADR-014) ---------------------------------------------------------
+
+
+def blocks_of(config_path, question: str, plan: dict[str, Any]) -> dict[str, Any]:
+    result = ask_invoices(config_path, question, llm=FakeLLM(plan))
+    assert result is not None and result["ok"]
+    assert_blocks_grounded(result)
+    return result
+
+
+def test_a_question_about_one_invoice_gives_its_key_data(battery_config):
+    result = blocks_of(
+        battery_config,
+        "¿Qué datos tiene la factura FAC-2026-0042?",
+        {"intent": "valor", "numero": "FAC-2026-0042", "campos": []},
+    )
+    (block,) = result["blocks"]
+    assert block["type"] == "key_data" and block["title"] == "Datos clave"
+    assert [i["field"] for i in block["items"]] == [
+        "emisor",
+        "cliente",
+        "numero",
+        "fecha_emision",
+        "importe_total",
+    ]
+    by_field = {i["field"]: i["text"] for i in block["items"]}
+    assert by_field["importe_total"] == "1.706,60 €"
+    assert by_field["emisor"] == "Lucía Martín Ortega"
+    assert all(i["cite"] is not None for i in block["items"])
+
+
+def test_key_data_keeps_to_the_asked_field(battery_config):
+    result = blocks_of(
+        battery_config,
+        "¿Cuál es el precio final de la factura FAC-2026-0042?",
+        {"intent": "valor", "numero": "FAC-2026-0042", "campos": ["importe_total"]},
+    )
+    (block,) = result["blocks"]
+    assert block["title"] == "Factura FAC-2026-0042"
+    assert [(i["label"], i["text"]) for i in block["items"]] == [("precio final", "1.706,60 €")]
+    assert "Lucía" not in result["answer"]
+
+
+def test_a_missing_value_stays_empty_instead_of_invented(battery_config):
+    result = blocks_of(
+        battery_config,
+        "¿Qué datos tiene la factura LM-7?",
+        {"intent": "valor", "numero": "LM-7", "campos": []},
+    )
+    (block,) = result["blocks"]
+    missing = {i["field"]: i for i in block["items"]}["numero"]
+    assert missing["text"] == "LM-7"
+    assert all(i["text"] is None and i["cite"] is None for i in block["items"] if i["text"] is None)
+
+
+def test_key_data_follow_ups_ask_for_fields_the_invoice_has(battery_config):
+    result = blocks_of(
+        battery_config,
+        "¿Cuál es el precio final de la factura T-100?",
+        {"intent": "valor", "numero": "T-100", "campos": ["importe_total"]},
+    )
+    labels = [f["label"] for f in result["follow_ups"]]
+    assert labels == ["Fecha de vencimiento", "Fecha de emisión", "Emisor"]
+    assert (
+        result["follow_ups"][0]["question"]
+        == "¿Cuál es la fecha de vencimiento de la factura T-100?"
+    )
+    assert "Importe total" not in labels
+
+
+def test_a_list_gives_a_table_with_a_question_per_row(battery_config):
+    result = blocks_of(
+        battery_config,
+        "facturas de Talleres Sur con su importe",
+        {"intent": "lista", "parte": "Talleres Sur", "campos": ["importe_total"]},
+    )
+    (block,) = result["blocks"]
+    assert block["type"] == "table"
+    assert [c["key"] for c in block["columns"]] == ["numero", "importe_total"]
+    assert len(block["rows"]) == 2
+    assert block["rows"][0]["question"].startswith("¿Qué datos tiene la factura ")
+    assert block["rows"][0]["cells"][0]["cite"] is not None
+    assert result["follow_ups"] == []
+
+
+def test_a_sum_gives_its_rows_and_the_total(battery_config):
+    result = blocks_of(
+        battery_config,
+        "suma de los importes de Talleres Sur",
+        {"intent": "sumar", "parte": "Talleres Sur", "campos": ["importe_total"]},
+    )
+    (block,) = result["blocks"]
+    assert block["summary"]["label"] == "Total"
+    assert block["summary"]["text"] in result["answer"]
+
+
+def test_answers_without_a_table_shape_carry_no_blocks(battery_config):
+    result = ask_invoices(
+        battery_config,
+        "¿Cuántas facturas ha emitido Talleres Sur?",
+        llm=FakeLLM({"intent": "contar", "parte": "Talleres Sur"}),
+    )
+    assert result is not None and result["ok"]
+    assert result.get("blocks", []) == []
+
+
+def test_number_question_does_not_reveal_an_unasked_amount(battery_config):
+    result = blocks_of(
+        battery_config,
+        "¿Cuál es el número de la factura T-100?",
+        {"intent": "valor", "numero": "T-100", "campos": ["numero"]},
+    )
+    assert [item["field"] for item in result["blocks"][0]["items"]] == ["numero"]
+    assert "3.630,00" not in result["answer"]
+
+
+def test_listing_numbers_alone_still_has_a_cited_table(battery_config):
+    result = blocks_of(
+        battery_config,
+        "Lista las facturas de Talleres Sur",
+        {"intent": "lista", "parte": "Talleres Sur"},
+    )
+    assert [column["key"] for column in result["blocks"][0]["columns"]] == ["numero"]

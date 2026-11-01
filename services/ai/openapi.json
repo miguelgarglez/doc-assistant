@@ -827,6 +827,40 @@
             "type": "array",
             "title": "Segments"
           },
+          "blocks_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Blocks Version",
+            "default": 1
+          },
+          "blocks": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/KeyDataBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/TableBlock"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "key_data": "#/components/schemas/KeyDataBlock",
+                  "table": "#/components/schemas/TableBlock"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Blocks"
+          },
+          "follow_ups": {
+            "items": {
+              "$ref": "#/components/schemas/FollowUp"
+            },
+            "type": "array",
+            "title": "Follow Ups"
+          },
           "inline": {
             "type": "string",
             "enum": [
@@ -896,6 +930,51 @@
           "file"
         ],
         "title": "Body_upload_document_documents_post"
+      },
+      "Cell": {
+        "description": "One stored value as the answer shows it. `text` is None when the invoice has no such value.\n\n`cite` is the position in `citations` of the citation that carries the same stored value.",
+        "properties": {
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Text"
+          },
+          "kind": {
+            "enum": [
+              "text",
+              "date",
+              "amount",
+              "percent",
+              "id"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "cite": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cite"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "Cell",
+        "type": "object"
       },
       "Citation": {
         "properties": {
@@ -1197,6 +1276,25 @@
           "message"
         ],
         "title": "ErrorBody"
+      },
+      "FollowUp": {
+        "description": "A question the service can answer from what it found: a field of the same invoice, or a nearby section.",
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "question"
+        ],
+        "title": "FollowUp",
+        "type": "object"
       },
       "HTTPValidationError": {
         "properties": {
@@ -1650,6 +1748,105 @@
         ],
         "title": "InvoiceUploadResponse"
       },
+      "KeyDataBlock": {
+        "description": "The data of one invoice, each with its citation.",
+        "properties": {
+          "type": {
+            "const": "key_data",
+            "default": "key_data",
+            "title": "Type",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "doc_id": {
+            "title": "Doc Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/KeyDatum"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Note"
+          }
+        },
+        "required": [
+          "title",
+          "doc_id",
+          "items"
+        ],
+        "title": "KeyDataBlock",
+        "type": "object"
+      },
+      "KeyDatum": {
+        "properties": {
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Text"
+          },
+          "kind": {
+            "enum": [
+              "text",
+              "date",
+              "amount",
+              "percent",
+              "id"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "cite": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cite"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "field",
+          "label"
+        ],
+        "title": "KeyDatum",
+        "type": "object"
+      },
       "PageHighlight": {
         "properties": {
           "page": {
@@ -1944,6 +2141,168 @@
         "title": "Suggestion",
         "type": "object"
       },
+      "TableBlock": {
+        "description": "Invoices as rows. The first column is the invoice number.",
+        "properties": {
+          "type": {
+            "const": "table",
+            "default": "table",
+            "title": "Type",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/TableColumn"
+            },
+            "title": "Columns",
+            "type": "array"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/TableRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TableSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Note"
+          }
+        },
+        "required": [
+          "columns",
+          "rows"
+        ],
+        "title": "TableBlock",
+        "type": "object"
+      },
+      "TableColumn": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "text",
+              "date",
+              "amount",
+              "percent",
+              "id"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "kind"
+        ],
+        "title": "TableColumn",
+        "type": "object"
+      },
+      "TableRow": {
+        "description": "`cells` follow `columns`. `question` asks for the data of this row's invoice.",
+        "properties": {
+          "doc_id": {
+            "title": "Doc Id",
+            "type": "string"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/Cell"
+            },
+            "title": "Cells",
+            "type": "array"
+          }
+        },
+        "required": [
+          "doc_id",
+          "question",
+          "cells"
+        ],
+        "title": "TableRow",
+        "type": "object"
+      },
+      "TableSummary": {
+        "description": "Calculated total, with the citation positions of every operand.",
+        "properties": {
+          "operation": {
+            "const": "sum",
+            "default": "sum",
+            "title": "Operation",
+            "type": "string"
+          },
+          "refs": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Refs",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "kind": {
+            "const": "amount",
+            "default": "amount",
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "refs",
+          "label",
+          "text"
+        ],
+        "title": "TableSummary",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -1983,6 +2342,55 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "BlocksEvent": {
+        "properties": {
+          "event": {
+            "const": "blocks",
+            "default": "blocks",
+            "title": "Event",
+            "type": "string"
+          },
+          "blocks_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Blocks Version",
+            "type": "integer"
+          },
+          "blocks": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "key_data": "#/components/schemas/KeyDataBlock",
+                  "table": "#/components/schemas/TableBlock"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/KeyDataBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/TableBlock"
+                }
+              ]
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "follow_ups": {
+            "items": {
+              "$ref": "#/components/schemas/FollowUp"
+            },
+            "title": "Follow Ups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "blocks"
+        ],
+        "title": "BlocksEvent",
+        "type": "object"
       },
       "CitationsEvent": {
         "properties": {
@@ -2051,6 +2459,40 @@
               "$ref": "#/components/schemas/Segment"
             },
             "title": "Segments",
+            "type": "array"
+          },
+          "blocks_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Blocks Version",
+            "type": "integer"
+          },
+          "blocks": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "key_data": "#/components/schemas/KeyDataBlock",
+                  "table": "#/components/schemas/TableBlock"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/KeyDataBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/TableBlock"
+                }
+              ]
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "follow_ups": {
+            "items": {
+              "$ref": "#/components/schemas/FollowUp"
+            },
+            "title": "Follow Ups",
             "type": "array"
           },
           "inline": {
@@ -2251,6 +2693,7 @@
       "StreamEvent": {
         "discriminator": {
           "mapping": {
+            "blocks": "#/components/schemas/BlocksEvent",
             "citations": "#/components/schemas/CitationsEvent",
             "clarification": "#/components/schemas/ClarificationEvent",
             "done": "#/components/schemas/DoneEvent",
@@ -2270,6 +2713,9 @@
           },
           {
             "$ref": "#/components/schemas/CitationsEvent"
+          },
+          {
+            "$ref": "#/components/schemas/BlocksEvent"
           },
           {
             "$ref": "#/components/schemas/RefusalEvent"
