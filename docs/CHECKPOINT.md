@@ -129,3 +129,6 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Decisión clave y por qué: el formato del importe no se pide al modelo ni se corrige en la web; sale del valor guardado en el servicio, para que el texto, la cita y la web digan lo mismo. Se prefiere quitar un campo no pedido a adivinar si estorba.
 - Pendiente: las fechas se muestran como están guardadas; el espacio del importe puede partirse en móvil (los chips de v0.14.0 lo resuelven); `.github/workflows/cross-platform.yml` conserva los puertos por defecto.
 
+
+## 01-Nov 01:33 CET · Diseño de respuestas enriquecidas
+- Comparadas A cliente/Markdown, B bloques del servicio y C híbrido. Elegida B en ADR-014 por evidencia por dato y degradación al Markdown; contrato con versión explícita. Documentado qué había en el WIP y qué falta verificar/corregir.

@@ -238,3 +238,12 @@ Con v0.13.0, una pregunta como «¿cuál es el importe total de la factura?» de
 
 *Actualizado en v0.13.2 (vista previa de cita):* el límite de colisión de la tarjeta era la ventana, porque el popup va en un Portal y Base UI toma por defecto los ancestros de recorte del popup. El composer está fuera del hilo pero dentro de la ventana, así que una cita al final del hilo lo cubría. `Conversation` expone su elemento de scroll (`useConversationScrollArea`) y `InlineCitationCardBody` lo usa como `collisionBoundary`, con `max-h-(--available-height)`. Alternativas descartadas: voltear siempre hacia arriba (tapa el hilo sin necesidad cuando la cita está arriba) y reservar un margen inferior fijo (frágil si cambia el composer).
 
+
+
+## ADR-014 Bloques de respuesta derivados de evidencia (2026-11-01)
+
+Se elige la opción B de [respuestas enriquecidas](design/respuestas-enriquecidas.md). Las fichas y tablas se construyen en el servicio desde la misma selección SQL que produce la respuesta Markdown. La web presenta valores literales y sus citas; no completa campos ni calcula importes. La unión `key_data | table` y `blocks_version: 1` se publican en OpenAPI y en el cliente generado.
+
+El Markdown completo es la alternativa de compatibilidad. Una versión desconocida o un bloque que no cumpla las invariantes de evidencia hace que la web degrade a esa respuesta. El evento final `done` prevalece sobre el evento `blocks` anticipado. Cada celda presente enlaza su evidencia y los agregados enlazan sus operandos.
+
+El WIP 59474c0 precedió a este ADR y queda sujeto a revisión. Se mantienen sus componentes y el flujo de datos, pendientes de cerrar las brechas descritas en el diseño y de verificar con fixtures sintéticas. Los datos generales de una factura se muestran solo ante una petición general; una pregunta por el total conserva únicamente el total. No se abre trabajo de historial ni feedback.
