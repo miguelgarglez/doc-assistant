@@ -43,7 +43,7 @@ def test_outbox_retries_failure_without_blocking_submit(caplog):
 
 
 def test_delete_invalidates_retry_and_stream_started_before_deletion(tmp_path):
-    from doc_assistant.history import HistoryStore
+    from doc_assistant.infra.history.sqlite import HistoryStore
 
     real = HistoryStore(tmp_path / "history.db")
     failed = threading.Event()
@@ -72,7 +72,7 @@ def test_delete_invalidates_retry_and_stream_started_before_deletion(tmp_path):
 
 
 def test_delete_waits_for_active_write_then_removes_it(tmp_path):
-    from doc_assistant.history import HistoryStore
+    from doc_assistant.infra.history.sqlite import HistoryStore
 
     store = HistoryStore(tmp_path / "history.db")
     entered = threading.Event()

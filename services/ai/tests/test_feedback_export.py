@@ -3,7 +3,7 @@ import json
 import pytest
 
 from doc_assistant.feedback_export import main
-from doc_assistant.history import HistoryStore
+from doc_assistant.infra.history.sqlite import HistoryStore
 
 
 def test_export_command_limits_output_to_reviewed_conversation(tmp_path, capsys):

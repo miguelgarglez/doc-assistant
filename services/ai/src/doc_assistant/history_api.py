@@ -12,8 +12,8 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, ValidationError
 
+from doc_assistant.application.ports.history import HistoryRepository
 from doc_assistant.ask_schemas import AskResponse
-from doc_assistant.history_contract import HistoryRepository
 
 
 def authorize(request: Request, x_history_token: Annotated[str | None, Header()] = None) -> None:

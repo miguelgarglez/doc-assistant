@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from doc_assistant.history import HistoryStore
+from doc_assistant.infra.history.sqlite import HistoryStore
 
 
 def test_recent_requests_are_paginated_without_response_contents(tmp_path):

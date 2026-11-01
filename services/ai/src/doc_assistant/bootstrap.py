@@ -35,8 +35,8 @@ def lifespan_for(config_path: Path) -> Callable[[FastAPI], AbstractAsyncContextM
         purge_task = None
         if os.environ.get("DOC_ASSISTANT_HISTORY_ENABLED", "1") != "0":
             from doc_assistant.application.history.outbox import HistoryOutbox
-            from doc_assistant.history import HistoryStore
-            from doc_assistant.history_contract import HistoryRepository
+            from doc_assistant.application.ports.history import HistoryRepository
+            from doc_assistant.infra.history.sqlite import HistoryStore
 
             store_lock = threading.Lock()
 

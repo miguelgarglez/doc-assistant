@@ -7,9 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from doc_assistant.application.ask.capacity import AskCapacity
-from doc_assistant.application.history.outbox import HistoryOutbox
+from doc_assistant.application.history.outbox import HistoryOutbox, HistoryWriter
 from doc_assistant.ask_stream import queued_ask_stream
-from doc_assistant.history import HistoryStore
 
 
 def recorded_ask_stream(
@@ -18,7 +17,7 @@ def recorded_ask_stream(
     question: str,
     request_id: str,
     conversation_id: str,
-    store: HistoryStore,
+    store: HistoryWriter,
 ) -> Iterator[str]:
     """Persist the final trace on completion or disconnect; propagate storage failures."""
     trace: dict[str, Any] = {"conversation_id": conversation_id}

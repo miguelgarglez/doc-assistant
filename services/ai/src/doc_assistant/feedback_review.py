@@ -7,7 +7,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from doc_assistant.history import HistoryStore
+from doc_assistant.infra.history.sqlite import HistoryStore
 
 
 def main(argv: Sequence[str] | None = None) -> int:

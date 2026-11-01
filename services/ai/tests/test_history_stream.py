@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 
 from doc_assistant.application.ask.capacity import AskCapacity
-from doc_assistant.history import HistoryStore
 from doc_assistant.history_stream import recorded_ask_stream
+from doc_assistant.infra.history.sqlite import HistoryStore
 
 
 def test_records_finished_stream(config_path, tmp_path):

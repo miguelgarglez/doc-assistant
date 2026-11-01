@@ -4,7 +4,7 @@ import json
 import pytest
 
 from doc_assistant.feedback_review import main
-from doc_assistant.history import HistoryStore
+from doc_assistant.infra.history.sqlite import HistoryStore
 
 CONFIRM = ["--confirmed-error", "--confirmed-no-sensitive-data"]
 
