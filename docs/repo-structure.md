@@ -15,17 +15,24 @@ scripts/
   evidence.py        capturas e2e; --live corrida real con fixtures
   evolution.py       galería por tag (evidence/evolution)
 NOTICE               licencias de modelos y llama.cpp
-services/ai/         doc_assistant (FastAPI): api, ask, verifier, ingest, chunking,
+services/ai/
+  src/doc_assistant/ FastAPI: api, ask, verifier, ingest, chunking,
                      store (SQLite+sqlite-vec), invoices, adapters (puertos), config
                      invoice_blocks (fichas y tablas), ask_capacity (cola por proceso),
                      pdf_lock (acceso serializado a PDFium)
-                     openapi.json = contrato (fuente de verdad)
+  openapi.json       contrato (fuente de verdad)
 apps/web/            Next.js 16 + TS strict
   src/app/api/[...path]/route.ts   proxy fino → servicio IA (BFF)
   src/lib/api/schema.d.ts          tipos generados desde openapi.json
   src/components/ui/               primitivos shadcn sobre Base UI
-  src/components/domain/           AnswerCard, CitationChip, SourceViewer, RefusalNotice,
-                                   InvoiceReviewCard, UploadDropzone
+  src/components/chat/             respuestas, bloques, citas, aclaraciones y visor
+  src/components/viewer/           página y resaltado
+  src/components/uploads/          diálogo y avisos de subida
+  src/components/sources/          gestión de fuentes
+  src/components/system/           estado de componentes y última traza
+  src/components/ai-elements/      componentes de conversación
+  src/components/providers/        estado compartido de chat y subidas
+  src/lib/domain/                  tipos y validación de bloques
 .github/workflows/cross-platform.yml   smoke Win/Linux/Mac (no ejecutado)
 docs/                README (índice), ADRs, CHECKPOINT, CHANGELOG, versioning, architecture, scaling,
                      requirements-coverage, open-gaps, design/, evolution-notes/, reviews/
