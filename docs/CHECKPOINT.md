@@ -323,3 +323,6 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:07 CET · Identificador de petición
 - `/ask` y `/ask/stream` asignan un UUID por petición. El evento `done` repite el valor de `x-request-id`; los errores de capacidad conservan la cabecera. No se persisten datos.
 - 37 pruebas focalizadas, Ruff y mypy pasaron. Contrato OpenAPI y cliente regenerados. La traza completa, el historial y feedback siguen pendientes; no hay tag v0.16.0.
+
+## 01-Nov 07:07 CET · Transporte sin streaming
+- El transporte sin streaming recoge `x-request-id` de la respuesta. Los fixtures SSE incluyen el campo nuevo y el chequeo de tipos de la web pasa. Si un servicio anterior no envía la cabecera, el identificador queda vacío.

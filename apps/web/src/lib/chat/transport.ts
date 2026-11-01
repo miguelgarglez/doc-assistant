@@ -115,6 +115,6 @@ async function askWithoutStreaming(base: string, question: string, signal: Abort
     signal,
   })
   if (!response.ok) return [await failureFrom(response)]
-  const data = (await response.json()) as Omit<DoneEvent, "event" | "timings"> & { timings?: Record<string, number> }
-  return [{ event: "done", timings: {}, suggestions: [], ...data }]
+  const data = (await response.json()) as Omit<DoneEvent, "event" | "timings" | "request_id"> & { timings?: Record<string, number> }
+  return [{ event: "done", timings: {}, suggestions: [], ...data, request_id: response.headers.get("x-request-id") ?? "" }]
 }
