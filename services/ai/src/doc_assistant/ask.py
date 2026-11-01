@@ -297,6 +297,7 @@ def _ask_events(
                 "vector_score": vector_scores.get(chunk["chunk_id"]),
                 "bm25_score": bm25_scores.get(chunk["chunk_id"]),
                 "rerank_score": None,
+                "rerank_position": None,
                 "selected": False,
             }
             for position, chunk in enumerate(ordered)
@@ -320,9 +321,10 @@ def _ask_events(
         ranked = []
     if trace is not None:
         candidates = trace["candidates"]
-        for index, score in ranked:
+        for position, (index, score) in enumerate(ranked):
             if 0 <= index < len(candidates):
                 candidates[index]["rerank_score"] = score
+                candidates[index]["rerank_position"] = position
         for index in top_idx if docs else []:
             if 0 <= index < len(candidates):
                 candidates[index]["selected"] = True

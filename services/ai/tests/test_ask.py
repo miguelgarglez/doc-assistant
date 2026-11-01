@@ -89,6 +89,11 @@ def test_private_trace_captures_scores_without_changing_events(
     }
     selected = [c for c in trace["candidates"] if c["selected"]]
     assert selected and all(c["rerank_score"] is not None for c in selected)
+    assert sorted(c["rerank_position"] for c in selected) == list(range(len(selected)))
+    ranked = sorted(trace["candidates"], key=lambda c: c["rerank_position"])
+    assert [c["rerank_score"] for c in ranked] == sorted(
+        (c["rerank_score"] for c in ranked), reverse=True
+    )
     candidate = next(c for c in trace["candidates"] if c["chunk_id"] == chunk["chunk_id"])
     assert candidate["text_sha256"] == hashlib.sha256(chunk["text"].encode()).hexdigest()
     assert any(c["vector_score"] is not None for c in trace["candidates"])
