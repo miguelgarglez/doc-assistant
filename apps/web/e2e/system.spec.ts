@@ -157,5 +157,8 @@ test.describe("sistema", () => {
     await expect(page.getByRole("button", { name: "Siguiente", exact: true })).toBeDisabled()
     await page.getByRole("button", { name: "Anterior", exact: true }).click()
     await expect(page.getByRole("button", { name: "Copiar identificador peticion-0" })).toBeVisible()
+    rows.unshift({ ...rows[0], request_id: "peticion-nueva" })
+    await page.getByRole("region", { name: "Historial y revisión" }).getByRole("button", { name: "Actualizar" }).click()
+    await expect(page.getByRole("button", { name: "Copiar identificador peticion-nueva" })).toBeVisible()
   })
 })

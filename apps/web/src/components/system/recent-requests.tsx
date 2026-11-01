@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Empty, EmptyDescription } from "@/components/ui/empty"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { copyText } from "@/lib/clipboard"
 
@@ -24,12 +25,13 @@ const labels: Record<string, string> = {
   completed: "Completada", interrupted: "Interrumpida", pending: "Pendiente",
 }
 
-export function RecentRequests({ failures }: { failures: { request_id: string; error: string }[] }) {
+export function RecentRequests({ failures, revision }: { failures: { request_id: string; error: string }[]; revision: number }) {
   const [page, setPage] = useState(0)
   const [retry, setRetry] = useState(0)
   const [state, setState] = useState<PageState>({ kind: "loading" })
   useEffect(() => {
     const controller = new AbortController()
+    void Promise.resolve().then(() => { if (!controller.signal.aborted) setState({ kind: "loading" }) })
     void fetch(`/api/history/requests?limit=${PAGE_SIZE + 1}&offset=${page * PAGE_SIZE}`, { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error("request failed")
@@ -38,7 +40,7 @@ export function RecentRequests({ failures }: { failures: { request_id: string; e
       .then((items) => setState({ kind: "ready", items }))
       .catch(() => { if (!controller.signal.aborted) setState({ kind: "error" }) })
     return () => controller.abort()
-  }, [page, retry])
+  }, [page, retry, revision])
 
   function go(next: number) {
     setState({ kind: "loading" })
@@ -54,7 +56,7 @@ export function RecentRequests({ failures }: { failures: { request_id: string; e
     <CardContent className="flex flex-col gap-3">
       {state.kind === "loading" ? <p role="status">Cargando peticiones…</p> : null}
       {state.kind === "error" ? <div role="alert">No se pudieron cargar las peticiones. <Button size="sm" variant="outline" onClick={() => { setState({ kind: "loading" }); setRetry((n) => n + 1) }}>Reintentar</Button></div> : null}
-      {state.kind === "ready" && state.items.length === 0 ? <p>No hay peticiones guardadas.</p> : null}
+      {state.kind === "ready" && state.items.length === 0 ? <Empty><EmptyDescription>No hay peticiones guardadas.</EmptyDescription></Empty> : null}
       {state.kind === "ready" && state.items.length > 0 ? <Table>
         <TableHeader><TableRow><TableHead>Hora</TableHead><TableHead>Tipo</TableHead><TableHead>Estado</TableHead><TableHead>Latencia</TableHead><TableHead>Identificador</TableHead><TableHead>Guardado</TableHead></TableRow></TableHeader>
         <TableBody>{state.items.slice(0, PAGE_SIZE).map((item) => {

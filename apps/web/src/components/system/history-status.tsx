@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { RecentRequests } from "@/components/system/recent-requests"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Empty, EmptyDescription } from "@/components/ui/empty"
 import { copyText } from "@/lib/clipboard"
 
 type HistoryStatus = { active: boolean; enabled: boolean; initialization_error: string | null; retention_days: number; pending: number; failures: { request_id: string; error: string }[] }
@@ -15,6 +16,7 @@ export function HistoryStatusPanel() {
   const [status, setStatus] = useState<HistoryStatus | null>(null)
   const [feedback, setFeedback] = useState<Feedback[]>([])
   const [error, setError] = useState("")
+  const [revision, setRevision] = useState(0)
   const refresh = useCallback(async () => {
     try {
       const response = await fetch("/api/history/status")
@@ -27,6 +29,7 @@ export function HistoryStatusPanel() {
         setFeedback(await queue.json())
       } else setFeedback([])
       setError("")
+      setRevision((current) => current + 1)
     } catch { setError("No se pudo consultar el estado del historial.") }
   }, [])
   async function copyFailure(id: string) {
@@ -43,9 +46,9 @@ export function HistoryStatusPanel() {
         {status?.failures.length ? <div><p className="font-medium">Últimos fallos de guardado</p><ul>{status.failures.map((failure, index) => <li className="break-all text-sm text-muted-foreground" key={`${failure.request_id}-${index}`}><Button variant="ghost" size="sm" aria-label={`Copiar identificador ${failure.request_id}`} onClick={() => void copyFailure(failure.request_id)}>{failure.request_id}</Button>: {failure.error}</li>)}</ul></div> : null}
         <div><Button onClick={() => void refresh()} size="sm" variant="outline">Actualizar</Button></div>
       </CardContent></Card>
-    {status?.active ? <RecentRequests failures={status.failures} /> : null}
+    {status?.active ? <RecentRequests failures={status.failures} revision={revision} /> : null}
     {status?.active ? <Card><CardHeader><CardTitle>Avisos pendientes</CardTitle><CardDescription>Revisa cada aviso antes de exportarlo.</CardDescription></CardHeader><CardContent className="flex flex-col gap-3">
-      {feedback.length ? <ul className="flex flex-col gap-2">{feedback.map((item) => <li className="flex items-center gap-3 border-b pb-2" key={item.feedback_id}><div className="min-w-0 flex-1"><p className="break-words">{item.comment || "Sin comentario"}</p><p className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleString("es-ES")}</p></div><Link className={buttonVariants({ variant: "outline", size: "sm" })} href={`/revision?id=${encodeURIComponent(item.feedback_id)}`}>Revisar</Link></li>)}</ul> : <p className="text-sm text-muted-foreground">No hay avisos pendientes.</p>}
+      {feedback.length ? <ul className="flex flex-col gap-2">{feedback.map((item) => <li className="flex items-center gap-3 border-b pb-2" key={item.feedback_id}><div className="min-w-0 flex-1"><p className="break-words">{item.comment || "Sin comentario"}</p><p className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleString("es-ES")}</p></div><Link className={buttonVariants({ variant: "outline", size: "sm" })} href={`/revision?id=${encodeURIComponent(item.feedback_id)}`}>Revisar</Link></li>)}</ul> : <Empty><EmptyDescription>No hay avisos pendientes.</EmptyDescription></Empty>}
       <div><Link className={buttonVariants({ variant: "outline", size: "sm" })} href="/revision">Abrir cola de revisión</Link></div>
     </CardContent></Card> : null}
   </section>
