@@ -38,6 +38,22 @@ def test_history_requires_token_and_actual_loopback_peer(tmp_path):
     )
 
 
+def test_history_api_accepts_an_alternative_store(tmp_path):
+    client, _ = client_for(tmp_path)
+
+    class AlternativeStore:
+        def conversations_page(self, *, limit, offset, search):
+            return [{"conversation_id": "alternative", "count": limit, "question": search}]
+
+    client.app.state.history_store = AlternativeStore()
+    response = client.get(
+        "/history/conversations?limit=2&offset=0&search=demo",
+        headers={"x-history-token": "secret"},
+    )
+    assert response.status_code == 200
+    assert response.json() == [{"conversation_id": "alternative", "count": 2, "question": "demo"}]
+
+
 def test_review_export_requires_human_confirmations_and_excludes_pending(tmp_path):
     client, store = client_for(tmp_path)
     headers = {"x-history-token": "secret"}

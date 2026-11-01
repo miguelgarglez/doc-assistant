@@ -647,15 +647,16 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         purge_task = None
         if os.environ.get("DOC_ASSISTANT_HISTORY_ENABLED", "1") != "0":
             from doc_assistant.history import HistoryStore
+            from doc_assistant.history_contract import HistoryRepository
             from doc_assistant.history_outbox import HistoryOutbox
 
             store_lock = threading.Lock()
 
-            def open_history() -> HistoryStore:
+            def open_history() -> HistoryRepository:
                 with store_lock:
-                    store = app.state.history_store
+                    store: HistoryRepository | None = app.state.history_store
                     if store is not None:
-                        return store  # type: ignore[no-any-return]
+                        return store
                     try:
                         store = HistoryStore(app.state.config.db.parent / "history.db")
                         cutoff = (

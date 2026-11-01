@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, ValidationError
 
-from doc_assistant.history import HistoryStore
+from doc_assistant.history_contract import HistoryRepository
 
 
 def authorize(request: Request, x_history_token: Annotated[str | None, Header()] = None) -> None:
@@ -30,15 +30,15 @@ def authorize(request: Request, x_history_token: Annotated[str | None, Header()]
         raise HTTPException(status_code=403, detail="Forbidden")
 
 
-def get_store(request: Request) -> HistoryStore:
-    store = getattr(request.app.state, "history_store", None)
-    if not isinstance(store, HistoryStore):
+def get_store(request: Request) -> HistoryRepository:
+    store: HistoryRepository | None = getattr(request.app.state, "history_store", None)
+    if store is None:
         raise HTTPException(status_code=503, detail="History unavailable")
     return store
 
 
 router = APIRouter(prefix="/history", dependencies=[Depends(authorize)])
-Store = Annotated[HistoryStore, Depends(get_store)]
+Store = Annotated[HistoryRepository, Depends(get_store)]
 
 
 class FeedbackInput(BaseModel):
