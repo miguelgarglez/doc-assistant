@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import os
 import re
-import sqlite3
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
@@ -19,62 +18,15 @@ from doc_assistant.config import load_config
 from doc_assistant.domain.answers.answer_markup import AnswerBuilder, md_escape
 from doc_assistant.domain.invoices.blocks import build_blocks, follow_ups
 from doc_assistant.domain.invoices.fields import display_value
-from doc_assistant.domain.invoices.values import norm_key
-from doc_assistant.infra.storage.chunks import SCHEMA_VERSION, ChunkStore, ensure_schema
+from doc_assistant.infra.invoices.sqlite import InvoiceDB
+from doc_assistant.infra.storage.chunks import ChunkStore
 from doc_assistant.invoice_extract import extract_invoice
-from doc_assistant.invoice_index import sync_derived
 from doc_assistant.invoice_query import (
     FIELDS,
     followup_question,
     is_invoice_question,
     plan_and_run,
 )
-
-
-class InvoiceDB:
-    def __init__(self, path: str = ":memory:") -> None:
-        ensure_schema(path)
-        self.con = sqlite3.connect(path)
-        cols = ", ".join(f"{k} TEXT" for k in FIELDS)
-        self.con.execute(
-            f"CREATE TABLE IF NOT EXISTS facturas ({cols}, fichero TEXT, cuadra TEXT, motivo TEXT, PRIMARY KEY(numero))"
-        )
-        self.con.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
-        self.sync()
-
-    def sync(self) -> dict[str, int]:
-        """Idempotent migration of the derived query tables (see invoice_index)."""
-        return sync_derived(self.con, list(FIELDS))
-
-    def upsert(
-        self,
-        rec: dict[str, Any],
-        fichero: str = "",
-        cuadra: str = "",
-        motivo: str | None = None,
-        *,
-        commit: bool = True,
-    ) -> None:
-        vals = [None if rec.get(k) in (None, "") else str(rec[k]) for k in FIELDS]
-        q = ",".join("?" * (len(FIELDS) + 3))
-        self.con.execute(
-            f"INSERT OR REPLACE INTO facturas VALUES ({q})", [*vals, fichero, cuadra, motivo]
-        )
-        if commit:
-            self.con.commit()
-            self.sync()
-
-    def rows(self) -> list[dict[str, Any]]:
-        cur = self.con.execute("SELECT * FROM facturas ORDER BY numero")
-        names = [d[0] for d in cur.description]
-        return [dict(zip(names, r)) for r in cur.fetchall()]
-
-    def get(self, numero: str) -> dict[str, Any] | None:
-        want = norm_key(numero)
-        rows = self.rows()
-        exact = [row for row in rows if row["numero"] == numero]
-        hits = exact or [row for row in rows if want and norm_key(row["numero"]) == want]
-        return hits[0] if len(hits) == 1 else None
 
 
 def list_invoices(path: str | Path) -> list[dict[str, Any]]:

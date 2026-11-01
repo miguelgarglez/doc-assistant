@@ -38,7 +38,7 @@ from doc_assistant.domain.invoices.values import (
     parse_amount,
     parse_date_range,
 )
-from doc_assistant.invoice_index import (
+from doc_assistant.infra.invoices.index import (
     AMOUNT_COLS,
     DATE_COLS,
     Party,

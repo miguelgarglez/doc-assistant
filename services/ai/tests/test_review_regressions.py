@@ -1,8 +1,8 @@
 from decimal import Decimal
 
+from doc_assistant.infra.invoices.sqlite import InvoiceDB
 from doc_assistant.invoice_extract import extract_invoice, parse_es_decimal
 from doc_assistant.invoice_query import run_plan
-from doc_assistant.invoices import InvoiceDB
 from doc_assistant.model_fakes import FakeLLM, FakeOCR
 
 
@@ -205,8 +205,8 @@ def test_review_status_is_exposed_and_warns(config_path):
 
     from doc_assistant.api import create_app
     from doc_assistant.config import load_config
+    from doc_assistant.infra.invoices.sqlite import InvoiceDB
     from doc_assistant.invoice_query import run_plan
-    from doc_assistant.invoices import InvoiceDB
 
     db = InvoiceDB(str(load_config(config_path).db))
     db.upsert({"numero": "A/120", "importe_total": "10"}, cuadra="0", motivo="suma_no_cuadra")
@@ -228,9 +228,10 @@ def test_invoice_transaction_rolls_back_and_separates_pdf(config_path, synthetic
     from doc_assistant.api import create_app
     from doc_assistant.chunking import invoice_doc_id, pdf_doc_id
     from doc_assistant.config import load_config
+    from doc_assistant.infra.invoices.sqlite import InvoiceDB
     from doc_assistant.infra.storage.chunks import ChunkStore
     from doc_assistant.ingest import ingest_pdfs
-    from doc_assistant.invoices import InvoiceDB, upload_invoice
+    from doc_assistant.invoices import upload_invoice
     from doc_assistant.model_fakes import FakeEmbedder
 
     pdf = synthetic_pdf.with_name("A120.pdf")

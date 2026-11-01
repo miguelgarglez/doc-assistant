@@ -18,8 +18,9 @@ import pytest
 
 from doc_assistant.config import load_config
 from doc_assistant.domain.invoices.fields import format_eur
+from doc_assistant.infra.invoices.sqlite import InvoiceDB
 from doc_assistant.infra.models.http import HttpLLM
-from doc_assistant.invoices import InvoiceDB, ask_invoices
+from doc_assistant.invoices import ask_invoices
 from doc_assistant.model_fakes import FakeLLM
 
 AMOUNT_FIELDS = (

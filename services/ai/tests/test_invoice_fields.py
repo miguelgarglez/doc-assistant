@@ -88,7 +88,7 @@ def test_noun_phrase_has_the_right_article():
 
 
 def test_field_kinds_match_the_typed_columns_of_the_index():
-    from doc_assistant.invoice_index import AMOUNT_COLS, DATE_COLS
+    from doc_assistant.infra.invoices.index import AMOUNT_COLS, DATE_COLS
 
     typed = {k for k, spec in FIELD_SPECS.items() if spec.kind in ("amount", "percent")}
     assert typed == set(AMOUNT_COLS)

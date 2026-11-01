@@ -4,6 +4,7 @@ import pytest
 
 from doc_assistant.application.ports.models import AdapterError
 from doc_assistant.domain.invoices.fields import FIELD_SPECS
+from doc_assistant.infra.invoices.sqlite import InvoiceDB
 from doc_assistant.invoice_query import (
     is_invoice_question,
     plan_and_run,
@@ -11,7 +12,6 @@ from doc_assistant.invoice_query import (
     run_plan,
     validate_plan,
 )
-from doc_assistant.invoices import InvoiceDB
 from doc_assistant.model_fakes import FakeLLM
 
 LUCIA = {

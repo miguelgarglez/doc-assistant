@@ -29,8 +29,9 @@ def test_amount_labels_with_colons_keep_values_and_evidence():
     assert check_gates(amounts) == ("ok", None)
 
 
+from doc_assistant.infra.invoices.sqlite import InvoiceDB
 from doc_assistant.infra.storage.chunks import ChunkStore
-from doc_assistant.invoices import InvoiceDB, upload_invoice
+from doc_assistant.invoices import upload_invoice
 
 FIXTURES = Path(__file__).resolve().parents[3] / "evidence/fixtures/invoices"
 
