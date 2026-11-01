@@ -17,10 +17,10 @@ from pydantic import BaseModel, Field
 from doc_assistant.application.ingest.jobs import IngestJobs, Progress, Stage
 from doc_assistant.application.ports.models import AdapterError
 from doc_assistant.application.ports.pdf import PdfPort
-from doc_assistant.ask import ask
 from doc_assistant.ask_schemas import AskRequest, AskResponse
 from doc_assistant.ask_stream import STREAM_SCHEMA, queued_ask_stream
 from doc_assistant.bootstrap import (
+    ask,
     component_health,
     ingest_pdfs,
     invoice_image,

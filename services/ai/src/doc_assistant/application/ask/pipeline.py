@@ -5,19 +5,18 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from copy import deepcopy
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any
 
-from doc_assistant import bootstrap
 from doc_assistant.application.answers.meta import (
     answer_meta,
     classify,
     related_follow_ups,
     suggestions_from,
 )
+from doc_assistant.application.ask.dependencies import AskContext
 from doc_assistant.application.ports.models import (
     LLM,
     AdapterError,
@@ -25,7 +24,6 @@ from doc_assistant.application.ports.models import (
     Reranker,
     StreamingLLM,
 )
-from doc_assistant.config import load_config
 from doc_assistant.domain.answers.inline import assign_by_rules, validate_model_segments
 from doc_assistant.domain.answers.partial_json import FieldStreamer
 from doc_assistant.domain.answers.verifier import verify
@@ -159,7 +157,7 @@ def _chunked(text: str, size: int = 24) -> list[str]:
 
 
 def _ask_events(
-    config_path: str | Path,
+    load_context: Callable[[], AskContext],
     question: str,
     *,
     embedder: Embedder | None = None,
@@ -184,15 +182,16 @@ def _ask_events(
         yield ("result", _refusal(why, {}, answer=msg))
         return
     question = q
-    cfg = load_config(config_path)
+    context = load_context()
+    cfg = context.settings
     if trace is not None:
         trace["versions"] = {
-            "config_sha256": cfg._source_sha256,
+            "config_sha256": cfg.config_sha256,
             "models_configured": {
-                "llm": cfg.llm.model,
-                "embeddings": cfg.embeddings.model,
-                "reranker": cfg.reranker.model,
-                "ocr": cfg.ocr.model,
+                "llm": cfg.llm_model,
+                "embeddings": cfg.embedding_model,
+                "reranker": cfg.reranker_model,
+                "ocr": cfg.ocr_model,
             },
             "answer_prompts_sha256": hashlib.sha256(
                 (SYSTEM_PROMPT + "\0" + EVIDENCE_FIRST_PROMPT + "\0" + SEGMENTS_PROMPT).encode()
@@ -202,7 +201,7 @@ def _ask_events(
 
     t = time.perf_counter()
     yield _step("route", "running", "Analizando la pregunta")
-    sources_service = bootstrap.source_service(cfg)
+    sources_service = context.sources()
     sources = sources_service.list_sources()
     intent, matched = classify(question, sources)
     latencies["route"] = round(time.perf_counter() - t, 4)
@@ -232,7 +231,7 @@ def _ask_events(
         return
 
     if embedder is None or reranker is None or llm is None:
-        e, r, l = bootstrap.build_adapters(cfg)
+        e, r, l = context.models()
         embedder = embedder or e
         reranker = reranker or r
         llm = llm or l
@@ -243,7 +242,7 @@ def _ask_events(
         invoice_trace: dict[str, Any] | None = {} if trace is not None else None
         if trace is not None:
             trace["invoice"] = invoice_trace
-        invoice_result = bootstrap.ask_invoices(config_path, question, llm=llm, trace=invoice_trace)
+        invoice_result = context.ask_invoices(question, llm, invoice_trace)
         latencies["invoices"] = round(time.perf_counter() - t, 4)
         yield _step(
             "invoices",
@@ -271,16 +270,14 @@ def _ask_events(
         )
         return
 
-    dim = getattr(embedder, "dim", None) or cfg.embeddings.dim or 8
+    dim = getattr(embedder, "dim", None) or cfg.embedding_dim or 8
     t0 = time.perf_counter()
     yield _step("retrieve", "running", "Buscando fragmentos relevantes")
     q_emb = embedder.embed([question])[0]
     latencies["embed"] = round(time.perf_counter() - t0, 4)
 
     t1 = time.perf_counter()
-    retrieval = bootstrap.retrieval_index(cfg.db, dim).search(
-        q_emb, question, fingerprint=trace is not None
-    )
+    retrieval = context.retrieval_index(dim).search(q_emb, question, fingerprint=trace is not None)
     vec, bm = retrieval.vector_scores, retrieval.keyword_scores
     cand_ids = _union_candidates(vec, bm)
     cand_chunks = retrieval.chunks
@@ -474,7 +471,7 @@ def _ask_events(
 
 
 def ask_events(
-    config_path: str | Path,
+    load_context: Callable[[], AskContext],
     question: str,
     *,
     embedder: Embedder | None = None,
@@ -485,7 +482,7 @@ def ask_events(
 ) -> Generator[Event, None, None]:
     """Yield the pipeline unchanged and optionally collect its final state in memory."""
     events = _ask_events(
-        config_path,
+        load_context,
         question,
         embedder=embedder,
         reranker=reranker,
@@ -548,7 +545,7 @@ def place_inline_citations(
 
 
 def ask(
-    config_path: str | Path,
+    load_context: Callable[[], AskContext],
     question: str,
     *,
     embedder: Embedder | None = None,
@@ -558,7 +555,7 @@ def ask(
 ) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for kind, data in ask_events(
-        config_path, question, embedder=embedder, reranker=reranker, llm=llm, trace=trace
+        load_context, question, embedder=embedder, reranker=reranker, llm=llm, trace=trace
     ):
         if kind == "result":
             result = data

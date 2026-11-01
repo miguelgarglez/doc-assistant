@@ -10,8 +10,8 @@ import yaml
 from doubles import FakeEmbedder, FakeLLM, FakeReranker
 from markup import make_pdf
 
-from doc_assistant.ask import ask, place_inline_citations
-from doc_assistant.bootstrap import ingest_pdfs
+from doc_assistant.application.ask.pipeline import place_inline_citations
+from doc_assistant.bootstrap import ask, ingest_pdfs
 from doc_assistant.config import load_config
 from doc_assistant.domain.answers.inline import (
     assign_by_rules,

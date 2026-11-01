@@ -57,7 +57,7 @@ def test_ingest_survives_bad_files(tmp_path, config_path, synthetic_pdf):
 
 
 def test_question_guard_before_any_model():
-    from doc_assistant.ask import ask
+    from doc_assistant.bootstrap import ask
 
     for q, why in (
         ("", "pregunta_vacia"),

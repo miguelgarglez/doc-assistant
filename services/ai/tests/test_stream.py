@@ -17,11 +17,11 @@ import yaml
 from doubles import FakeEmbedder, FakeLLM, FakeReranker
 from fastapi.testclient import TestClient
 
-from doc_assistant import ask as ask_module
 from doc_assistant import ask_stream as stream_module
 from doc_assistant import bootstrap as bootstrap_module
 from doc_assistant.api import create_app
 from doc_assistant.application.answers.meta import classify
+from doc_assistant.application.ask import pipeline as ask_module
 from doc_assistant.application.ports.models import AdapterBusy, AdapterError
 from doc_assistant.ask_stream import ask_stream_events
 from doc_assistant.bootstrap import save_and_ingest_pdf

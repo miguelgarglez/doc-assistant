@@ -11,7 +11,6 @@ from pydantic import BaseModel, TypeAdapter
 
 from doc_assistant.application.ask.capacity import AskCapacity
 from doc_assistant.application.ports.models import AdapterError
-from doc_assistant.ask import ask_events
 from doc_assistant.ask_schemas import (
     AskResponse,
     BlocksEvent,
@@ -24,6 +23,7 @@ from doc_assistant.ask_schemas import (
     StreamEvent,
     TokenEvent,
 )
+from doc_assistant.bootstrap import ask_events
 
 ASK_QUEUE_TIMEOUT_S = 60.0
 

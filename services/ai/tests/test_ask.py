@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from doubles import FakeEmbedder, FakeLLM, FakeReranker
 
-from doc_assistant.ask import ask, ask_events
+from doc_assistant.bootstrap import ask, ask_events
 from doc_assistant.infra.history.sqlite import HistoryStore
 from doc_assistant.infra.pdf.extract import chunk_pdf
 from doc_assistant.infra.storage.chunks import ChunkStore
@@ -64,7 +64,7 @@ def test_trace_hashes_config_used_even_if_file_changes(
 
     import yaml
 
-    ask_module = importlib.import_module("doc_assistant.ask")
+    ask_module = importlib.import_module("doc_assistant.bootstrap")
     store = _seed(tmp_path, synthetic_pdf, fake_embedder)
     cfg = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     cfg["db"] = str(store.path)
@@ -274,7 +274,7 @@ def test_trace_marks_pipeline_error(config_path: Path, monkeypatch) -> None:
         raise RuntimeError("failure")
         yield
 
-    monkeypatch.setattr("doc_assistant.ask._ask_events", fail)
+    monkeypatch.setattr("doc_assistant.application.ask.pipeline._ask_events", fail)
     trace: dict = {}
     with pytest.raises(RuntimeError, match="failure"):
         list(ask_events(config_path, "pregunta", trace=trace))
@@ -286,7 +286,7 @@ def test_trace_marks_pipeline_error(config_path: Path, monkeypatch) -> None:
 
 
 def test_trace_marks_pipeline_without_result_as_error(config_path: Path, monkeypatch) -> None:
-    from doc_assistant import ask as ask_module
+    from doc_assistant.application.ask import pipeline as ask_module
 
     def incomplete_events(*args, **kwargs):
         yield "token", {"text": "incompleto"}
@@ -294,7 +294,7 @@ def test_trace_marks_pipeline_without_result_as_error(config_path: Path, monkeyp
     monkeypatch.setattr(ask_module, "_ask_events", incomplete_events)
     trace: dict = {}
     with pytest.raises(RuntimeError, match="without a result"):
-        list(ask_module.ask_events(config_path, "pregunta", trace=trace))
+        list(ask_events(config_path, "pregunta", trace=trace))
     assert trace["status"] == "error"
     assert trace["kind"] == "error"
     assert trace["error_code"] == "internal_error"
@@ -304,7 +304,7 @@ def test_trace_distinguishes_clarification(config_path: Path, monkeypatch) -> No
     def clarify(*args, **kwargs):
         yield "result", {"ok": False, "clarification": {"candidates": ["A", "B"]}}
 
-    monkeypatch.setattr("doc_assistant.ask._ask_events", clarify)
+    monkeypatch.setattr("doc_assistant.application.ask.pipeline._ask_events", clarify)
     trace: dict = {}
     list(ask_events(config_path, "pregunta", trace=trace))
     assert trace["kind"] == "clarification"
@@ -317,20 +317,21 @@ def test_invoice_trace_survives_planner_failure(config_path, fake_embedder, monk
 
     from doc_assistant.application.ports.models import AdapterBusy
 
-    module = importlib.import_module("doc_assistant.ask")
+    module = importlib.import_module("doc_assistant.application.ask.pipeline")
+    from doc_assistant import bootstrap
 
     class Sources:
         def list_sources(self):
             return [{"kind": "invoice"}]
 
-    monkeypatch.setattr(module.bootstrap, "source_service", lambda cfg: Sources())
+    monkeypatch.setattr(bootstrap, "source_service", lambda cfg: Sources())
     monkeypatch.setattr(module, "classify", lambda question, sources: ("rag", []))
 
     def fail(config_path, question, *, llm, trace):
         trace["plan_prompt_sha256"] = "planner-hash"
         raise AdapterBusy("busy")
 
-    monkeypatch.setattr(module.bootstrap, "ask_invoices", fail)
+    monkeypatch.setattr(bootstrap, "ask_invoices", fail)
     trace = {}
     with pytest.raises(AdapterBusy):
         list(

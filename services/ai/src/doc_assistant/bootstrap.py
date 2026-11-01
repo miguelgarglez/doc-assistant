@@ -4,7 +4,7 @@ import os
 import secrets
 import threading
 import time
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable, Generator
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -12,7 +12,9 @@ from typing import Any
 
 from fastapi import FastAPI
 
+from doc_assistant.application.ask import pipeline
 from doc_assistant.application.ask.capacity import AskCapacity
+from doc_assistant.application.ask.dependencies import AskContext, AskSettings
 from doc_assistant.application.health import check_components
 from doc_assistant.application.ingest.jobs import IngestJobs
 from doc_assistant.application.ingest.service import IngestService
@@ -170,6 +172,70 @@ def ask_invoices(
     trace: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     return invoice_service(load_config(config_path)).ask(question, llm=llm, trace=trace)
+
+
+def ask_context(config_path: str | Path) -> AskContext:
+    cfg = load_config(config_path)
+    settings = AskSettings(
+        config_sha256=cfg._source_sha256,
+        llm_model=cfg.llm.model,
+        embedding_model=cfg.embeddings.model,
+        reranker_model=cfg.reranker.model,
+        ocr_model=cfg.ocr.model,
+        embedding_dim=cfg.embeddings.dim or 8,
+        top_k=cfg.top_k,
+        answer_mode=cfg.answer_mode,
+        inline_citations=cfg.inline_citations,
+    )
+    return AskContext(
+        settings=settings,
+        sources=lambda: source_service(cfg),
+        models=lambda: build_adapters(cfg),
+        ask_invoices=lambda question, llm, trace: ask_invoices(
+            config_path, question, llm=llm, trace=trace
+        ),
+        retrieval_index=lambda dim: retrieval_index(cfg.db, dim),
+    )
+
+
+def ask_events(
+    config_path: str | Path,
+    question: str,
+    *,
+    embedder: Embedder | None = None,
+    reranker: Reranker | None = None,
+    llm: LLM | None = None,
+    stream: bool = False,
+    trace: dict[str, Any] | None = None,
+) -> Generator[pipeline.Event, None, None]:
+    return pipeline.ask_events(
+        lambda: ask_context(config_path),
+        question,
+        embedder=embedder,
+        reranker=reranker,
+        llm=llm,
+        stream=stream,
+        trace=trace,
+    )
+
+
+def ask(
+    config_path: str | Path,
+    question: str,
+    *,
+    embedder: Embedder | None = None,
+    reranker: Reranker | None = None,
+    llm: LLM | None = None,
+    trace: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return pipeline.ask(
+        lambda: ask_context(config_path),
+        question,
+        embedder=embedder,
+        reranker=reranker,
+        llm=llm,
+        trace=trace,
+    )
 
 
 def lifespan_for(config_path: Path) -> Callable[[FastAPI], AbstractAsyncContextManager[None]]:
