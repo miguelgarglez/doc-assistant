@@ -280,3 +280,32 @@ def test_editing_a_reviewed_answer_requires_review_again(tmp_path):
     assert list(store.export_reviewed("c")) == []
     assert store.review_feedback("c", "f", "changed")
     assert json.loads(next(store.export_reviewed("c")))["expected_answer"] == "changed"
+
+
+def test_private_feedback_requires_explicit_context(tmp_path):
+    store = HistoryStore(tmp_path / "history.db")
+    trace = {"question": "Factura de 123 €", "result": {"citations": [{"quote": "123 €"}]}}
+    store.record("r", "c", "2026-01-01", trace)
+    assert store.add_private_feedback("private", "c", "r", "now", "incorrecta")
+    assert store.get_feedback("c", "private")["trace"] == {
+        "request_id": "r",
+        "conversation_id": "c",
+    }
+    assert store.add_private_feedback("included", "c", "r", "now", None, include_context=True)
+    assert store.get_feedback("c", "included")["trace"] == trace
+    assert not store.add_private_feedback("missing", "other", "r", "now", None)
+
+
+def test_conversation_pages_search_and_delete(tmp_path):
+    store = HistoryStore(tmp_path / "history.db")
+    store.record("r1", "c1", "2026-01-01", {"question": "alfa"})
+    store.record("r2", "c2", "2026-01-02", {"question": "beta"})
+    store.record("r3", "c2", "2026-01-03", {"question": "gamma"})
+    assert [x["conversation_id"] for x in store.conversations_page(limit=1)] == ["c2"]
+    assert [x["conversation_id"] for x in store.conversations_page(limit=1, offset=1)] == ["c1"]
+    assert store.conversations_page(search="beta")[0]["count"] == 2
+    assert store.add_private_feedback("f", "c2", "r2", "now", None)
+    assert store.delete_conversation("c2") == 2
+    assert store.get_feedback("c2", "f") is None
+    assert store.delete_all() == 1
+    assert store.conversations_page() == []

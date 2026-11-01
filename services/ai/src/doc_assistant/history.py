@@ -57,6 +57,12 @@ class HistoryStore:
                 """
             )
             db.execute("BEGIN IMMEDIATE")
+            request_columns = {row[1] for row in db.execute("PRAGMA table_info(requests)")}
+            if "owner" not in request_columns:
+                db.execute("ALTER TABLE requests ADD COLUMN owner TEXT NOT NULL DEFAULT 'local'")
+            db.execute(
+                "CREATE INDEX IF NOT EXISTS requests_owner_time ON requests(owner, created_at DESC)"
+            )
             columns = {row[1] for row in db.execute("PRAGMA table_info(feedback)")}
             if "conversation_id" not in columns:
                 db.execute("ALTER TABLE feedback ADD COLUMN conversation_id TEXT")
@@ -87,9 +93,87 @@ class HistoryStore:
             raise ValueError("trace conversation_id does not match the conversation")
         with self._connect() as db:
             db.execute(
-                "INSERT INTO requests VALUES (?, ?, ?, ?)",
+                "INSERT INTO requests (request_id, conversation_id, created_at, trace_json) "
+                "VALUES (?, ?, ?, ?)",
                 (request_id, conversation_id, created_at, json.dumps(trace, ensure_ascii=False)),
             )
+
+    def conversations_page(
+        self, *, owner: str = "local", limit: int = 50, offset: int = 0, search: str = ""
+    ) -> list[dict[str, Any]]:
+        """List conversations by most recent request, scoped to one owner."""
+        if not 1 <= limit <= 100 or offset < 0:
+            raise ValueError("invalid pagination")
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT conversation_id, MAX(created_at), COUNT(*) FROM requests "
+                "WHERE owner = ? AND (? = '' OR conversation_id IN "
+                "(SELECT conversation_id FROM requests WHERE owner = ? "
+                "AND instr(lower(trace_json), lower(?)) > 0)) "
+                "GROUP BY conversation_id ORDER BY MAX(created_at) DESC, conversation_id DESC "
+                "LIMIT ? OFFSET ?",
+                (owner, search, owner, search, limit, offset),
+            ).fetchall()
+        return [{"conversation_id": row[0], "updated_at": row[1], "count": row[2]} for row in rows]
+
+    def delete_conversation(self, conversation_id: str, *, owner: str = "local") -> int:
+        with self._connect() as db:
+            db.execute(
+                "DELETE FROM feedback WHERE conversation_id = ? AND EXISTS "
+                "(SELECT 1 FROM requests WHERE conversation_id = ? AND owner = ?)",
+                (conversation_id, conversation_id, owner),
+            )
+            return db.execute(
+                "DELETE FROM requests WHERE conversation_id = ? AND owner = ?",
+                (conversation_id, owner),
+            ).rowcount
+
+    def delete_all(self, *, owner: str = "local") -> int:
+        with self._connect() as db:
+            db.execute(
+                "DELETE FROM feedback WHERE conversation_id IN "
+                "(SELECT conversation_id FROM requests WHERE owner = ?)",
+                (owner,),
+            )
+            return db.execute("DELETE FROM requests WHERE owner = ?", (owner,)).rowcount
+
+    def add_private_feedback(
+        self,
+        feedback_id: str,
+        conversation_id: str,
+        request_id: str,
+        created_at: str,
+        comment: str | None,
+        *,
+        include_context: bool = False,
+    ) -> bool:
+        """Capture no request contents unless the submitter explicitly includes them."""
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT trace_json FROM requests WHERE conversation_id = ? "
+                "AND request_id = ? AND owner = 'local'",
+                (conversation_id, request_id),
+            ).fetchone()
+            if row is None:
+                return False
+            trace = (
+                json.loads(row[0])
+                if include_context
+                else {"request_id": request_id, "conversation_id": conversation_id}
+            )
+            db.execute(
+                "INSERT INTO feedback (feedback_id, request_id, conversation_id, created_at, "
+                "kind, comment, trace_json) VALUES (?, ?, ?, ?, 'incorrecta', ?, ?)",
+                (
+                    feedback_id,
+                    request_id,
+                    conversation_id,
+                    created_at,
+                    comment,
+                    json.dumps(trace, ensure_ascii=False),
+                ),
+            )
+            return True
 
     def get(self, conversation_id: str, request_id: str) -> dict[str, Any] | None:
         with self._connect() as db:
