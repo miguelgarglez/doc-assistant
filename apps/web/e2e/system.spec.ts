@@ -26,6 +26,22 @@ test.describe("sistema", () => {
     await expect(page.getByTestId("piece-llm")).toHaveAttribute("data-lit", "idle")
   })
 
+  test("muestra el código de un fallo temprano y no ofrece reproducir pasos ausentes", async ({ page }) => {
+    await mockBackend(page, {
+      ask: (route) => route.fulfill({
+        contentType: "text/event-stream",
+        body: sse([["error", { code: "model_busy", message: "El modelo está ocupado. Inténtalo de nuevo." }]]),
+      }),
+    })
+    await page.goto("/")
+    await ask(page, "¿Carga útil?")
+    await expect(page.getByTestId("ask-error-notice")).toContainText("El modelo está ocupado")
+    await expect(page.getByTestId("ask-error-notice")).not.toContainText("model_busy")
+    await page.getByRole("link", { name: "Sistema" }).click()
+    await expect(page.getByTestId("trace-code")).toHaveText("model_busy")
+    await expect(page.getByTestId("replay-trace")).toBeDisabled()
+  })
+
   test("la última consulta aparece con sus pasos y el tiempo de cada pieza; al pasar por un paso se ilumina su pieza", async ({ page }) => {
     await mockBackend(page)
     await page.goto("/")

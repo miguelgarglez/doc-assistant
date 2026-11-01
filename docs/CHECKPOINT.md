@@ -260,3 +260,6 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - La última traza conserva el código de un fallo incluso si ocurre antes del primer paso. Sin pasos, el botón de reproducción queda desactivado.
 - Pasaron 13 pruebas del transporte. `mise run check` pasó con dependencias ya existentes y una raíz temporal ampliada para Turbopack; la primera ejecución con la configuración original falló en build por los enlaces externos. Pendientes pruebas visuales de este cambio y check en un entorno de dependencias local al worktree.
 
+## 01-Nov 03:12 CET · Prueba visual del error
+- La prueba de navegador confirma el mensaje en chat y el código en Sistema para un fallo antes de cualquier paso. Las capturas sintéticas antes y después están en `evidence/comparison-v0.15.1/` y se inspeccionaron. La primera ejecución focalizada usó un directorio de trabajo incorrecto y no llegó a ejecutar la prueba; repetida desde `apps/web` pasó.
+
