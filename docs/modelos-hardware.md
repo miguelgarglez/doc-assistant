@@ -45,7 +45,7 @@ Con los dos archivos Qwen3.5 Q4_K_M locales se ejecutaron tres preguntas sintét
 | Qwen3.5 4B | 3.152 MiB | 3.420 MiB | 0,30 / 0,35 / 0,40 s |
 | Qwen3.5 9B | 2.630 MiB | 2.902 MiB | 0,55 / 0,61 / 0,67 s |
 
-La RSS observada del 9B fue menor en esta muestra. No es el consumo total ni demuestra que necesite menos memoria: la residencia de páginas y la memoria del dispositivo pueden variar. No se ha medido el pico. Los tiempos incluyen la petición HTTP y corresponden a salidas cortas; no son una comparación controlada ni predicen tiempos de la aplicación. El experimento no permite descartar ninguna alternativa y C4/C5/E-C1 sigue en «no».
+La RSS observada del 9B fue menor en esta muestra. No es el consumo total ni demuestra que necesite menos memoria: la residencia de páginas y la memoria del dispositivo pueden variar. En una segunda ejecución del script publicado, la RSS final del 9B fue 4.194 MiB frente a 2.902 MiB en la primera, lo que ilustra esa variabilidad; tampoco se ha medido el pico. Los tiempos incluyen la petición HTTP y corresponden a salidas cortas; no son una comparación controlada ni predicen tiempos de la aplicación. El experimento no permite descartar ninguna alternativa y C4/C5/E-C1 sigue en «no».
 
 Para repetirlo en macOS con los dos GGUF ya disponibles y `llama-server` compatible en PATH:
 

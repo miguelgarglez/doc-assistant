@@ -2,6 +2,7 @@
 (Horas reales de los commits, Europe/Madrid, tomadas de `git log`.)
 
 ## Hitos
+- **01-nov 02:31 · Repetición del experimento y checklist.** El comando publicado de comparación de modelos se ejecutó desde el repositorio y reprodujo las respuestas; la RSS varió entre ejecuciones. Checklist de shadcn consultado: sin componentes añadidos, sin `next/image`; lint, tipos y Playwright pasaron.
 - **01-nov 02:31 · Verificación visual sintética.** Tres parejas de capturas a 1440 × 900 en `evidence/comparison-v0.14.0-continuacion/`; antes de la galería v0.14.0, después de la rama actual. Cada pareja es idéntica byte a byte y se inspeccionó. No cubre datos reales ni otros tamaños o temas.
 - **01-nov 02:31 · Playwright con versiones fijadas.** Tres pasadas con Node 24.22.2: 180 aprobadas y 4 live omitidas cada una; incluyen axe. El puerto 3180 quedó libre.
 - **01-nov 02:28 · Comparación exploratoria de modelos.** Qwen3.5 4B y 9B respondieron tres preguntas sintéticas iguales; se anotaron RSS y tiempos individuales con otra actividad en el equipo. Método reproducible y límites en `modelos-hardware.md`; no permite descartar alternativas. Los dos procesos se cerraron por PID.
