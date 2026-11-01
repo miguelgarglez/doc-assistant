@@ -8,7 +8,7 @@ scripts/
   _common.py         rutas/plataforma compartidas
   assets.json        llama.cpp b12020 + modelos, con SHA256
   setup.py           uv sync, pnpm install, build, llama-server, modelos
-  dev.py             arranque único: llama x3 → IA → web; Ctrl-C limpio
+  dev.py             arranque único: LLM, embeddings, reranker, OCR → IA → web; Ctrl-C limpio
   check.py           ruff, mypy, pytest, contrato sin drift, eslint, tsc, build
   fake_llama.py      simula llama-server (CI)
   package.py         ZIP64 de entrega + smoke al descomprimir
@@ -17,6 +17,8 @@ scripts/
 NOTICE               licencias de modelos y llama.cpp
 services/ai/         doc_assistant (FastAPI): api, ask, verifier, ingest, chunking,
                      store (SQLite+sqlite-vec), invoices, adapters (puertos), config
+                     invoice_blocks (fichas y tablas), ask_capacity (cola por proceso),
+                     pdf_lock (acceso serializado a PDFium)
                      openapi.json = contrato (fuente de verdad)
 apps/web/            Next.js 16 + TS strict
   src/app/api/[...path]/route.ts   proxy fino → servicio IA (BFF)
@@ -25,9 +27,12 @@ apps/web/            Next.js 16 + TS strict
   src/components/domain/           AnswerCard, CitationChip, SourceViewer, RefusalNotice,
                                    InvoiceReviewCard, UploadDropzone
 .github/workflows/cross-platform.yml   smoke Win/Linux/Mac (no ejecutado)
-docs/                ADRs, CHECKPOINT, CHANGELOG, versioning, architecture, scaling,
-                     requirements-coverage, open-gaps, reviews/
-evidence/            screenshots/, live/, fixtures/ (sintéticos), evolution/ (por tag)
+docs/                README (índice), ADRs, CHECKPOINT, CHANGELOG, versioning, architecture, scaling,
+                     requirements-coverage, open-gaps, design/, evolution-notes/, reviews/
+evidence/            screenshots/, live/, fixtures/ (sintéticos), evolution/ (por tag),
+                     comparison-*/, evaluacion-sintetica/, chunking/, modelos/
 vendor/, models/     binarios, archives/ y GGUF (git-ignorados)
 _trash/              en vez de borrar (git-ignorado)
 ```
+
+El [índice documental](README.md) explica qué pregunta responde cada documento. Los diseños de multiusuario e historial son propuestas; su presencia en `docs/design/` no implica implementación.

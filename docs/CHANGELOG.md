@@ -2,6 +2,11 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
+## v0.15.3 · 2026-11-01
+
+- [Índice documental](README.md) con rutas de lectura, ADR y convenciones de evidencia. Resumen inicial del CHECKPOINT sin eliminar el diario.
+- Actualizadas arquitectura, estructura, huecos, pendientes y versionado contra el árbol v0.15.2. Añadidas notas de evolución de v0.14.0 a v0.15.2. Sin cambios de código ni nuevas pruebas de comportamiento.
+
 ## v0.15.2 · 2026-11-01
 
 - Una evaluación con dos manuales y tres facturas sintéticas detectó que las etiquetas con dos puntos impedían extraer importes. El extractor admite ese separador y conserva la evidencia literal. La batería pasó de 7 a 11 coincidencias de 12 con un oráculo limitado; en el caso restante el sistema enumeró ambas facturas cuando se esperaba aclaración. [Método y límites](../evidence/evaluacion-sintetica/README.md).

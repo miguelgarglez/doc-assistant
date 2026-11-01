@@ -60,4 +60,4 @@ No es la evaluación final: no se han usado documentos ni facturas reales.
 - `mise run gen-client`.
 - `mise run package`: ZIP de entrega, probado en limpio.
 
-Más: [arquitectura](docs/architecture.md) · [escalado y despliegue](docs/scaling-deployment.md) · [decisiones](docs/decisions-log.md) · [estructura](docs/repo-structure.md) · [revisión](docs/reviews/2026-10-31-sol.md) · [NOTICE](NOTICE).
+Más: [índice de documentación](docs/README.md).

@@ -1,13 +1,6 @@
 # Decisiones pendientes
 
-Estas decisiones requieren la aprobación de Miguel. Las pruebas sintéticas no sustituyen a una evaluación sobre fuentes aprobadas.
-
-## Dependencias para verificar este worktree
-
-- **Decidir:** autorizar la instalación local de las dependencias fijadas en los lockfiles dentro de este worktree.
-- **Opciones:** autorizar `pnpm install --frozen-lockfile` y `uv sync --frozen` en este worktree; aportar un entorno local equivalente ya preparado.
-- **Recomendación:** usar los lockfiles sin actualizar dependencias y repetir `mise run check` con la configuración del repositorio.
-- **Impacto:** los enlaces a dependencias de otro worktree permiten probar, pero Turbopack necesita una raíz temporal ampliada para compilar. El check con esa adaptación pasó; falta comprobar el entorno local sin ella.
+Estas decisiones requieren aprobación de quien evalúe o despliegue el sistema. Las pruebas sintéticas no sustituyen a una evaluación sobre fuentes aprobadas.
 
 ## Conjunto de evaluación y criterio de aceptación
 
@@ -36,3 +29,7 @@ Estas decisiones requieren la aprobación de Miguel. Las pruebas sintéticas no 
 - **Opciones:** mantener el paquete para macOS ARM64, Linux x64 y Windows x64; incluir también macOS x64, Linux ARM64 y Windows ARM64 tras validar sus binarios y dependencias.
 - **Recomendación:** fijar la matriz según los equipos de destino y probar cada combinación antes de ampliarla.
 - **Impacto:** el ZIP incluye solo los tres primeros archivos b12020. En las demás arquitecturas `setup` necesita descargar el archivo correspondiente; Windows ARM64 tiene además la limitación de `sqlite-vec` documentada. Linux y Windows no se han ejecutado en esta sesión.
+
+## Límites de verificación del entorno
+
+La instalación de dependencias del worktree nocturno consta como realizada en el [CHECKPOINT](CHECKPOINT.md), en la entrada de las 02:23. No es una decisión de producto pendiente. Las verificaciones posteriores de v0.15.1 y v0.15.2 reutilizaron dependencias y ampliaron temporalmente la raíz de Turbopack. Falta repetir el check con un entorno local instalado y la configuración original. Este límite de verificación no acredita que se haya preparado ese entorno.

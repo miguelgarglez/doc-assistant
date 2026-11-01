@@ -1,6 +1,19 @@
 # CHECKPOINT
 (Horas reales de los commits, Europe/Madrid, tomadas de `git log`.)
 
+## Estado de un vistazo
+
+- Referencia de comportamiento: v0.15.2; este cierre v0.15.3 es documental.
+- Cobertura: 18 cumplidas, 10 parciales y 3 no, según `requirements-coverage.md`.
+- ADR-014 implementa bloques con evidencia y alternativa Markdown.
+- Consultas limitadas por proceso a dos activas y cuatro en espera, hasta 60 segundos.
+- La cola no limita ingestas ni comparte capacidad entre procesos.
+- La evaluación sintética tras corregir importes obtuvo 11 coincidencias de 12 con un oráculo limitado.
+- Falta gold aprobado y evaluación representativa; no hay una tasa general de error acreditada.
+- Faltan carga sostenida, equidad de cola y causa demostrada del error histórico sin traza.
+- Linux y Windows no están probados; el check registrado usó dependencias existentes y raíz temporal ampliada.
+- Historial persistente y multiusuario siguen como propuestas; el diario inferior conserva estados anteriores.
+
 ## Hitos
 - **01-Nov 02:51 · Suite del servicio.** 314 pruebas pasan y 35 live se omiten con el entorno Python existente. La regresión se ha ajustado a Ruff. No sustituye `mise run check` ni las tres pasadas e2e.
 - **01-Nov 02:50 · Carga sintética concurrente.** Con modelos locales, cuatro consultas SSE y dos ingestas PDF simultáneas terminaron correctamente. El modelo tenía dos slots; esta muestra no demuestra el comportamiento bajo saturación prolongada.

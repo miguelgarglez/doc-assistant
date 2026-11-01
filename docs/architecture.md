@@ -24,6 +24,20 @@ Todo escucha en `127.0.0.1`. Nada sale de la máquina.
 
 La comparación reproducible en `evidence/chunking/` muestra que las secciones mantienen íntegros seis hechos sintéticos que una ventana fija de 64 caracteres parte en cuatro casos. Es una prueba exploratoria de integridad literal, no de calidad de recuperación; no justifica generalizar a documentos sin encabezados o secciones largas.
 
+## Bloques de respuesta (ADR-014)
+
+`invoice_blocks.py` construye fichas `key_data` y tablas `table` desde los datos seleccionados para la respuesta. El contrato añade `blocks_version: 1`, `blocks` y `follow_ups`. Los valores presentes llevan citas y las sumas referencian sus operandos. La web no calcula importes ni completa campos. `done` prevalece sobre el evento `blocks`; una versión desconocida o un bloque inválido hace que se muestre el Markdown completo. Véanse [ADR-014](decisions-log.md#adr-014-bloques-de-respuesta-derivados-de-evidencia-2026-11-01) y el [contrato](streaming.md).
+
+## Concurrencia y admisión de consultas
+
+`ask_capacity.py` limita por proceso a dos consultas activas y cuatro en espera. `api.py` aplica el límite a `/ask` y `/ask/stream`, con espera máxima de 60 segundos. El flujo SSE informa de la espera mediante `step`; `queue_full` y `queue_timeout` terminan el flujo con un error recuperable. En `/ask` devuelven HTTP 503. La cola no es durable, no comparte capacidad entre procesos ni limita ingestas. No se han acreditado equidad ni carga sostenida.
+
+La recuperación cierra SQLite antes de emitir el siguiente evento. `pdf_lock.py` serializa el uso de PDFium entre ingestas y visor dentro del proceso. La carga sintética registrada en [CHANGELOG](CHANGELOG.md) no demuestra la causa del error histórico sin traza.
+
+## Trazas disponibles
+
+Los eventos SSE `step` y `done.timings` permiten reconstruir la última consulta en Sistema. El cliente conserva esa traza en memoria. En este árbol no hay configuración de trazas internas opcionales del servicio ni historial persistente de peticiones. La [persistencia de historial y feedback](design/persistencia-historial-feedback.md) sigue siendo una propuesta.
+
 ## Modularidad (puertos y adaptadores)
 LLM, embeddings, reranker y OCR son `Protocol`s; los adaptadores HTTP se eligen en `config/config.yaml` (validada con Pydantic al arrancar). Cambiar de modelo = cambiar config o el modelo que sirve llama-server.
 
@@ -46,7 +60,7 @@ LLM, embeddings, reranker y OCR son `Protocol`s; los adaptadores HTTP se eligen 
 - Revisión independiente por otro modelo: `docs/reviews/`, triaje en ADR-006.
 
 ## Entrega
-`mise run package` crea un ZIP64 con código, docs, evidence, los tres GGUF (con `models/SHA256SUMS`) y los binarios llama.cpp b12020 de macOS arm64, Linux x64 y Windows x64 en `vendor/archives/`. `setup` usa lo empaquetado antes de descargar nada (SHA256). El script descomprime en limpio y hace setup + start + pregunta para probarlo.
+`mise run package` crea un ZIP64 con código, docs, evidence, los cinco GGUF (con `models/SHA256SUMS`) y los binarios llama.cpp b12020 de macOS arm64, Linux x64 y Windows x64 en `vendor/archives/`. `setup` usa lo empaquetado antes de descargar nada (SHA256). El script descomprime en limpio y hace setup + start + pregunta para probarlo.
 
 ## Streaming y preguntas panorámicas
-`POST /ask/stream` emite el mismo pipeline como eventos SSE (trazas, tokens provisionales, citas, rechazo o aclaración, `done`); la verificación corre tras el último token y puede retirar el texto. Las preguntas sobre capacidades, inventario o el índice de un documento se responden desde metadatos del índice, sin LLM. Detalle en `docs/streaming.md` y ADR-009.
+`POST /ask/stream` emite el mismo pipeline como eventos SSE (trazas, tokens provisionales, citas, rechazo o aclaración, `done`); la verificación corre tras el último token y puede retirar el texto. Las preguntas sobre capacidades, inventario o el índice de un documento se responden desde metadatos del índice, sin LLM. Detalle en [streaming](streaming.md) y ADR-009.
