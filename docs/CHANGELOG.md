@@ -2,7 +2,10 @@
 
 Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`git tag -n99 vX`) y en `CHECKPOINT.md`. Capturas por versión: `evidence/evolution/README.md`.
 
-## Sin publicar
+## v0.15.0 · 2026-11-01
+
+- ZIP probado en macOS ARM64 con b12020 y cinco modelos verificados por SHA256. Se indexaron cuatro documentos y cinco facturas; una respuesta con cita, el visor, una aclaración y un rechazo funcionaron en una prueba de humo. Una primera consulta documental durante otra petición mostró un error interno; una repetición posterior funcionó. La causa no se ha determinado.
+- El ZIP no incluye binarios para macOS x64, Linux ARM64 ni Windows ARM64. Windows y Linux no se probaron en esta sesión. El gold sigue sin aprobar y el humo no mide precisión general.
 
 - Comparación visual sintética con v0.14.0 en tres vistas de escritorio; las parejas son idénticas byte a byte. Repetidas tres pasadas Playwright con Node fijado: 180 aprobadas y cuatro live omitidas por pasada.
 - Comparación exploratoria reproducible de Qwen3.5 4B y 9B con tres preguntas sintéticas; no acredita calidad general ni descarta alternativas.
@@ -13,7 +16,7 @@ Fechas del commit etiquetado (Europe/Madrid). Detalle de pruebas en cada tag (`g
 - Registrados el hardware medido, el inventario de modelos y sus límites, y las decisiones pendientes de aprobación.
 - Propuesta multiusuario con permisos por documento, ingesta durable y fases de despliegue. No está implementada.
 - La matriz multiplataforma configura puertos aislados. Su workflow no se ha ejecutado.
-- Revisión privada del gold en borrador, sin evaluación final. Ninguna fase tiene tag nuevo ni sus comprobaciones de cierre completas.
+- Revisión privada del gold en borrador, sin evaluación final. El gold sigue pendiente de aprobación.
 
 ## v0.14.0 · 2026-11-01
 - Respuestas enriquecidas desde el servicio. Ficha general con emisor, cliente, número, fecha y total; preguntas específicas con los campos pedidos. Listados y comparativas como tablas, números y valores con su cita, sumas con operación y referencias de operandos.

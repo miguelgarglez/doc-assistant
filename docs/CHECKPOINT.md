@@ -2,6 +2,7 @@
 (Horas reales de los commits, Europe/Madrid, tomadas de `git log`.)
 
 ## Hitos
+- **01-nov 02:40 · Recorrido del ZIP.** macOS ARM64, b12020 y cinco modelos con SHA256 correcto. Cuatro PDF (44 fragmentos) y cinco facturas procesados. La consulta documental con cita y visor, la factura, la aclaración y el rechazo funcionaron en serie. Una consulta documental concurrente mostró antes un error interno de causa no determinada. Las capturas y datos reales permanecen fuera del repo. Tres pasadas anteriores de Playwright con axe y `mise run check` pasaron; cuatro pruebas live se omitieron por pasada.
 - **01-nov 02:32 · Auditoría preliminar actualizada.** Clon limpio de `258dda3`: TOTAL 0. No hay tag v0.15.0 y esta comprobación no sustituye la auditoría de entrega.
 - **01-nov 02:31 · Repetición del experimento y checklist.** El comando publicado de comparación de modelos se ejecutó desde el repositorio y reprodujo las respuestas; la RSS varió entre ejecuciones. Checklist de shadcn consultado: sin componentes añadidos, sin `next/image`; lint, tipos y Playwright pasaron.
 - **01-nov 02:31 · Verificación visual sintética.** Tres parejas de capturas a 1440 × 900 en `evidence/comparison-v0.14.0-continuacion/`; antes de la galería v0.14.0, después de la rama actual. Cada pareja es idéntica byte a byte y se inspeccionó. No cubre datos reales ni otros tamaños o temas.

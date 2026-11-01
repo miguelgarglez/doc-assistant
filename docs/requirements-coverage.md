@@ -7,6 +7,12 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 
 "Fiabilidad real" dice qué prueba lo respalda. Una prueba con datos sintéticos o simulados no sustituye a la evaluación con un conjunto aprobado, que aún no existe.
 
+## Resumen v0.15.0
+
+- Mejoran C3, A2 y la evidencia de portabilidad en macOS; el diseño multiusuario sigue siendo una propuesta.
+- Pendientes: gold aprobado, evaluación representativa, plataformas no probadas y el error interno observado durante peticiones simultáneas.
+- Recuento: 31 filas, 18 cumplidas, 10 parciales y 3 no.
+
 ## Consulta documental
 
 | Id | Requisito (paráfrasis) | Dónde | Estado | Fiabilidad real |
