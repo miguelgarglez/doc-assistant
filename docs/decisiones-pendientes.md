@@ -2,6 +2,13 @@
 
 Estas decisiones requieren la aprobación de Miguel. Las pruebas sintéticas no sustituyen a una evaluación sobre fuentes aprobadas.
 
+## Dependencias para verificar este worktree
+
+- **Decidir:** autorizar la instalación local de las dependencias fijadas en los lockfiles dentro de este worktree.
+- **Opciones:** autorizar `pnpm install --frozen-lockfile` y `uv sync --frozen` en este worktree; aportar un entorno local equivalente ya preparado.
+- **Recomendación:** usar los lockfiles sin actualizar dependencias y repetir `mise run check` con la configuración del repositorio.
+- **Impacto:** los enlaces a dependencias de otro worktree permiten probar, pero Turbopack necesita una raíz temporal ampliada para compilar. El check con esa adaptación pasó; falta comprobar el entorno local sin ella.
+
 ## Conjunto de evaluación y criterio de aceptación
 
 - **Decidir:** aprobar los casos, sus respuestas esperadas y las fuentes permitidas, y fijar los umbrales de aceptación de respuestas, rechazos y citas.

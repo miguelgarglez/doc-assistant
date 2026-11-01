@@ -266,3 +266,6 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 03:13 CET · Documentación de trabajo sin publicar
 - CHANGELOG y cobertura registran los cambios de robustez y sus límites. El recuento de requisitos no cambia; la serie de navegador y la fase siguen abiertas.
 
+## 01-Nov 03:14 CET · Entorno de verificación
+- Registrada la autorización pendiente para instalar las dependencias de los lockfiles en este worktree. El check con enlaces y raíz temporal ampliada pasó; el build con la configuración original no resolvió dependencias externas.
+
