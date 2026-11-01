@@ -133,4 +133,29 @@ test.describe("sistema", () => {
       await page.goto("/")
     }
   })
+
+  test("Sistema muestra y pagina las peticiones guardadas", async ({ page }) => {
+    await mockBackend(page)
+    await page.route("**/api/history/status", (route) => route.fulfill({ json: {
+      active: true, enabled: true, initialization_error: null, retention_days: 30, pending: 0, failures: [],
+    } }))
+    await page.route("**/api/history/feedback?**", (route) => route.fulfill({ json: [] }))
+    const rows = Array.from({ length: 12 }, (_, index) => ({
+      request_id: `peticion-${index}`, conversation_id: "c", created_at: "2026-11-01T10:00:00Z",
+      kind: "answer", status: "completed", elapsed_s: 1.25,
+    }))
+    await page.route("**/api/history/requests?**", (route) => {
+      const query = new URL(route.request().url()).searchParams
+      const offset = Number(query.get("offset"))
+      return route.fulfill({ json: rows.slice(offset, offset + Number(query.get("limit"))) })
+    })
+    await page.goto("/sistema")
+    await expect(page.getByRole("button", { name: "Copiar identificador peticion-0" })).toBeVisible()
+    await expect(page.getByText("1,25 s")).toHaveCount(10)
+    await page.getByRole("button", { name: "Siguiente", exact: true }).click()
+    await expect(page.getByRole("button", { name: "Copiar identificador peticion-10" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Siguiente", exact: true })).toBeDisabled()
+    await page.getByRole("button", { name: "Anterior", exact: true }).click()
+    await expect(page.getByRole("button", { name: "Copiar identificador peticion-0" })).toBeVisible()
+  })
 })

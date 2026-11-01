@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
+import { RecentRequests } from "@/components/system/recent-requests"
 import { useConversation } from "@/components/providers/chat-provider"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -113,6 +114,7 @@ export function HistoryStatusPanel() {
           <div><Button onClick={() => void refresh()} size="sm" variant="outline">Actualizar</Button></div>
         </CardContent>
       </Card>
+      {status?.active ? <RecentRequests failures={status.failures} /> : null}
       {status?.active ? <Card>
         <CardHeader><CardTitle>Avisos pendientes</CardTitle><CardDescription>Revisa cada aviso antes de exportarlo.</CardDescription></CardHeader>
         <CardContent className="flex flex-col gap-3">
