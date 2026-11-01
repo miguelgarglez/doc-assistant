@@ -268,6 +268,43 @@ def test_invoice_transaction_rolls_back_and_separates_pdf(config_path, synthetic
         assert client.get("/sources/A120/pages/1").status_code == 404
         assert client.get(f"/sources/{invoice_doc_id('A/120')}/pages/1").content == b"first"
         assert client.get(f"/sources/{pdf_doc_id('A120')}/pages/1").content.startswith(b"\x89PNG")
+
+    def index_snapshot():
+        snapshot_store = ChunkStore(cfg.db, 8)
+        try:
+            ids = [
+                r[0]
+                for r in snapshot_store.db.execute(
+                    "SELECT chunk_id FROM chunks WHERE doc = ? ORDER BY chunk_id",
+                    (invoice_doc_id("A/120"),),
+                )
+            ]
+            return [
+                (
+                    chunk_id,
+                    tuple(
+                        snapshot_store.db.execute(
+                            "SELECT body, text FROM chunks WHERE chunk_id = ?", (chunk_id,)
+                        ).fetchone()
+                    ),
+                    tuple(
+                        snapshot_store.db.execute(
+                            "SELECT text FROM fts WHERE chunk_id = ?", (chunk_id,)
+                        ).fetchone()
+                    ),
+                    bytes(
+                        snapshot_store.db.execute(
+                            "SELECT emb FROM vec WHERE chunk_id = ?", (chunk_id,)
+                        ).fetchone()[0]
+                    ),
+                )
+                for chunk_id in ids
+            ]
+        finally:
+            snapshot_store.db.close()
+
+    before = index_snapshot()
+    assert before
     original = ChunkStore.upsert
 
     def fail(self, chunks, embeddings, *, commit=True):
@@ -286,3 +323,4 @@ def test_invoice_transaction_rolls_back_and_separates_pdf(config_path, synthetic
     store = ChunkStore(cfg.db, 8)
     assert store.page(invoice_doc_id("A/120"), 1) == b"first"
     store.db.close()
+    assert index_snapshot() == before

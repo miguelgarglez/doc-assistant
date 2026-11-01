@@ -4,14 +4,12 @@ its idempotent migration in invoice_index."""
 
 from __future__ import annotations
 
-import os
-import re
-import tempfile
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 from doc_assistant.adapters import build_adapters, build_ocr
+from doc_assistant.application.ports.invoice_writer import InvoiceWrite
 from doc_assistant.application.ports.models import LLM, Embedder, OcrPort
 from doc_assistant.chunking import chunk_invoice, invoice_doc_id
 from doc_assistant.config import load_config
@@ -19,10 +17,10 @@ from doc_assistant.domain.answers.answer_markup import AnswerBuilder, md_escape
 from doc_assistant.domain.invoices.blocks import build_blocks, follow_ups
 from doc_assistant.domain.invoices.fields import display_value
 from doc_assistant.infra.invoices.sqlite import InvoiceDB
+from doc_assistant.infra.invoices.writer import SqliteInvoiceWriter
 from doc_assistant.infra.storage.chunks import ChunkStore
 from doc_assistant.invoice_extract import extract_invoice
 from doc_assistant.invoice_query import (
-    FIELDS,
     followup_question,
     is_invoice_question,
     plan_and_run,
@@ -35,15 +33,6 @@ def list_invoices(path: str | Path) -> list[dict[str, Any]]:
         return db.rows()
     finally:
         db.con.close()
-
-
-def sanitize_image_filename(name: str, numero: str) -> str:
-    base = Path(name or f"{numero}.png").name
-    safe = re.sub(r"[^\w.\-]+", "_", base, flags=re.UNICODE).strip("._") or numero
-    lower = safe.lower()
-    if not lower.endswith((".png", ".jpg", ".jpeg")):
-        safe = f"{safe}.png"
-    return safe
 
 
 def upload_invoice(
@@ -82,47 +71,20 @@ def upload_invoice(
     chunks = chunk_invoice(record)
     embeddings = embedder.embed([c["text"] for c in chunks]) if chunks else []
 
-    invoices_dir = cfg.data_dir / "invoices"
-    invoices_dir.mkdir(parents=True, exist_ok=True)
-    path = invoices_dir / (
-        invoice_doc_id(numero) + Path(sanitize_image_filename(filename, numero)).suffix
+    dim = getattr(embedder, "dim", None) or cfg.embeddings.dim or 8
+    writer = SqliteInvoiceWriter(cfg.db, cfg.data_dir, dim)
+    relative = writer.save(
+        InvoiceWrite(
+            number=numero,
+            record=record,
+            state=extracted["estado"],
+            reason=extracted["motivo"],
+            filename=filename,
+            image=image,
+            chunks=chunks,
+            embeddings=embeddings,
+        )
     )
-    relative = str(path.relative_to(cfg.data_dir))
-    fd, temporary = tempfile.mkstemp(dir=invoices_dir, prefix=".invoice-")
-    try:
-        with os.fdopen(fd, "wb") as f:
-            f.write(image)
-        dim = getattr(embedder, "dim", None) or cfg.embeddings.dim or 8
-        store = ChunkStore(cfg.db, dim=dim)
-        try:
-            cols = ", ".join(f"{k} TEXT" for k in FIELDS)
-            store.db.execute(
-                f"CREATE TABLE IF NOT EXISTS facturas ({cols}, fichero TEXT, cuadra TEXT, motivo TEXT, PRIMARY KEY(numero))"
-            )
-            values = [None if record.get(k) in (None, "") else str(record[k]) for k in FIELDS]
-            placeholders = ",".join("?" * (len(FIELDS) + 3))
-            store.db.execute(
-                f"INSERT OR REPLACE INTO facturas VALUES ({placeholders})",
-                [
-                    *values,
-                    relative,
-                    "1" if extracted["estado"] == "ok" else "0",
-                    extracted["motivo"],
-                ],
-            )
-            store.replace_document(
-                invoice_doc_id(numero), chunks, embeddings, [image], commit=False
-            )
-            store.db.commit()
-        except Exception:
-            store.db.rollback()
-            raise
-        finally:
-            store.db.close()
-        os.replace(temporary, path)
-    finally:
-        if os.path.exists(temporary):
-            os.unlink(temporary)
 
     return {
         "record": record,
