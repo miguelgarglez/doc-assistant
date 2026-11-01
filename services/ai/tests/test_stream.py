@@ -7,6 +7,7 @@ import socket
 import subprocess
 import sys
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
@@ -485,3 +486,14 @@ def test_stream_survives_worker_thread_changes(
     evs = events("".join(frames))
     assert evs[-1][0] == "done", evs[-1]
     assert evs[-1][1]["ok"] is True
+
+
+def test_request_id_matches_stream_and_is_unique(config_path: Path) -> None:
+    with TestClient(create_app(config_path)) as client:
+        streamed = client.post("/ask/stream", json={"question": "¿Qué documentos tienes?"})
+        plain = client.post("/ask", json={"question": "¿Qué documentos tienes?"})
+    stream_id = streamed.headers["x-request-id"]
+    assert str(uuid.UUID(stream_id)) == stream_id
+    assert events(streamed.text)[-1][1]["request_id"] == stream_id
+    assert str(uuid.UUID(plain.headers["x-request-id"])) == plain.headers["x-request-id"]
+    assert plain.headers["x-request-id"] != stream_id

@@ -3,6 +3,7 @@
 import copy
 import json
 import time
+import uuid
 from collections.abc import AsyncIterator, Callable, Iterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -252,6 +253,7 @@ class ClarificationEvent(BaseModel):
 class DoneEvent(AskResponse):
     event: Literal["done"] = "done"
     timings: dict[str, float]
+    request_id: str
 
 
 class ErrorEvent(BaseModel):
@@ -392,8 +394,11 @@ def sse(event: BaseModel) -> str:
     return f"event: {name}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
-def ask_stream_events(config_path: Path, question: str) -> Iterator[str]:
+def ask_stream_events(
+    config_path: Path, question: str, request_id: str | None = None
+) -> Iterator[str]:
     """Translate pipeline events into the SSE contract (see docs/streaming.md)."""
+    request_id = request_id or str(uuid.uuid4())
     emitted = False
     try:
         for kind, data in ask_events(config_path, question, stream=True):
@@ -427,14 +432,18 @@ def ask_stream_events(config_path: Path, question: str) -> Iterator[str]:
                     )
                 timings = dict(data.get("latencies") or {})
                 timings["total"] = round(sum(timings.values()), 4)
-                yield sse(DoneEvent(**response.model_dump(), timings=timings))
+                yield sse(
+                    DoneEvent(**response.model_dump(), timings=timings, request_id=request_id)
+                )
     except AdapterError as exc:
         yield sse(ErrorEvent(code=exc.code, message=exc.public_message))
     except Exception:  # noqa: BLE001 - the stream must always end with done or error
         yield sse(ErrorEvent(code="internal_error", message="Error interno al responder"))
 
 
-def queued_ask_stream(capacity: AskCapacity, config_path: Path, question: str) -> Iterator[str]:
+def queued_ask_stream(
+    capacity: AskCapacity, config_path: Path, question: str, request_id: str | None = None
+) -> Iterator[str]:
     if not capacity.admitted.acquire(blocking=False):
         yield sse(
             ErrorEvent(
@@ -468,7 +477,7 @@ def queued_ask_stream(capacity: AskCapacity, config_path: Path, question: str) -
                     elapsed_s=round(time.monotonic() - started, 4),
                 )
             )
-        yield from ask_stream_events(config_path, question)
+        yield from ask_stream_events(config_path, question, request_id)
     finally:
         if acquired:
             capacity.running.release()
@@ -563,6 +572,9 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         return JSONResponse(
             status_code=502,
             content=ErrorBody(code=exc.code, message=exc.public_message).model_dump(),
+            headers={"x-request-id": request.state.request_id}
+            if hasattr(request.state, "request_id")
+            else None,
         )
 
     @app.get("/health")
@@ -665,21 +677,28 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         response_model=AskResponse,
         responses={502: {"model": ErrorBody}, 503: {"model": ErrorBody}},
     )
-    def query(payload: AskRequest, request: Request) -> Any:
+    def query(payload: AskRequest, request: Request, response: Response) -> Any:
+        request_id = str(uuid.uuid4())
+        response.headers["x-request-id"] = request_id
+        request.state.request_id = request_id
         capacity = request.app.state.ask_capacity
         if not capacity.admitted.acquire(blocking=False):
-            return upload_error(
+            error = upload_error(
                 "queue_full",
                 "Hay demasiadas consultas pendientes. Inténtalo de nuevo en unos segundos.",
                 503,
             )
+            error.headers["x-request-id"] = request_id
+            return error
         acquired = False
         try:
             acquired = capacity.running.acquire(timeout=ASK_QUEUE_TIMEOUT_S)
             if not acquired:
-                return upload_error(
+                error = upload_error(
                     "queue_timeout", "La espera ha sido demasiado larga. Inténtalo de nuevo.", 503
                 )
+                error.headers["x-request-id"] = request_id
+                return error
             return ask(config_path, payload.question)
         finally:
             if acquired:
@@ -700,10 +719,17 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         },
     )
     def query_stream(payload: AskRequest, request: Request) -> StreamingResponse:
+        request_id = str(uuid.uuid4())
         return StreamingResponse(
-            queued_ask_stream(request.app.state.ask_capacity, config_path, payload.question),
+            queued_ask_stream(
+                request.app.state.ask_capacity, config_path, payload.question, request_id
+            ),
             media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+                "x-request-id": request_id,
+            },
         )
 
     @app.get("/sources", response_model=list[Source])

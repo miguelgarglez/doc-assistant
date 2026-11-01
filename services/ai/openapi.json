@@ -2550,6 +2550,10 @@
             },
             "title": "Timings",
             "type": "object"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
           }
         },
         "required": [
@@ -2557,7 +2561,8 @@
           "answer",
           "citations",
           "reason",
-          "timings"
+          "timings",
+          "request_id"
         ],
         "title": "DoneEvent",
         "type": "object"

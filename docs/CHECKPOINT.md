@@ -319,3 +319,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:05 CET · Latencias sintéticas
 - Diez muestras válidas por operación en serie y con concurrencia 2. `docs/modelos-hardware.md` recoge p50 y p95 por interpolación inclusiva y las limitaciones. El informe y los resultados completos están fuera del repositorio.
 - La ejecución terminó y cerró los procesos propios. Los servidores ajenos no se inspeccionaron, por lo que su estado durante la prueba no está acreditado.
+
+## 01-Nov 07:07 CET · Identificador de petición
+- `/ask` y `/ask/stream` asignan un UUID por petición. El evento `done` repite el valor de `x-request-id`; los errores de capacidad conservan la cabecera. No se persisten datos.
+- 37 pruebas focalizadas, Ruff y mypy pasaron. Contrato OpenAPI y cliente regenerados. La traza completa, el historial y feedback siguen pendientes; no hay tag v0.16.0.
