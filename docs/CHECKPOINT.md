@@ -2,6 +2,7 @@
 (Horas reales de los commits, Europe/Madrid, tomadas de `git log`.)
 
 ## Hitos
+- **01-nov 02:26 · Playwright y axe.** Tres pasadas con 180 aprobadas y 4 live omitidas cada una, en el puerto 3180. Se usó Node 26 del sistema para Playwright; el check de proyecto utilizó las versiones fijadas por mise.
 - **01-nov 02:25 · Auditoría preliminar.** Clon limpio del commit `e634a11`: TOTAL 0. No sustituye la auditoría del tag, que aún no existe.
 - **01-nov 02:24 · Bloqueo del recorrido ZIP.** Los archivos de llama.cpp b12020 que incluye el empaquetador no están disponibles; descargarlos e instalarlos excede la autorización limitada a lockfiles. La decisión y alternativa quedan en `decisiones-pendientes.md`.
 - **01-nov 02:23 · Check de continuación.** `mise run check` correcto: 313 tests del servicio, 35 live omitidos, 26 de scripts, lint, tipos, contrato y build. Entornos instalados desde los lockfiles dentro del worktree nocturno.
