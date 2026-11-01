@@ -550,10 +550,11 @@ def ask(
     embedder: Embedder | None = None,
     reranker: Reranker | None = None,
     llm: LLM | None = None,
+    trace: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for kind, data in ask_events(
-        config_path, question, embedder=embedder, reranker=reranker, llm=llm
+        config_path, question, embedder=embedder, reranker=reranker, llm=llm, trace=trace
     ):
         if kind == "result":
             result = data

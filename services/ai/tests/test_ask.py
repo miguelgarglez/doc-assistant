@@ -210,6 +210,14 @@ def test_trace_marks_completion_and_interruption(config_path: Path) -> None:
     assert "elapsed_s" in interrupted
 
 
+def test_non_streaming_ask_can_collect_trace(config_path: Path) -> None:
+    trace: dict = {}
+    result = ask(config_path, "", trace=trace)
+    assert result["reason"] == "pregunta_vacia"
+    assert trace["result"] == result
+    assert trace["status"] == "completed"
+
+
 def test_trace_marks_pipeline_error(config_path: Path, monkeypatch) -> None:
     import pytest
 
