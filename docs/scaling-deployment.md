@@ -51,7 +51,7 @@ Un portátil (M4, 16 GB): web, servicio de IA y cuatro servidores de modelos; SQ
 
 ## Historial: base local y siguiente etapa
 
-La versión inicial funciona en una instalación local: SQLite en modo WAL guarda las consultas con un propietario `local`. El proxy de Next inyecta un token efímero en servidor y la API restringe estas rutas a loopback. Esto no autentica personas ni proporciona aislamiento multiusuario. El protocolo `HistoryWriter` separa las escrituras de la cola; las lecturas y operaciones de revisión aún dependen de `HistoryStore`, por lo que sustituir el almacén requiere completar una interfaz para esas operaciones.
+La versión inicial funciona en una instalación local: SQLite en modo WAL guarda las consultas con un propietario `local`. El proxy de Next inyecta un token efímero en servidor y la API restringe estas rutas a loopback. Esto no autentica personas ni proporciona aislamiento multiusuario. El protocolo `HistoryRepository` reúne escritura, lectura, borrado, retención y revisión. La instalación construye hoy `HistoryStore` con SQLite; un adaptador Postgres tendría que implementar ese contrato y superar las pruebas de comportamiento y aislamiento.
 
 Para cientos de usuarios, la siguiente etapa sería Postgres compartido, particiones por fecha, índice por usuario y SSO; también habría que incorporar y verificar el propietario en todas las consultas, feedback y controles de acceso. SQLite WAL es adecuado para un solo servidor, pero no para coordinar varios servidores; la búsqueda sobre texto y propietarios también requiere otra estrategia al crecer.
 
