@@ -65,7 +65,7 @@ def test_outbox_failure_does_not_change_done_stream(config_path):
     from doc_assistant.history_stream import outbox_ask_stream
 
     class BrokenOutbox:
-        def submit(self, *args):
+        def submit(self, *args, **kwargs):
             raise OSError("unavailable")
 
     frames = list(outbox_ask_stream(AskCapacity(1, 0), config_path, "", "r", "c", BrokenOutbox()))

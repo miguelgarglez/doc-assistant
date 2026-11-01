@@ -38,6 +38,8 @@ def outbox_ask_stream(
     request_id: str,
     conversation_id: str,
     outbox: HistoryOutbox,
+    *,
+    ticket: tuple[int, int] | None = None,
 ) -> Iterator[str]:
     """Enqueue a trace after the stream closes, without exposing storage errors."""
     trace: dict[str, Any] = {"conversation_id": conversation_id}
@@ -48,7 +50,9 @@ def outbox_ask_stream(
     finally:
         if "started_at" in trace:
             try:
-                outbox.submit(request_id, conversation_id, trace["started_at"], trace)
+                outbox.submit(
+                    request_id, conversation_id, trace["started_at"], trace, ticket=ticket
+                )
             except Exception:  # noqa: BLE001 - storage must not interrupt the stream
                 logging.getLogger(__name__).error(
                     "Could not queue history for request_id=%s", request_id

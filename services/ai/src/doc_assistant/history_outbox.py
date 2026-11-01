@@ -7,10 +7,12 @@ import queue
 import threading
 import time
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeVar
 
 logger = logging.getLogger(__name__)
+T = TypeVar("T")
 
 
 class HistoryWriter(Protocol):
@@ -27,6 +29,7 @@ class _Entry:
     conversation_id: str = field(compare=False)
     created_at: str = field(compare=False)
     trace: dict[str, Any] = field(compare=False)
+    generation: tuple[int, int] = field(compare=False)
     attempts: int = field(default=0, compare=False)
 
 
@@ -38,6 +41,9 @@ class HistoryOutbox:
         self._retry_base = retry_base
         self._queue: queue.PriorityQueue[_Entry] = queue.PriorityQueue()
         self._lock = threading.Lock()
+        self._write_lock = threading.Lock()
+        self._generation = 0
+        self._conversation_generations: dict[str, int] = {}
         self._failures: deque[dict[str, str]] = deque(maxlen=20)
         self._pending = 0
         self._sequence = 0
@@ -45,16 +51,47 @@ class HistoryOutbox:
         self._thread = threading.Thread(target=self._run, name="history-outbox", daemon=True)
         self._thread.start()
 
+    def ticket(self, conversation_id: str) -> tuple[int, int]:
+        with self._lock:
+            return self._generation, self._conversation_generations.get(conversation_id, 0)
+
     def submit(
-        self, request_id: str, conversation_id: str, created_at: str, trace: dict[str, Any]
+        self,
+        request_id: str,
+        conversation_id: str,
+        created_at: str,
+        trace: dict[str, Any],
+        *,
+        ticket: tuple[int, int] | None = None,
     ) -> None:
         with self._lock:
+            generation = (self._generation, self._conversation_generations.get(conversation_id, 0))
+            if ticket is not None and ticket != generation:
+                return
             self._sequence += 1
             self._pending += 1
             entry = _Entry(
-                time.monotonic(), self._sequence, request_id, conversation_id, created_at, trace
+                time.monotonic(),
+                self._sequence,
+                request_id,
+                conversation_id,
+                created_at,
+                trace,
+                generation,
             )
         self._queue.put(entry)
+
+    def delete(self, operation: Callable[[], T], *, conversation_id: str | None = None) -> T:
+        """Invalidate earlier streams and writes before deleting the stored data."""
+        with self._write_lock:
+            with self._lock:
+                if conversation_id is None:
+                    self._generation += 1
+                else:
+                    self._conversation_generations[conversation_id] = (
+                        self._conversation_generations.get(conversation_id, 0) + 1
+                    )
+            return operation()
 
     def status(self) -> dict[str, Any]:
         with self._lock:
@@ -76,10 +113,15 @@ class HistoryOutbox:
                 self._stop.wait(min(delay, 0.1))
                 continue
             try:
-                self._store.record(
-                    entry.request_id, entry.conversation_id, entry.created_at, entry.trace
-                )
-            except Exception as exc:
+                with self._write_lock:
+                    if entry.generation != self.ticket(entry.conversation_id):
+                        with self._lock:
+                            self._pending -= 1
+                        continue
+                    self._store.record(
+                        entry.request_id, entry.conversation_id, entry.created_at, entry.trace
+                    )
+            except Exception as exc:  # noqa: BLE001 - retry storage failures
                 logger.error(
                     "History write failed for request_id=%s (%s)",
                     entry.request_id,
