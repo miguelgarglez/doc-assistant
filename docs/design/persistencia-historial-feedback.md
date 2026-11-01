@@ -140,6 +140,8 @@ El historial de preguntas de `sessionStorage` no se migra. Queda como recuerdo c
 - Web: el menú de feedback se maneja con teclado y pasa axe en cuatro temas y modos.
 - Rendimiento: medir el coste de escribir la traza sobre la latencia de una petición. No hay medida todavía. Hay que tomarla antes de aceptar la fase 1.
 
+Una medición exploratoria local de `HistoryStore.record` usó 100 escrituras consecutivas de una traza sintética con 40 candidatos y sin texto de fragmentos. La traza JSON ocupó 8.524 bytes; cada operación abrió la conexión, serializó y confirmó una fila. La mediana fue 0,54 ms y el p95 interpolado 0,73 ms, con un rango de 0,40 a 1,08 ms. Las 100 filas se leyeron después. Es una sola serie, sin carga concurrente ni perfilado, y no mide el coste en una petición completa. No permite aceptar la fase 1 ni estimar el tamaño con fragmentos literales. El script y las muestras están en `_agents/night2/`.
+
 ## 11. Decisiones abiertas
 
 1. ¿Se guarda el texto de los fragmentos por defecto? La propuesta dice que sí, por reproducibilidad.

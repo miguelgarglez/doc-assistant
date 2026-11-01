@@ -361,3 +361,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:14 CET · Fechas y errores en la traza
 - La traza opcional registra inicio y fin UTC y el código de error, sin incluir el mensaje de una excepción interna. También registra el fin cuando se interrumpe el generador.
 - Siete pruebas de consulta y Ruff pasan. La traza sigue en memoria y aún no incluye errores de admisión a la cola.
+
+## 01-Nov 07:14 CET · Medición exploratoria del almacén
+- Cien escrituras secuenciales de una traza sintética de 40 candidatos y 8.524 bytes produjeron p50 0,54 ms y p95 0,73 ms; se leyeron las 100 filas. El script, las muestras y la base sintética están en `_agents/night2/`.
+- Es una sola serie de `record`, sin perfilado, concurrencia ni petición completa. No permite estimar el coste para el usuario ni cerrar la prueba de rendimiento de la fase 1.
