@@ -30,7 +30,7 @@ def test_absent_number_rejected():
     assert not verify("6000", cit("Guarda los últimos 5.000 eventos"), CH).ok
 
 
-from doc_assistant.chunking import chunk_invoice
+from doc_assistant.domain.invoices.chunking import chunk_invoice
 
 
 def test_invoice_header_chunk_has_issuer_and_taxid():

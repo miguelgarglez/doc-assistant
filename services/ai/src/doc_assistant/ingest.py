@@ -15,8 +15,10 @@ import pypdfium2 as pdfium
 
 from doc_assistant.adapters import build_adapters
 from doc_assistant.application.ports.models import Embedder
-from doc_assistant.chunking import chunk_invoice, chunk_pdf, pdf_doc_id
+from doc_assistant.chunking import chunk_pdf
 from doc_assistant.config import load_config
+from doc_assistant.domain.documents.ids import pdf_doc_id
+from doc_assistant.domain.invoices.chunking import chunk_invoice
 from doc_assistant.infra.pdf.lock import pdf_lock
 from doc_assistant.infra.storage.chunks import ChunkStore
 

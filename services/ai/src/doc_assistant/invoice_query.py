@@ -21,7 +21,7 @@ from decimal import Decimal
 from typing import Any
 
 from doc_assistant.application.ports.models import AdapterBusy, AdapterError, AdapterTimeout
-from doc_assistant.chunking import invoice_doc_id
+from doc_assistant.domain.documents.ids import invoice_doc_id
 from doc_assistant.domain.invoices.fields import (
     FIELD_SPECS,
     asks_for,

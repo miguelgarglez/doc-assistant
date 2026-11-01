@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 from doc_assistant.application.ports.invoice_writer import InvoiceWrite
-from doc_assistant.chunking import invoice_doc_id
+from doc_assistant.domain.documents.ids import invoice_doc_id
 from doc_assistant.infra.invoices.sqlite import FIELDS
 from doc_assistant.infra.storage.chunks import ChunkStore
 

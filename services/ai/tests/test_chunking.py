@@ -5,7 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from doc_assistant.chunking import chunk_invoice, chunk_pdf, extract_pdf_text
+from doc_assistant.chunking import chunk_pdf, extract_pdf_text
+from doc_assistant.domain.invoices.chunking import chunk_invoice
 
 
 def test_extract_pdf_text_has_sections(synthetic_pdf: Path) -> None:

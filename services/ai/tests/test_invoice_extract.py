@@ -161,9 +161,9 @@ def test_upload_indexes_sql_and_image(config_path: Path) -> None:
     store = ChunkStore(cfg.db, dim=8)
     assert (
         store.page(
-            __import__("doc_assistant.chunking", fromlist=["invoice_doc_id"]).invoice_doc_id(
-                "F-2026-001"
-            ),
+            __import__(
+                "doc_assistant.domain.documents.ids", fromlist=["invoice_doc_id"]
+            ).invoice_doc_id("F-2026-001"),
             1,
         )
         is not None

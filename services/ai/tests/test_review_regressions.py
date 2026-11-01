@@ -226,8 +226,8 @@ def test_invoice_transaction_rolls_back_and_separates_pdf(config_path, synthetic
     from fastapi.testclient import TestClient
 
     from doc_assistant.api import create_app
-    from doc_assistant.chunking import invoice_doc_id, pdf_doc_id
     from doc_assistant.config import load_config
+    from doc_assistant.domain.documents.ids import invoice_doc_id, pdf_doc_id
     from doc_assistant.infra.invoices.sqlite import InvoiceDB
     from doc_assistant.infra.storage.chunks import ChunkStore
     from doc_assistant.ingest import ingest_pdfs

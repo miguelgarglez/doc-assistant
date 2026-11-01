@@ -360,7 +360,7 @@ def test_scope_sentence_is_verbatim_first_sentence() -> None:
 def test_stream_ambiguous_invoice_is_a_clarification_not_a_refusal(
     config_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from doc_assistant.chunking import chunk_invoice
+    from doc_assistant.domain.invoices.chunking import chunk_invoice
     from doc_assistant.infra.invoices.sqlite import InvoiceDB
 
     cfg = load_config(config_path)
@@ -398,7 +398,7 @@ def test_stream_ambiguous_invoice_is_a_clarification_not_a_refusal(
 
 
 def seed_invoice(config_path: Path, record: dict[str, str]) -> None:
-    from doc_assistant.chunking import chunk_invoice
+    from doc_assistant.domain.invoices.chunking import chunk_invoice
     from doc_assistant.infra.invoices.sqlite import InvoiceDB
 
     cfg = load_config(config_path)

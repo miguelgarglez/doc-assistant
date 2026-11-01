@@ -4,8 +4,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from doc_assistant.api import create_app
-from doc_assistant.chunking import pdf_doc_id
 from doc_assistant.config import load_config
+from doc_assistant.domain.documents.ids import pdf_doc_id
 from doc_assistant.infra.storage.chunks import ChunkStore
 from doc_assistant.ingest import ingest_pdfs
 from doc_assistant.model_fakes import FakeEmbedder

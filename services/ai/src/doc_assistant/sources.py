@@ -9,8 +9,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from doc_assistant.chunking import invoice_doc_id, pdf_doc_id
 from doc_assistant.config import AppConfig
+from doc_assistant.domain.documents.ids import invoice_doc_id, pdf_doc_id
 from doc_assistant.infra.storage.chunks import ChunkStore
 
 
