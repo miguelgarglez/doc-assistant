@@ -185,3 +185,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Documentados los cinco archivos, cuantizaciones y tamaños fijados. Los 5,072 GiB son tamaño en disco, no memoria usada. C4/C5/E-C1 y E-B2 siguen abiertos a falta de medidas y comparación.
 - Verificación: tamaños calculados desde `scripts/assets.json`; cuatro tests de troceado pasaron con el entorno Python ya existente de ui7, sin instalar dependencias.
 
+
+## 01-Nov 01:57 CET · Límite de fundamentación en el README
+- Sustituida la promesa de ausencia de invenciones por una descripción de las verificaciones y su límite heurístico, coherente con `docs/architecture.md`. No se afirma una tasa de error sin gold aprobado.
+- Verificación: revisión del texto y `git diff --check`. Sin cambios de comportamiento.
+

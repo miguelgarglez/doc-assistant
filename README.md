@@ -1,6 +1,6 @@
 # Doc Assistant — consultas sobre documentación técnica y facturas, 100 % local
 
-Pregunta en español sobre fichas técnicas, manuales de instalación, de célula o de visión, y sobre facturas. Cada respuesta cita el documento, la sección, la página y el fragmento exacto, que se ve resaltado junto a la imagen de la página. Si no hay evidencia, el sistema lo dice y no inventa nada. Las facturas (PNG/JPG) se extraen a campos, se comprueba que los importes cuadren (suma e IVA) y se pueden consultar.
+Pregunta en español sobre fichas técnicas, manuales de instalación, de célula o de visión, y sobre facturas. Cada respuesta cita el documento, la sección, la página y el fragmento exacto, que se ve resaltado junto a la imagen de la página. El servicio rechaza respuestas cuando sus verificaciones no encuentran evidencia suficiente. Estas comprobaciones son heurísticas y no garantizan la ausencia de errores. Las facturas (PNG/JPG) se extraen a campos, se comprueba que los importes cuadren (suma e IVA) y se pueden consultar.
 
 ## Arranque (igual en macOS, Linux y Windows)
 1. Instala mise: `curl https://mise.run | sh` (macOS/Linux) o `winget install jdx.mise` (Windows). **Abre una terminal nueva** después.
