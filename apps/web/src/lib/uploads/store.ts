@@ -17,6 +17,7 @@ export type UploadItem = {
   progress: number
   /** Step the service reports while it processes the file. */
   stage?: IngestStage
+  stageProgress?: { current: number; total: number }
   /** Result summary when done, reason when it failed. */
   detail?: string
   /** The service already had this file: nothing was added. */
@@ -80,7 +81,7 @@ export class UploadStore {
   }
 
   retry(id: string) {
-    this.patch(id, { status: "queued", progress: 0, detail: undefined, stage: undefined, duplicate: undefined, hidden: false })
+    this.patch(id, { status: "queued", progress: 0, detail: undefined, stage: undefined, stageProgress: undefined, duplicate: undefined, hidden: false })
     this.pump()
   }
 
@@ -139,7 +140,11 @@ export class UploadStore {
       (event) => {
         const current = this.items.find((candidate) => candidate.id === item.id)
         if (current?.status === "uploading" || current?.status === "processing") {
-          this.patch(item.id, { stage: event.stage, status: "processing", progress: 100 })
+          const { current: done, total } = event.detail ?? {}
+          const stageProgress = typeof done === "number" && typeof total === "number" && total > 0 && done >= 0 && done <= total
+            ? { current: done, total }
+            : undefined
+          this.patch(item.id, { stage: event.stage, stageProgress, status: "processing", progress: 100 })
         }
       },
       follow.signal

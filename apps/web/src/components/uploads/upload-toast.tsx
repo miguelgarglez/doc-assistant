@@ -40,7 +40,7 @@ function Row({ item }: { item: UploadItem }) {
           className={cn(
             "text-xs tabular-nums text-muted-foreground",
             item.status !== "error" && "truncate",
-            item.status === "error" && "text-destructive",
+            item.status === "error" && "text-popover-foreground",
             item.status === "done" && !item.duplicate && "text-[var(--ok-fg)]"
           )}
           data-testid="upload-status"

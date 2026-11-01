@@ -163,4 +163,39 @@ def test_document_stages_are_reported_while_it_is_processed(
                 seen.append(state.stage)
         upload.join(10)
     assert seen[0] == "received" and "indexing" in seen and seen[-1] == "done"
-    assert seen == sorted(set(seen), key=seen.index)
+    assert seen == sorted(seen, key={"received": 0, "reading": 1, "indexing": 2, "done": 3}.get)
+
+
+def test_ingest_batches_embeddings_and_reports_progress(config_path: Path, tmp_path: Path) -> None:
+    from reportlab.pdfgen.canvas import Canvas
+
+    from doc_assistant.ingest import ingest_pdfs
+
+    pdf = tmp_path / "many.pdf"
+    canvas = Canvas(str(pdf))
+    canvas.drawString(50, 800, "Manual")
+    for n in range(40):
+        y = 780 - (n % 20) * 35
+        if n == 20:
+            canvas.showPage()
+        canvas.drawString(50, y, f"{n + 1}. Apartado")
+        canvas.drawString(50, y - 15, f"Contenido del apartado {n + 1}.")
+    canvas.save()
+    sizes = []
+    events = []
+
+    class Recording(FakeEmbedder):
+        def embed(self, texts: list[str]) -> list[list[float]]:
+            sizes.append(len(texts))
+            return super().embed(texts)
+
+    result = ingest_pdfs(
+        config_path,
+        pdf,
+        embedder=Recording(dim=8),
+        progress=lambda stage, **detail: events.append((stage, detail)),
+    )
+    assert result["n_chunks"] == 40
+    assert sizes == [32, 8]
+    assert ("reading", {"current": 2, "total": 2}) in events
+    assert ("indexing", {"current": 40, "total": 40}) in events

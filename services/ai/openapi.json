@@ -2197,6 +2197,30 @@
           "message": {
             "type": "string",
             "title": "Message"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Upload reason: unsupported_type, size_limit, page_limit, pdf_protected or pdf_unreadable."
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit",
+            "description": "Upload limit in bytes or pages, according to reason."
           }
         },
         "type": "object",

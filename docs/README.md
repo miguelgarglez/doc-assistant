@@ -31,6 +31,7 @@
 - No están verificadas la carga sostenida ni la equidad de la cola, ni la causa del error histórico sin traza.
 - Linux y Windows siguen sin probar; el check registrado reutilizó dependencias y una raíz temporal ampliada para el build.
 - El historial persistente funciona localmente; multiusuario y SSO siguen sin implementar.
+- Los límites y el progreso de subida se explican en las [notas de v0.17.1](evolution-notes/v0.17.1.md#subida-de-archivos).
 
 ## Orden de lectura
 

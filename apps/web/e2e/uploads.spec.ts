@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
+import AxeBuilder from "@axe-core/playwright"
 
 import { mockBackend, SOURCES, sse } from "./mocks"
 
@@ -26,6 +27,24 @@ async function mockStages(page: Page, stages: string[]) {
 }
 
 test.describe("añadir fuentes", () => {
+  for (const theme of ["industrial", "neutral"]) {
+    for (const mode of ["light", "dark"]) {
+      test(`aviso de error accesible en ${theme} ${mode}`, async ({ page }) => {
+        await page.addInitScript(([t, m]) => {
+          localStorage.setItem("doc-assistant.theme", t)
+          localStorage.setItem("doc-assistant.mode", m)
+        }, [theme, mode])
+        await mockBackend(page)
+        await page.goto("/")
+        await openDialog(page)
+        await page.getByTestId("sources-file-input").setInputFiles({ name: "invalido.txt", mimeType: "text/plain", buffer: Buffer.from("prueba") })
+        await expect(toast(page)).toBeVisible()
+        await expect(page.getByTestId("add-sources-dialog")).toHaveCount(0)
+        await page.waitForTimeout(500) // Let the toast entrance finish before measuring contrast.
+        expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([])
+      })
+    }
+  }
   test("el aviso de errores permanece visible y permite cerrar cada archivo", async ({ page }) => {
     await mockBackend(page)
     await page.goto("/")
@@ -123,6 +142,26 @@ test.describe("añadir fuentes", () => {
     await expect(toast(page)).toHaveCount(0)
   })
 
+  test("muestra el avance de procesamiento por archivo", async ({ page }) => {
+    await mockBackend(page)
+    await page.route("**/api/ingest/jobs/*/events", (route) => route.fulfill({
+      contentType: "text/event-stream",
+      body: sse([["stage", { stage: "reading", label: "Leyendo", seq: 1, detail: { current: 12, total: 80 } }]]),
+    }))
+    let release: () => void = () => undefined
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    await page.route("**/api/documents*", async (route) => {
+      await gate
+      await route.fulfill(created(3))
+    })
+    await page.goto("/")
+    await openDialog(page)
+    await page.getByTestId("sources-file-input").setInputFiles(pdf("largo.pdf"))
+    await expect(row(page, "largo.pdf")).toContainText("Leyendo páginas: 12 de 80")
+    release()
+    await expect(row(page, "largo.pdf")).toHaveAttribute("data-status", "done")
+  })
+
   test("la lista de Fuentes se actualiza al terminar", async ({ page }) => {
     await mockBackend(page)
     let added = false
@@ -150,7 +189,7 @@ test.describe("añadir fuentes", () => {
     await page.route("**/api/documents*", (route) => {
       calls += 1
       if (calls === 1) {
-        return route.fulfill({ status: 502, json: { code: "adapter_error", message: "llm unavailable" } })
+        return route.fulfill({ status: 502, json: { code: "model_busy", message: "llm unavailable" } })
       }
       return route.fulfill(created(3))
     })
@@ -159,7 +198,7 @@ test.describe("añadir fuentes", () => {
     await page.getByTestId("sources-file-input").setInputFiles([pdf("grande.pdf"), { name: "notas.txt", mimeType: "text/plain", buffer: Buffer.from("hola") }])
     const big = row(page, "grande.pdf")
     await expect(big).toHaveAttribute("data-status", "error")
-    await expect(big).toContainText("El modelo de lectura no respondió")
+    await expect(big).toContainText("El servicio está ocupado")
     await expect(row(page, "notas.txt")).toContainText("Solo se admiten PDF e imágenes")
     await expect(row(page, "notas.txt").getByRole("button", { name: /Reintentar/ })).toHaveCount(0)
     await expect(page.getByTestId("upload-toast-title")).toHaveText("No se pudieron añadir 2 archivos")
@@ -177,6 +216,34 @@ test.describe("añadir fuentes", () => {
     const item = row(page, "enorme.pdf")
     await expect(item).toContainText("supera el tamaño máximo")
     await expect(item.getByRole("button", { name: /Reintentar/ })).toHaveCount(0)
+  })
+
+  test("explica límites, protección, timeout y errores internos", async ({ page }) => {
+    await mockBackend(page)
+    const errors = [
+      { code: "upload_too_large", message: "limit", reason: "page_limit", limit: 200 },
+      { code: "upload_too_large", message: "limit", reason: "size_limit", limit: 1024 },
+      { code: "invalid_file", message: "invalid", reason: "pdf_protected" },
+      { code: "invalid_file", message: "invalid", reason: "pdf_unreadable" },
+      { code: "model_timeout", message: "timeout" },
+      { code: "internal_error", message: "secret" },
+    ]
+    let index = 0
+    await page.route("**/api/documents*", (route) => route.fulfill({ status: 400, json: errors[index++] }))
+    await page.goto("/")
+    await openDialog(page)
+    await page.getByTestId("sources-file-input").setInputFiles(errors.map((_, n) => pdf(`${n}.pdf`)))
+    const cases = [
+      ["0.pdf", "200 páginas", false], ["1.pdf", "1024 bytes", false],
+      ["2.pdf", "protegido", false], ["3.pdf", "No se puede leer", false],
+      ["4.pdf", "tardó demasiado", true], ["5.pdf", "error interno", false],
+    ] as const
+    for (const [name, message, retry] of cases) {
+      const item = row(page, name)
+      await expect(item).toContainText(message)
+      await expect(item.getByRole("button", { name: /Reintentar/ })).toHaveCount(retry ? 1 : 0)
+    }
+    await expect(row(page, "5.pdf")).not.toContainText("secret")
   })
 
   test("un archivo repetido se dice, no se presenta como añadido", async ({ page }) => {

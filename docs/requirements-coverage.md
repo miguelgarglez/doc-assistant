@@ -9,7 +9,7 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 
 ## Resumen v0.17.1
 
-- Mejoran la visibilidad de peticiones, el historial contextual y la revisión de feedback con copia de exportación aprobada.
+- Mejoran la visibilidad de peticiones, el historial contextual, la revisión de feedback y la subida de documentos largos con progreso y errores explicativos.
 - Pendientes: gold aprobado, evaluación representativa, aislamiento multiusuario y persistencia de la cola ante reinicios.
 - Recuento: 31 filas, 18 cumplidas, 10 parciales y 3 no. Las mejoras no cambian el estado de esas filas.
 

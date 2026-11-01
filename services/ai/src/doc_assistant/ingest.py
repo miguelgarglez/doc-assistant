@@ -98,7 +98,8 @@ def ingest_pdfs(
                 pdf_document = pdfium.PdfDocument(pdf)
                 try:
                     images = []
-                    for page in pdf_document:
+                    total_pages = len(pdf_document)
+                    for page_number, page in enumerate(pdf_document, 1):
                         try:
                             bitmap = page.render(scale=2)
                             try:
@@ -110,6 +111,7 @@ def ingest_pdfs(
                                 bitmap.close()
                         finally:
                             page.close()
+                        report("reading", current=page_number, total=total_pages)
                 finally:
                     pdf_document.close()
         except Exception as exc:  # noqa: BLE001 — isolate rendering failures
@@ -146,7 +148,11 @@ def ingest_pdfs(
 
     report("indexing")
     t_emb = time.perf_counter()
-    embeddings = embedder.embed([c["text"] for c in all_chunks]) if all_chunks else []
+    embeddings = []
+    for start in range(0, len(all_chunks), 32):
+        batch = all_chunks[start : start + 32]
+        embeddings.extend(embedder.embed([c["text"] for c in batch]))
+        report("indexing", current=min(start + len(batch), len(all_chunks)), total=len(all_chunks))
     embed_s = time.perf_counter() - t_emb
 
     t_store = time.perf_counter()

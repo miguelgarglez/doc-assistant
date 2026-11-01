@@ -406,3 +406,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 - El aviso se ancla arriba con margen para áreas seguras, permite cerrar errores individuales y conserva el cierre conjunto. El texto de error deja de truncarse, los errores se agrupan y el porcentaje de transmisión es accesible. Pasaron 11 pruebas focalizadas de navegador; resta verificar los cuatro modos, avisos simultáneos y la batería completa.
 - La subida completa del PDF sintético de 80 páginas respondió 200 con 160 fragmentos almacenados y la página 80 disponible. Esta prueba usa el modelo real de embeddings y datos sintéticos.
+
+## 01-Nov 16:15 CET · Errores y avance de ingesta
+
+- La API mantiene los códigos anteriores y añade motivo y límite cuando corresponde. La interfaz diferencia PDF protegido o ilegible, límites, servicio ocupado, espera agotada y fallo interno; solo ofrece reintento para fallos transitorios. El procesamiento comunica páginas y fragmentos y solicita embeddings en lotes de 32.
+- El PDF sintético de 80 páginas volvió a subir con el modelo real y 160 fragmentos. Pasaron 13 pruebas focalizadas de subida y axe en los cuatro modos tras corregir el contraste del texto de error. Quedan la verificación completa, las capturas restantes y la auditoría final.

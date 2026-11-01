@@ -225,7 +225,7 @@ def _request_json(method: str, url: str, *, timeout: float, **kwargs: Any) -> An
     except requests.Timeout as e:
         raise AdapterTimeout(f"Timeout al contactar {url} ({timeout}s)") from e
     except requests.ConnectionError as e:
-        raise AdapterError(f"No responde el servidor en {url}") from e
+        raise AdapterBusy(f"No responde el servidor en {url}") from e
     except requests.HTTPError as e:
         raise http_adapter_error(e, url) from e
     except ValueError as e:

@@ -660,6 +660,16 @@ export interface components {
             code: string;
             /** Message */
             message: string;
+            /**
+             * Reason
+             * @description Upload reason: unsupported_type, size_limit, page_limit, pdf_protected or pdf_unreadable.
+             */
+            reason?: string | null;
+            /**
+             * Limit
+             * @description Upload limit in bytes or pages, according to reason.
+             */
+            limit?: number | null;
         };
         /** FeedbackDecision */
         FeedbackDecision: {

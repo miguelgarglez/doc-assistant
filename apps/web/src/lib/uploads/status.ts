@@ -17,6 +17,10 @@ export function uploadStatusText(item: UploadItem): string {
     case "uploading":
       return `Subiendo ${item.progress}%`
     case "processing":
+      if (item.stageProgress && (item.stage === "reading" || item.stage === "indexing")) {
+        const action = item.stage === "reading" ? "Leyendo páginas" : "Indexando fragmentos"
+        return `${action}: ${item.stageProgress.current} de ${item.stageProgress.total}`
+      }
       return (item.stage && STAGE_TEXT[item.stage]) || "Procesando…"
     case "done":
       return item.detail ?? "Listo"

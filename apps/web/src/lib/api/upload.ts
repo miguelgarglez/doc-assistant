@@ -34,7 +34,8 @@ async function uploadWithProgress<T>(
     const xhr = new XMLHttpRequest()
     xhr.open("POST", `/api${path}${jobId ? `?job=${encodeURIComponent(jobId)}` : ""}`)
     xhr.responseType = "json"
-    xhr.timeout = 180_000
+    // Processing starts after transmission; long documents can take several minutes.
+    xhr.timeout = 900_000
 
     xhr.upload.onprogress = (event) => {
       if (!event.lengthComputable) return

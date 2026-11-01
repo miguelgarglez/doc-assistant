@@ -11,6 +11,64 @@ from doc_assistant.ingest import ingest_pdfs
 from doc_assistant.store import ChunkStore
 
 
+def test_upload_error_reasons_and_transient_models(config_path, tmp_path, monkeypatch):
+    import yaml
+    from reportlab.lib.pdfencrypt import StandardEncryption
+    from reportlab.pdfgen.canvas import Canvas
+
+    from doc_assistant.adapters import AdapterBusy, AdapterTimeout
+
+    cfg = yaml.safe_load(config_path.read_text())
+    cfg["upload_pdf_max_bytes"] = 100000
+    cfg["upload_pdf_max_pages"] = 1
+    config_path.write_text(yaml.safe_dump(cfg))
+    protected = tmp_path / "protected.pdf"
+    canvas = Canvas(str(protected), encrypt=StandardEncryption("secret"))
+    canvas.drawString(50, 700, "Synthetic")
+    canvas.save()
+    long = tmp_path / "long.pdf"
+    canvas = Canvas(str(long))
+    canvas.showPage()
+    canvas.showPage()
+    canvas.save()
+    with TestClient(create_app(config_path)) as client:
+
+        def upload(name, data):
+            return client.post("/documents", files={"file": (name, data)})
+
+        assert upload("x.txt", b"text").json()["reason"] == "unsupported_type"
+        assert upload("x.pdf", b"%PDF broken").json()["reason"] == "pdf_unreadable"
+        assert upload("x.pdf", protected.read_bytes()).json()["reason"] == "pdf_protected"
+        body = upload("x.pdf", long.read_bytes()).json()
+        assert (body["reason"], body["limit"]) == ("page_limit", 1)
+        body = upload("x.pdf", b"x" * 100001).json()
+        assert (body["reason"], body["limit"]) == ("size_limit", 100000)
+        plain = _plain_pdf(tmp_path)
+        for exc, code in [
+            (AdapterBusy("busy"), "model_busy"),
+            (AdapterTimeout("timeout"), "model_timeout"),
+            (RuntimeError("private"), "internal_error"),
+        ]:
+
+            def fail(*args, exc=exc, **kwargs):
+                raise exc
+
+            monkeypatch.setattr("doc_assistant.api.save_and_ingest_pdf", fail)
+            response = upload("x.pdf", plain)
+            assert response.json()["code"] == code
+            assert "private" not in response.text
+
+
+def _plain_pdf(tmp_path):
+    from reportlab.pdfgen.canvas import Canvas
+
+    path = tmp_path / "plain.pdf"
+    canvas = Canvas(str(path))
+    canvas.drawString(50, 700, "Synthetic")
+    canvas.save()
+    return path.read_bytes()
+
+
 def test_source_chunks_only_returns_the_requested_document(
     config_path: Path, synthetic_pdf: Path
 ) -> None:

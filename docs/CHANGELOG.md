@@ -3,6 +3,7 @@
 ## v0.17.1 · Historial contextual y revisión
 
 - Sistema incorpora peticiones recientes paginadas; el historial abre junto al chat y puede ampliarse.
+- La subida agrupa errores, permite cerrarlos por archivo y comunica sus límites y el avance de lectura e indexación. Los PDF con apartados largos se dividen en fragmentos citables antes de generar embeddings.
 - La revisión de avisos dispone de cola, detalle, atajos, redacción asistida y vista previa. Solo se exporta una copia aprobada tras confirmar la ausencia de datos sensibles; las revisiones previas requieren una nueva confirmación.
 - [Notas de evolución](evolution-notes/v0.17.1.md) y [cobertura](requirements-coverage.md#resumen-v0171).
 

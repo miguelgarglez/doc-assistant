@@ -42,6 +42,13 @@ ASK_QUEUE_TIMEOUT_S = 60.0
 class ErrorBody(BaseModel):
     code: str
     message: str
+    reason: str | None = Field(
+        default=None,
+        description="Upload reason: unsupported_type, size_limit, page_limit, pdf_protected or pdf_unreadable.",
+    )
+    limit: int | None = Field(
+        default=None, description="Upload limit in bytes or pages, according to reason."
+    )
 
 
 class IngestRequest(BaseModel):
@@ -381,9 +388,14 @@ def read_upload(file: UploadFile, limit: int) -> bytes | None:
     return b"".join(blocks)
 
 
-def upload_error(code: str, message: str, status: int) -> JSONResponse:
+def upload_error(
+    code: str, message: str, status: int, *, reason: str | None = None, limit: int | None = None
+) -> JSONResponse:
     return JSONResponse(
-        status_code=status, content=ErrorBody(code=code, message=message).model_dump()
+        status_code=status,
+        content=ErrorBody(code=code, message=message, reason=reason, limit=limit).model_dump(
+            exclude_none=True
+        ),
     )
 
 
@@ -605,9 +617,10 @@ def tracked(
             jobs.fail(job, exc.code, exc.public_message)
         raise
     except Exception:
+        logging.getLogger(__name__).exception("Upload processing failed")
         if job:
             jobs.fail(job, "internal_error", "Error interno al procesar el archivo")
-        raise
+        return upload_error("internal_error", "Error interno al procesar el archivo", 500)
     if job:
         if isinstance(result, JSONResponse):
             body = json.loads(bytes(result.body))
@@ -801,18 +814,21 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
         def run(progress: Progress) -> Any:
             filename = file.filename or "document.pdf"
             if not filename.lower().endswith(".pdf"):
-                return JSONResponse(
-                    status_code=400,
-                    content=ErrorBody(
-                        code="invalid_file", message="Only PDF uploads are accepted"
-                    ).model_dump(),
+                return upload_error(
+                    "invalid_file", "Only PDF uploads are accepted", 400, reason="unsupported_type"
                 )
             cfg = request.app.state.config
             if not safe_upload_directory(cfg.data_dir, "documents"):
                 return upload_error("invalid_directory", "Upload path escapes data_dir", 400)
             data = read_upload(file, cfg.upload_pdf_max_bytes)
             if data is None:
-                return upload_error("upload_too_large", "PDF exceeds upload limit", 413)
+                return upload_error(
+                    "upload_too_large",
+                    "PDF exceeds upload limit",
+                    413,
+                    reason="size_limit",
+                    limit=cfg.upload_pdf_max_bytes,
+                )
             if not data:
                 return JSONResponse(
                     status_code=400,
@@ -832,10 +848,23 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
                         pages = len(pdf)
                     finally:
                         pdf.close()
-            except pdfium.PdfiumError:
-                return upload_error("invalid_file", "Invalid PDF", 400)
+            except pdfium.PdfiumError as exc:
+                import pypdfium2.raw as pdfium_raw  # type: ignore[import-untyped]
+
+                reason = (
+                    "pdf_protected"
+                    if exc.err_code == pdfium_raw.FPDF_ERR_PASSWORD
+                    else "pdf_unreadable"
+                )
+                return upload_error("invalid_file", "Invalid PDF", 400, reason=reason)
             if pages > cfg.upload_pdf_max_pages:
-                return upload_error("upload_too_large", "PDF exceeds page limit", 413)
+                return upload_error(
+                    "upload_too_large",
+                    "PDF exceeds page limit",
+                    413,
+                    reason="page_limit",
+                    limit=cfg.upload_pdf_max_pages,
+                )
             return save_and_ingest_pdf(config_path, data, filename, progress=progress)
 
         return tracked(request.app.state.jobs, job, run, summarize_document)
@@ -1073,18 +1102,24 @@ def create_app(config_path: Path = DEFAULT_CONFIG) -> FastAPI:
             filename = file.filename or "factura.png"
             lower = filename.lower()
             if not lower.endswith((".png", ".jpg", ".jpeg")):
-                return JSONResponse(
-                    status_code=400,
-                    content=ErrorBody(
-                        code="invalid_file", message="Only PNG/JPG invoice images are accepted"
-                    ).model_dump(),
+                return upload_error(
+                    "invalid_file",
+                    "Only PNG/JPG invoice images are accepted",
+                    400,
+                    reason="unsupported_type",
                 )
             cfg = request.app.state.config
             if not safe_upload_directory(cfg.data_dir, "invoices"):
                 return upload_error("invalid_directory", "Upload path escapes data_dir", 400)
             data = read_upload(file, cfg.upload_image_max_bytes)
             if data is None:
-                return upload_error("upload_too_large", "Image exceeds upload limit", 413)
+                return upload_error(
+                    "upload_too_large",
+                    "Image exceeds upload limit",
+                    413,
+                    reason="size_limit",
+                    limit=cfg.upload_image_max_bytes,
+                )
             if not data:
                 return JSONResponse(
                     status_code=400,
