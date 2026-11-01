@@ -440,3 +440,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:29 CET · Migración concurrente y suite
 - La prueba de migración abre la base anterior desde cuatro hilos y comprueba que se preservan el vínculo recuperable y el feedback huérfano. Cinco pruebas de historial, Ruff y formato pasan.
 - Suite completa del servicio con el código actual: 344 pasadas y 35 live omitidas. No sustituye los checks de entrega.
+
+## 01-Nov 07:29 CET · Traza documental en almacén aislado
+- Una prueba guarda y recupera íntegra una traza documental producida por el pipeline con adaptadores simulados y crea feedback a partir de ella. Comprueba la serialización de la estructura real, no solo un diccionario de ejemplo.
+- Nueve pruebas de consulta y Ruff pasan. La API sigue sin activar el almacén.

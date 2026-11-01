@@ -8,6 +8,7 @@ from pathlib import Path
 from doc_assistant.adapters import FakeEmbedder, FakeLLM, FakeReranker
 from doc_assistant.ask import ask, ask_events
 from doc_assistant.chunking import chunk_pdf
+from doc_assistant.history import HistoryStore
 from doc_assistant.store import ChunkStore
 
 
@@ -103,6 +104,12 @@ def test_private_trace_captures_scores_without_changing_events(
     assert trace["verification"]["citations"][0]["quote"] == "24 V"
     assert all("candidates" not in data for _, data in events)
     assert events[-1][1]["ok"] is True
+    history = HistoryStore(tmp_path / "history.db")
+    history.record("request", "conversation", trace["started_at"], trace)
+    assert history.get("conversation", "request") == trace
+    assert history.add_feedback(
+        "feedback", "conversation", "request", trace["finished_at"], "otro", None
+    )
     events[-1][1]["citations"][0]["quote"] = "modificada por el consumidor"
     assert trace["result"]["citations"][0]["quote"] == "24 V"
     events[-1][1]["raw"]["citations"][0]["quote"] = "otra modificación"
