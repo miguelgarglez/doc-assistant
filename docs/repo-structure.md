@@ -32,7 +32,8 @@ apps/web/            Next.js 16 + TS strict
   src/components/system/           estado de componentes y última traza
   src/components/ai-elements/      componentes de conversación
   src/components/providers/        estado compartido de chat y subidas
-  src/lib/domain/                  tipos y validación de bloques
+  src/lib/domain/                  tipos y utilidades de dominio
+  src/lib/chat/                    transporte SSE, vistas y validación de bloques
 .github/workflows/cross-platform.yml   smoke Win/Linux/Mac (no ejecutado)
 docs/                README (índice), ADRs, CHECKPOINT, CHANGELOG, versioning, architecture, scaling,
                      requirements-coverage, open-gaps, design/, evolution-notes/, reviews/

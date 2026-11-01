@@ -325,3 +325,9 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Tres pasadas de navegador con axe dieron 182 aprobadas y cuatro live omitidas cada una. Usaron respuestas simuladas; se ejecutaron antes del cambio del extractor, que no modifica la interfaz. El servidor propio se cerró por PID y los temporales se movieron a `_trash/`.
 - Mejoran extracción de importes con dos puntos y evaluación sintética. Pendientes gold aprobado, evaluación representativa y percentiles. Recuento: 18 cumplidas, 10 parciales y 3 no.
 
+
+## 01-Nov · Cierre documental v0.15.3
+
+- Añadidos el índice documental, las rutas de lectura y las notas de v0.14.0 a v0.15.2. Arquitectura, estructura, huecos, pendientes y versionado contrastados con el árbol v0.15.2 y su historial.
+- El comprobador local revisó README y los Markdown de docs: 28 documentos y 135 enlaces internos, sin enlaces rotos. Se repararon rutas de la revisión histórica y se conservaron sus referencias a líneas originales.
+- Este cierre solo cambia documentación. No repite pruebas de código ni instala dependencias; los límites de evaluación y entorno de v0.15.2 siguen vigentes.
