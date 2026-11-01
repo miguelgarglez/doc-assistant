@@ -1,5 +1,5 @@
 {
-  "fecha": "2026-10-31 13:30 CET",
+  "fecha": "2026-11-02 00:48 CET",
   "documentos": [
     {
       "fichero": "robot-demo.pdf",
@@ -16,48 +16,53 @@
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 10.6
+      "segundos": 16.7
     },
     {
       "fichero": "factura_011.png",
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 17.0
+      "segundos": 22.7
     },
     {
       "fichero": "factura_021.png",
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 18.1
+      "segundos": 24.5
     },
     {
       "fichero": "factura_031.png",
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 13.6
+      "segundos": 22.0
     },
     {
       "fichero": "factura_041.png",
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 14.3
+      "segundos": 26.1
     },
     {
       "fichero": "factura_051.png",
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 14.4
+      "segundos": 27.9
     }
   ],
   "preguntas": [
     {
       "tipo": "documento",
       "pregunta": "¿Qué alcance tiene el sensor SX-20?",
+      "esperado": {
+        "ok": true,
+        "texto_incluye": "4 m",
+        "citas": "al menos una"
+      },
       "ok": true,
       "respuesta": "El alcance del sensor SX-20 es de 4 m.",
       "motivo": "verified",
@@ -70,11 +75,17 @@
           "Alcance: 4 m."
         ]
       ],
-      "segundos": 5.5
+      "cumple": true,
+      "segundos": 10.5
     },
     {
       "tipo": "documento",
       "pregunta": "¿Qué temperatura de trabajo admite el sensor?",
+      "esperado": {
+        "ok": true,
+        "texto_incluye": "0 a 50 C",
+        "citas": "al menos una"
+      },
       "ok": true,
       "respuesta": "0 a 50 C",
       "motivo": "verified",
@@ -87,13 +98,19 @@
           "Temperatura de trabajo: 0 a 50 C."
         ]
       ],
-      "segundos": 5.2
+      "cumple": true,
+      "segundos": 10.6
     },
     {
       "tipo": "factura",
       "pregunta": "¿Cuál es el importe total de la factura F-2026-001?",
+      "esperado": {
+        "ok": true,
+        "texto_incluye": "537,94",
+        "citas": "al menos una"
+      },
       "ok": true,
-      "respuesta": "Factura F-2026-001: importe total: 537.94",
+      "respuesta": "- Factura F-2026-001: importe total: 537,94 €",
       "motivo": "sql",
       "citas": [
         [
@@ -101,28 +118,47 @@
           [
             1
           ],
-          "537.94"
+          "537,94 €"
         ]
       ],
-      "segundos": 4.8
+      "cumple": true,
+      "segundos": 7.0
     },
     {
-      "tipo": "rechazo esperado",
+      "tipo": "rechazo",
       "pregunta": "¿Cuál es el precio del robot?",
+      "esperado": {
+        "ok": false,
+        "texto_incluye": "No dispongo",
+        "citas": "ninguna"
+      },
       "ok": false,
       "respuesta": "No dispongo de esa información en los documentos",
       "motivo": "llm_unanswerable",
       "citas": [],
-      "segundos": 3.7
+      "cumple": true,
+      "segundos": 6.8
     },
     {
-      "tipo": "rechazo esperado",
+      "tipo": "rechazo",
       "pregunta": "¿Quién ganó el mundial de 2010?",
+      "esperado": {
+        "ok": false,
+        "texto_incluye": "No dispongo",
+        "citas": "ninguna"
+      },
       "ok": false,
       "respuesta": "No dispongo de esa información en los documentos",
       "motivo": "llm_unanswerable",
       "citas": [],
-      "segundos": 3.3
+      "cumple": true,
+      "segundos": 5.6
     }
-  ]
+  ],
+  "metricas": {
+    "facturas_sin_discrepancias": 6,
+    "facturas_total": 6,
+    "preguntas_cumplen": 5,
+    "preguntas_total": 5
+  }
 }

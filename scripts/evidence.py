@@ -26,7 +26,7 @@ OUT = ROOT / "evidence" / "live"
 QUESTIONS = [
     ("documento", "¿Qué alcance tiene el sensor SX-20?", True, "4 m"),
     ("documento", "¿Qué temperatura de trabajo admite el sensor?", True, "0 a 50 C"),
-    ("factura", "¿Cuál es el importe total de la factura F-2026-001?", True, "537.94"),
+    ("factura", "¿Cuál es el importe total de la factura F-2026-001?", True, "537,94"),
     ("rechazo", "¿Cuál es el precio del robot?", False, "No dispongo"),
     ("rechazo", "¿Quién ganó el mundial de 2010?", False, "No dispongo"),
 ]
