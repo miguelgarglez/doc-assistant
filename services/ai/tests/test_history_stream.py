@@ -71,3 +71,28 @@ def test_outbox_failure_does_not_change_done_stream(config_path):
     frames = list(outbox_ask_stream(AskCapacity(1, 0), config_path, "", "r", "c", BrokenOutbox()))
     assert any("event: done" in frame for frame in frames)
     assert not any("event: error" in frame for frame in frames)
+
+
+def test_enqueue_failure_is_visible_in_outbox_without_changing_done(config_path, monkeypatch):
+    from doc_assistant.history_outbox import HistoryOutbox
+    from doc_assistant.history_stream import outbox_ask_stream
+
+    class Store:
+        def record(self, *args):
+            raise AssertionError("must not be called")
+
+    outbox = HistoryOutbox(Store())
+    try:
+
+        def fail(*args, **kwargs):
+            raise OSError("queue unavailable")
+
+        monkeypatch.setattr(outbox, "submit", fail)
+        frames = list(outbox_ask_stream(AskCapacity(1, 0), config_path, "", "r", "c", outbox))
+        assert any("event: done" in frame for frame in frames)
+        assert outbox.status() == {
+            "pending": 0,
+            "failures": [{"request_id": "r", "error": "OSError"}],
+        }
+    finally:
+        outbox.close()

@@ -111,6 +111,8 @@ def status(request: Request) -> dict[str, Any]:
     outbox = getattr(request.app.state, "history_outbox", None)
     return {
         "active": store is not None and outbox is not None,
+        "enabled": outbox is not None,
+        "initialization_error": getattr(request.app.state, "history_initialization_error", None),
         "retention_days": request.app.state.history_retention_days,
         **(outbox.status() if outbox else {"pending": 0, "failures": []}),
     }

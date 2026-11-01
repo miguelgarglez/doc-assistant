@@ -69,7 +69,6 @@ class HistoryOutbox:
             if ticket is not None and ticket != generation:
                 return
             self._sequence += 1
-            self._pending += 1
             entry = _Entry(
                 time.monotonic(),
                 self._sequence,
@@ -79,7 +78,8 @@ class HistoryOutbox:
                 trace,
                 generation,
             )
-        self._queue.put(entry)
+            self._queue.put(entry)
+            self._pending += 1
 
     def delete(self, operation: Callable[[], T], *, conversation_id: str | None = None) -> T:
         """Invalidate earlier streams and writes before deleting the stored data."""
@@ -96,6 +96,11 @@ class HistoryOutbox:
     def status(self) -> dict[str, Any]:
         with self._lock:
             return {"pending": self._pending, "failures": list(self._failures)}
+
+    def report_failure(self, request_id: str, exc: Exception) -> None:
+        logger.error("History write failed for request_id=%s (%s)", request_id, type(exc).__name__)
+        with self._lock:
+            self._failures.append({"request_id": request_id, "error": type(exc).__name__})
 
     def close(self) -> None:
         self._stop.set()
@@ -122,15 +127,7 @@ class HistoryOutbox:
                         entry.request_id, entry.conversation_id, entry.created_at, entry.trace
                     )
             except Exception as exc:  # noqa: BLE001 - retry storage failures
-                logger.error(
-                    "History write failed for request_id=%s (%s)",
-                    entry.request_id,
-                    type(exc).__name__,
-                )
-                with self._lock:
-                    self._failures.append(
-                        {"request_id": entry.request_id, "error": type(exc).__name__}
-                    )
+                self.report_failure(entry.request_id, exc)
                 entry.attempts += 1
                 entry.due = time.monotonic() + min(
                     self._retry_base * 2 ** min(entry.attempts - 1, 10), 60

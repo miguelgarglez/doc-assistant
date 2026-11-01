@@ -128,22 +128,65 @@ def test_application_records_stream_and_purges_expired(config_path, tmp_path, mo
         )
 
 
-def test_history_start_failure_does_not_change_stream(config_path, monkeypatch):
+def test_history_start_failure_retries_without_changing_stream(config_path, monkeypatch, caplog):
+    import time
+
     from doc_assistant.api import create_app
 
-    def broken_init(self, path):
-        raise OSError("storage offline")
+    original_init = HistoryStore.__init__
+    available = False
 
-    monkeypatch.setattr(HistoryStore, "__init__", broken_init)
+    def flaky_init(self, path):
+        if not available:
+            raise OSError("storage offline")
+        original_init(self, path)
+
+    monkeypatch.setattr(HistoryStore, "__init__", flaky_init)
     monkeypatch.setenv("DOC_ASSISTANT_HISTORY_TOKEN", "secret")
+    monkeypatch.setenv("DOC_ASSISTANT_HISTORY_ENABLED", "1")
+    headers = {"x-history-token": "secret"}
     with TestClient(create_app(config_path), client=("127.0.0.1", 1234)) as client:
-        response = client.post("/ask/stream", json={"question": " "})
+        status = client.get("/history/status", headers=headers).json()
+        assert status["active"] is False
+        assert status["enabled"] is True
+        assert status["initialization_error"] == "OSError"
+        response = client.post("/ask/stream", json={"question": " ", "conversation_id": "c"})
         assert response.status_code == 200
         assert "event: done" in response.text
-        assert (
-            client.get("/history/status", headers={"x-history-token": "secret"}).json()["active"]
-            is False
-        )
+        request_id = response.headers["x-request-id"]
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline:
+            status = client.get("/history/status", headers=headers).json()
+            if status["failures"]:
+                break
+            time.sleep(0.01)
+        assert status["pending"] == 1
+        assert status["failures"][0]["request_id"] == request_id
+        assert f"request_id={request_id}" in caplog.text
+        available = True
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            status = client.get("/history/status", headers=headers).json()
+            if status["active"] and status["pending"] == 0:
+                break
+            time.sleep(0.01)
+        assert status["active"] is True
+        assert status["initialization_error"] is None
+        assert status["pending"] == 0
+        result = client.get("/history/conversations/c", headers=headers).json()
+        assert result["items"][0]["request_id"] == request_id
+
+
+def test_history_can_be_disabled_by_administrator(config_path, monkeypatch):
+    from doc_assistant.api import create_app
+
+    monkeypatch.setenv("DOC_ASSISTANT_HISTORY_TOKEN", "secret")
+    monkeypatch.setenv("DOC_ASSISTANT_HISTORY_ENABLED", "0")
+    with TestClient(create_app(config_path), client=("127.0.0.1", 1234)) as client:
+        status = client.get("/history/status", headers={"x-history-token": "secret"}).json()
+        assert status["enabled"] is False
+        assert status["active"] is False
+        assert status["initialization_error"] is None
 
 
 def test_storage_write_failure_is_reported_without_changing_stream(config_path, monkeypatch):

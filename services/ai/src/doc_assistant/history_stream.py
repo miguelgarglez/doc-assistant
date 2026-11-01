@@ -53,7 +53,10 @@ def outbox_ask_stream(
                 outbox.submit(
                     request_id, conversation_id, trace["started_at"], trace, ticket=ticket
                 )
-            except Exception:  # noqa: BLE001 - storage must not interrupt the stream
-                logging.getLogger(__name__).error(
-                    "Could not queue history for request_id=%s", request_id
-                )
+            except Exception as exc:  # noqa: BLE001 - storage must not interrupt the stream
+                try:
+                    outbox.report_failure(request_id, exc)
+                except Exception:  # noqa: BLE001 - diagnostics must not interrupt the stream
+                    logging.getLogger(__name__).error(
+                        "Could not queue history for request_id=%s", request_id
+                    )
