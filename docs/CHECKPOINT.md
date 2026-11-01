@@ -175,3 +175,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - `sysctl`, `sw_vers` y `system_profiler` identifican Apple M4, CPU y GPU de 10 núcleos, 16 GiB de memoria unificada y macOS 26.6.2. README registra los comandos y distingue capacidad de consumo medido. C3 pasa a cumplido; E-B2 sigue parcial.
 - Verificación: salida de los tres comandos contrastada con README y cobertura. Sin instalaciones. La fase sigue abierta y aún no tiene tag.
 
+
+## 01-Nov 01:56 CET · Decisiones pendientes
+- Registradas las decisiones sobre gold y umbrales, privacidad del historial e identidad. Las recomendaciones no implican aprobación ni cambian el estado del gold.
+- Verificación: recuento automático de las 31 filas: 18 cumplidas, 9 parciales y 4 no. La fase continúa abierta.
+
