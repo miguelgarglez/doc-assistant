@@ -39,6 +39,7 @@ def test_history_is_separate_and_feedback_copies_server_trace(tmp_path):
         "comment": "revisar",
         "trace": trace,
         "status": "nuevo",
+        "expected_answer": None,
     }
 
 
@@ -96,6 +97,7 @@ def test_existing_feedback_gains_conversation_without_losing_orphans(tmp_path):
         rows = dict(db.execute("SELECT feedback_id, conversation_id FROM feedback"))
     assert rows == {"f": "c", "orphan": None}
     assert HistoryStore(path).get_feedback("c", "f")["status"] == "nuevo"
+    assert HistoryStore(path).get_feedback("c", "f")["expected_answer"] is None
 
 
 def test_wal_initialization_retries_when_database_is_locked(tmp_path, monkeypatch):
@@ -188,3 +190,19 @@ def test_feedback_review_status_is_scoped_and_survives_reopening(tmp_path):
     assert reopened.get_feedback("c", "f")["status"] == "revisado"
     assert reopened.list_feedback_page("c")[0][0]["status"] == "revisado"
     assert not reopened.set_feedback_status("c", "missing", "descartado")
+
+
+def test_expected_answer_is_scoped_and_preserves_snapshot(tmp_path):
+    path = tmp_path / "history.db"
+    store = HistoryStore(path)
+    trace = {"question": "¿Cuánto?", "answer": "12 €"}
+    store.record("r", "c", "now", trace)
+    assert store.add_feedback("f", "c", "r", "now", "incorrecta", None)
+    assert not store.set_expected_answer("other", "f", "secret")
+    assert store.get_feedback("c", "f")["expected_answer"] is None
+    assert store.set_expected_answer("c", "f", "15 €")
+    saved = HistoryStore(path).get_feedback("c", "f")
+    assert saved["expected_answer"] == "15 €"
+    assert saved["trace"] == trace
+    assert store.set_expected_answer("c", "f", None)
+    assert store.get_feedback("c", "f")["expected_answer"] is None

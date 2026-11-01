@@ -484,3 +484,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 11:09 CET · Traza de pipeline sin resultado
 - Si el pipeline se agota sin resultado, el colector lo clasifica como error interno en vez de interrupción. El transporte sigue enviando un evento de error; no se exponen detalles internos.
 - Pasan 56 pruebas de consulta, streaming y cola, y Ruff. La primera ejecución de la regresión falló por un import ausente; corregido, reprodujo el defecto antes de la solución. La persistencia sigue desconectada.
+
+## 01-Nov 11:10 CET · Respuesta esperada del feedback
+- El almacén interno admite una respuesta esperada escrita por quien revisa, separada de la traza capturada. Las bases anteriores se migran con valor nulo y las operaciones se filtran por conversación. Aún no hay exportación ni endpoints.
+- Pasan 12 pruebas de historial, Ruff, formato y mypy. El filtro por conversación no autentica al usuario.

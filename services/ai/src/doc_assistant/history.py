@@ -51,6 +51,7 @@ class HistoryStore:
                     kind TEXT NOT NULL,
                     comment TEXT,
                     status TEXT NOT NULL DEFAULT 'nuevo',
+                    expected_answer TEXT,
                     trace_json TEXT NOT NULL
                 );
                 """
@@ -65,6 +66,8 @@ class HistoryStore:
                 )
             if "status" not in columns:
                 db.execute("ALTER TABLE feedback ADD COLUMN status TEXT NOT NULL DEFAULT 'nuevo'")
+            if "expected_answer" not in columns:
+                db.execute("ALTER TABLE feedback ADD COLUMN expected_answer TEXT")
             db.execute(
                 "CREATE INDEX IF NOT EXISTS feedback_conversation_time "
                 "ON feedback(conversation_id, created_at DESC, feedback_id DESC)"
@@ -146,7 +149,7 @@ class HistoryStore:
         if not 1 <= limit <= 100:
             raise ValueError("limit must be between 1 and 100")
         query = (
-            "SELECT feedback_id, request_id, created_at, kind, comment, trace_json, status "
+            "SELECT feedback_id, request_id, created_at, kind, comment, trace_json, status, expected_answer "
             "FROM feedback WHERE conversation_id = ?"
         )
         params: list[Any] = [conversation_id]
@@ -171,13 +174,14 @@ class HistoryStore:
             "comment": row[4],
             "trace": json.loads(row[5]),
             "status": row[6],
+            "expected_answer": row[7],
         }
 
     def get_feedback(self, conversation_id: str, feedback_id: str) -> dict[str, Any] | None:
         """Read the server snapshot, including after its request has been removed."""
         with self._connect() as db:
             row = db.execute(
-                "SELECT feedback_id, request_id, created_at, kind, comment, trace_json, status "
+                "SELECT feedback_id, request_id, created_at, kind, comment, trace_json, status, expected_answer "
                 "FROM feedback WHERE conversation_id = ? AND feedback_id = ?",
                 (conversation_id, feedback_id),
             ).fetchone()
@@ -193,5 +197,16 @@ class HistoryStore:
             cursor = db.execute(
                 "UPDATE feedback SET status = ? WHERE conversation_id = ? AND feedback_id = ?",
                 (status, conversation_id, feedback_id),
+            )
+            return cursor.rowcount == 1
+
+    def set_expected_answer(
+        self, conversation_id: str, feedback_id: str, answer: str | None
+    ) -> bool:
+        """Save the reviewer's expected answer without changing the captured trace."""
+        with self._connect() as db:
+            cursor = db.execute(
+                "UPDATE feedback SET expected_answer = ? WHERE conversation_id = ? AND feedback_id = ?",
+                (answer, conversation_id, feedback_id),
             )
             return cursor.rowcount == 1
