@@ -330,3 +330,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:08 CET · Almacén de historial aislado
 - Añadido un almacén SQLite separado del índice, aún sin conectar a la API. Cada operación abre y cierra su conexión; el feedback copia la traza guardada en una sola operación SQL. No se activa la persistencia de datos de usuario.
 - Tres pruebas cubren concurrencia de escritores, rechazo de identificadores duplicados y conservación de la copia de feedback. Ruff y mypy pasan. Faltan la traza completa, endpoints, interfaz, política de privacidad y verificaciones de entrega; no hay tag v0.16.0.
+
+## 01-Nov 07:09 CET · Puntuaciones en traza interna
+- El pipeline admite un colector opcional en memoria para candidatos, puntuaciones vectoriales, BM25 y reranking, selección y verificación de citas. No se envía en el stream ni se almacena por sí solo; aún faltan datos de facturas, versiones y conexión con el almacén.
+- Pasan 38 pruebas de consulta y streaming, Ruff y mypy. No se han ejecutado todavía las verificaciones de entrega de v0.16.0.

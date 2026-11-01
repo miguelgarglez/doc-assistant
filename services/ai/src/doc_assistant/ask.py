@@ -161,6 +161,7 @@ def ask_events(
     reranker: Reranker | None = None,
     llm: LLM | None = None,
     stream: bool = False,
+    trace: dict[str, Any] | None = None,
 ) -> Iterator[Event]:
     """Run the pipeline as a sequence of events; the last one is ("result", dict).
 
@@ -267,6 +268,20 @@ def ask_events(
 
     ordered = [cand_chunks[i] for i in cand_ids if i in cand_chunks]
     docs = [c["text"] for c in ordered]
+    if trace is not None:
+        vector_scores = dict(vec)
+        bm25_scores = dict(bm)
+        trace["candidates"] = [
+            {
+                "chunk_id": chunk["chunk_id"],
+                "position": position,
+                "vector_score": vector_scores.get(chunk["chunk_id"]),
+                "bm25_score": bm25_scores.get(chunk["chunk_id"]),
+                "rerank_score": None,
+                "selected": False,
+            }
+            for position, chunk in enumerate(ordered)
+        ]
     yield _step(
         "retrieve",
         "done",
@@ -283,6 +298,15 @@ def ask_events(
         top_chunks = [ordered[i] for i in top_idx if i < len(ordered)]
     else:
         top_chunks = []
+        ranked = []
+    if trace is not None:
+        candidates = trace["candidates"]
+        for index, score in ranked:
+            if 0 <= index < len(candidates):
+                candidates[index]["rerank_score"] = score
+        for index in top_idx if docs else []:
+            if 0 <= index < len(candidates):
+                candidates[index]["selected"] = True
     latencies["rerank"] = round(time.perf_counter() - t2, 4)
     yield _step(
         "rerank",
@@ -356,6 +380,12 @@ def ask_events(
     citations = raw.get("citations") or []
     answer = raw.get("answer")
     checked = verify(answer, citations, retrieved_text)
+    if trace is not None:
+        trace["verification"] = {
+            "citations": citations,
+            "ok": checked.ok,
+            "reason": checked.reason,
+        }
     latencies["verify"] = round(time.perf_counter() - t4, 4)
 
     if not checked.ok:

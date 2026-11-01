@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from doc_assistant.adapters import FakeEmbedder, FakeLLM, FakeReranker
-from doc_assistant.ask import ask
+from doc_assistant.ask import ask, ask_events
 from doc_assistant.chunking import chunk_pdf
 from doc_assistant.store import ChunkStore
 
@@ -51,6 +51,43 @@ def test_ask_verified_answer(
     assert "24 V" in result["answer"]
     assert result["citations"]
     assert "latencies" in result
+
+
+def test_private_trace_captures_scores_without_changing_events(
+    tmp_path: Path, synthetic_pdf: Path, config_path: Path, fake_embedder: FakeEmbedder
+) -> None:
+    import yaml
+
+    store = _seed(tmp_path, synthetic_pdf, fake_embedder)
+    cfg = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    cfg["db"] = str(store.path)
+    config_path.write_text(yaml.dump(cfg), encoding="utf-8")
+    chunk = store.get_by_section("1")
+    llm = FakeLLM(
+        response={
+            "answerable": True,
+            "answer": "El robot debe operar a 24 V.",
+            "citations": [{"chunk_id": chunk["chunk_id"], "quote": "24 V"}],
+        }
+    )
+    trace: dict = {}
+    events = list(
+        ask_events(
+            config_path,
+            "¿A qué voltaje opera?",
+            embedder=fake_embedder,
+            reranker=FakeReranker(),
+            llm=llm,
+            trace=trace,
+        )
+    )
+    selected = [c for c in trace["candidates"] if c["selected"]]
+    assert selected and all(c["rerank_score"] is not None for c in selected)
+    assert any(c["vector_score"] is not None for c in trace["candidates"])
+    assert trace["verification"]["ok"] is True
+    assert trace["verification"]["citations"][0]["quote"] == "24 V"
+    assert all("candidates" not in data for _, data in events)
+    assert events[-1][1]["ok"] is True
 
 
 def test_ask_llm_rejects(
