@@ -23,7 +23,7 @@
 
 ## Estado actual
 
-- La versión de comportamiento de referencia es v0.17.0.
+- La versión de comportamiento de referencia es v0.17.1.
 - La [cobertura](requirements-coverage.md) registra 18 cumplidas, 10 parciales y 3 no.
 - Hay respuestas con citas, aclaraciones de facturas y bloques derivados de evidencia, con Markdown como alternativa.
 - La cola acota consultas por proceso; no limita ingestas ni comparte capacidad entre procesos.
@@ -66,6 +66,8 @@ Para desarrollar:
 - [ADR-014 Bloques de respuesta derivados de evidencia](decisions-log.md#adr-014-bloques-de-respuesta-derivados-de-evidencia-2026-11-01).
 
 ## Notas por versión
+
+- [v0.17.1 · Historial contextual y revisión](evolution-notes/v0.17.1.md)
 
 - [v0.17.0](evolution-notes/v0.17.0.md): historial local, feedback y revisión.
 - [v0.16.0](evolution-notes/v0.16.0.md): identidad de petición y piezas internas de historial y feedback.

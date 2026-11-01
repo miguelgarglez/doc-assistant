@@ -7,6 +7,12 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 
 "Fiabilidad real" dice qué prueba lo respalda. Una prueba con datos sintéticos o simulados no sustituye a la evaluación con un conjunto aprobado, que aún no existe.
 
+## Resumen v0.17.1
+
+- Mejoran la visibilidad de peticiones, el historial contextual y la revisión de feedback con copia de exportación aprobada.
+- Pendientes: gold aprobado, evaluación representativa, aislamiento multiusuario y persistencia de la cola ante reinicios.
+- Recuento: 31 filas, 18 cumplidas, 10 parciales y 3 no. Las mejoras no cambian el estado de esas filas.
+
 ## Resumen v0.17.0
 
 - Mejoran el historial local, la revisión de feedback y la visibilidad de fallos; las respuestas conservan su stream aunque falle el guardado.

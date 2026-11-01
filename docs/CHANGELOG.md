@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.17.1 · Historial contextual y revisión
+
+- Sistema incorpora peticiones recientes paginadas; el historial abre junto al chat y puede ampliarse.
+- La revisión de avisos dispone de cola, detalle, atajos, redacción asistida y vista previa. Solo se exporta una copia aprobada tras confirmar la ausencia de datos sensibles; las revisiones previas requieren una nueva confirmación.
+- [Notas de evolución](evolution-notes/v0.17.1.md) y [cobertura](requirements-coverage.md#resumen-v0171).
+
 ## v0.17.0 · Historial local y feedback
 
 - Historial SQLite WAL activo por defecto, con retención configurable, borrado, búsqueda y recuperación de conversaciones. Las rutas requieren token y acceso local.
