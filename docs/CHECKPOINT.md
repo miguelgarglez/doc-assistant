@@ -433,3 +433,6 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:28 CET · Estado al entregar done al transporte
 - La traza marca el transporte completado al ceder la trama `done`, también si el consumidor cierra el generador inmediatamente después. Antes quedaba como interrumpido; una regresión reproduce el caso. Esto no acredita la recepción por la red.
 - Pasan 43 pruebas de streaming y cola, Ruff y mypy. La traza sigue sin persistir.
+
+## 01-Nov 07:29 CET · Cierre de la cola tras done
+- Una prueba adicional cierra el generador de cola tras `done`: conserva el estado completado y libera ambos permisos de capacidad. Siete pruebas de cola y Ruff pasan.

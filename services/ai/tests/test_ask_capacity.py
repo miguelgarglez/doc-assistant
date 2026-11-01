@@ -94,6 +94,22 @@ def test_admitted_request_preserves_pipeline_trace(config_path):
     assert trace["queue_wait_s"] >= 0
 
 
+def test_close_after_done_releases_capacity_and_keeps_completion(config_path):
+    capacity = AskCapacity(running=1, waiting=0)
+    trace: dict = {}
+    stream = api.queued_ask_stream(capacity, config_path, "", trace=trace)
+    assert event(next(stream))[0] == "refusal"
+    assert event(next(stream))[0] == "done"
+    stream.close()
+    assert trace["transport_status"] == "completed"
+    assert trace["status"] == "completed"
+    assert trace["finished_at"] >= trace["started_at"]
+    assert capacity.admitted.acquire(blocking=False)
+    assert capacity.running.acquire(blocking=False)
+    capacity.running.release()
+    capacity.admitted.release()
+
+
 def test_waiting_steps_survive_completed_pipeline(config_path):
     capacity = AskCapacity(running=1, waiting=1)
     capacity.running.acquire()
