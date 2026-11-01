@@ -157,3 +157,33 @@ def test_answerable_without_answer_is_refused(
     )
     assert result["ok"] is False
     assert result["citations"] == []
+
+
+def test_trace_marks_completion_and_interruption(config_path: Path) -> None:
+    completed: dict = {}
+    events = list(ask_events(config_path, "", trace=completed))
+    assert completed["status"] == "completed"
+    assert completed["result"] == events[-1][1]
+    assert completed["trace_schema_version"] == 1
+    interrupted: dict = {}
+    stream = ask_events(config_path, "Una pregunta", trace=interrupted)
+    next(stream)
+    stream.close()
+    assert interrupted["status"] == "interrupted"
+    assert interrupted["steps"]
+    assert "elapsed_s" in interrupted
+
+
+def test_trace_marks_pipeline_error(config_path: Path, monkeypatch) -> None:
+    import pytest
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("failure")
+        yield
+
+    monkeypatch.setattr("doc_assistant.ask._ask_events", fail)
+    trace: dict = {}
+    with pytest.raises(RuntimeError, match="failure"):
+        list(ask_events(config_path, "pregunta", trace=trace))
+    assert trace["status"] == "error"
+    assert "elapsed_s" in trace

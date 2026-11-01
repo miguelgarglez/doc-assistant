@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import time
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -153,7 +153,7 @@ def _chunked(text: str, size: int = 24) -> list[str]:
     return [text[i : i + size] for i in range(0, len(text), size)]
 
 
-def ask_events(
+def _ask_events(
     config_path: str | Path,
     question: str,
     *,
@@ -162,7 +162,7 @@ def ask_events(
     llm: LLM | None = None,
     stream: bool = False,
     trace: dict[str, Any] | None = None,
-) -> Iterator[Event]:
+) -> Generator[Event, None, None]:
     """Run the pipeline as a sequence of events; the last one is ("result", dict).
 
     `step` and `token` events are progress only. The result is the single source
@@ -447,6 +447,43 @@ def ask_events(
             "raw": raw,
         },
     )
+
+
+def ask_events(
+    config_path: str | Path,
+    question: str,
+    *,
+    embedder: Embedder | None = None,
+    reranker: Reranker | None = None,
+    llm: LLM | None = None,
+    stream: bool = False,
+    trace: dict[str, Any] | None = None,
+) -> Iterator[Event]:
+    """Yield the pipeline unchanged and optionally collect its final state in memory."""
+    events = _ask_events(
+        config_path, question, embedder=embedder, reranker=reranker, llm=llm,
+        stream=stream, trace=trace,
+    )
+    if trace is None:
+        yield from events
+        return
+    trace.update({"trace_schema_version": 1, "question": question, "steps": []})
+    started = time.perf_counter()
+    trace["status"] = "interrupted"
+    try:
+        for kind, data in events:
+            if kind == "step":
+                trace["steps"].append(data.copy())
+            elif kind == "result":
+                trace["result"] = data.copy()
+                trace["status"] = "completed"
+            yield kind, data
+    except Exception:
+        trace["status"] = "error"
+        raise
+    finally:
+        events.close()
+        trace["elapsed_s"] = round(time.perf_counter() - started, 4)
 
 
 def place_inline_citations(

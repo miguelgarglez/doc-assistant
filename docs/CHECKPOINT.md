@@ -339,3 +339,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 07:10 CET · Traza interna de facturas
 - El colector opcional registra el plan validado, el SQL de selección con sus parámetros y las filas seleccionadas. Los datos permanecen en memoria y no se añaden a la respuesta ni se persisten.
 - Pasan 329 pruebas del servicio y 35 live se omiten. Ruff pasa. Faltan versiones, interrupciones y conexión al historial; no hay tag v0.16.0.
+
+## 01-Nov 07:11 CET · Ciclo de vida de la traza
+- El colector opcional guarda pasos, resultado y duración, y distingue finalización, error e interrupción al cerrar el generador. El flujo público conserva sus eventos y aún no se guarda ninguna traza.
+- 40 pruebas de consulta y streaming pasan, junto con Ruff y mypy. Faltan versiones e integración con el almacén y la interfaz.
