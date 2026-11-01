@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v0.17.0 · Historial local y feedback
+
+- Historial SQLite WAL activo por defecto, con retención configurable, borrado, búsqueda y recuperación de conversaciones. Las rutas requieren token y acceso local.
+- El guardado asíncrono reintenta sin alterar el stream; los fallos aparecen en Sistema. La cola pendiente se pierde al reiniciar.
+- Feedback con consentimiento para incluir contexto, revisión humana y exportación JSONL de elementos revisados. La organización debe validar las obligaciones legales del despliegue.
+- [Arquitectura y configuración](architecture.md#historial-y-feedback), [escalado](scaling-deployment.md#historial-base-local-y-siguiente-etapa) y [notas de la versión](evolution-notes/v0.17.0.md).
+
 ## v0.16.0 · Identidad de petición y base interna de historial
 
 - `x-request-id` identifica las respuestas de consulta; `done.request_id` conserva la identidad en SSE y en el fallback web. No cambia la presentación del chat.

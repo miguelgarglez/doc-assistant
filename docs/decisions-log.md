@@ -250,7 +250,7 @@ El WIP 59474c0 precedió a este ADR y queda sujeto a revisión. Se mantienen sus
 
 ## D-HIST-1..4: historial y feedback (2026-11-01)
 
-Decisiones aprobadas para la versión inicial; su registro no implica que ya estén implementadas.
+Decisiones aprobadas e implementadas para la instalación local en v0.17.0. La interfaz de escritura es intercambiable; falta abstraer lecturas y revisión antes de sustituir SQLite. El aislamiento multiusuario y SSO siguen pendientes.
 
 - **D-HIST-1.** Cada instalación conserva su historial sin cuentas. Las rutas de historial y feedback solo aceptan conexiones locales y requieren un token local generado al arrancar, inyectado por el proxy de servidor. Las conversaciones tienen propietario local por defecto. La interfaz de almacén debe permitir sustituir SQLite por Postgres con particiones por fecha, índice por usuario y SSO en una fase posterior.
 - **D-HIST-2.** El historial está activo por defecto, con aviso discreto en el chat y configuración administrativa para desactivarlo. Guarda pregunta, respuesta, citas y request_id. El feedback no copia documentos ni importes de facturas sin selección explícita. La validación legal y de protección de datos para cada despliegue queda abierta a la organización.

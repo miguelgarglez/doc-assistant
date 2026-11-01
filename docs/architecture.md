@@ -36,7 +36,7 @@ La recuperación cierra SQLite antes de emitir el siguiente evento. `pdf_lock.py
 
 ## Trazas disponibles
 
-Los eventos SSE `step` y `done.timings` permiten reconstruir la última consulta en Sistema. El cliente conserva esa traza en memoria. En este árbol no hay configuración de trazas internas opcionales del servicio ni historial persistente de peticiones. La [persistencia de historial y feedback](design/persistencia-historial-feedback.md) sigue siendo una propuesta.
+Los eventos SSE `step` y `done.timings` permiten reconstruir la última consulta en Sistema. El cliente conserva esa traza en memoria. El historial local persiste en SQLite WAL y la cola en memoria guarda el resultado fuera del stream. Las trazas internas opcionales son independientes. Las rutas locales requieren token y el proxy lo inyecta en servidor. La cola reintenta con backoff, pero pierde pendientes al reiniciar. La [propuesta de persistencia](design/persistencia-historial-feedback.md) conserva el diseño anterior; la implementación y sus límites se describen en [escalado](scaling-deployment.md).
 
 ## Modularidad (puertos y adaptadores)
 LLM, embeddings, reranker y OCR son `Protocol`s; los adaptadores HTTP se eligen en `config/config.yaml` (validada con Pydantic al arrancar). Cambiar de modelo = cambiar config o el modelo que sirve llama-server.
@@ -64,3 +64,16 @@ LLM, embeddings, reranker y OCR son `Protocol`s; los adaptadores HTTP se eligen 
 
 ## Streaming y preguntas panorámicas
 `POST /ask/stream` emite el mismo pipeline como eventos SSE (trazas, tokens provisionales, citas, rechazo o aclaración, `done`); la verificación corre tras el último token y puede retirar el texto. Las preguntas sobre capacidades, inventario o el índice de un documento se responden desde metadatos del índice, sin LLM. Detalle en [streaming](streaming.md) y ADR-009.
+
+## Historial y feedback
+
+Por defecto se guarda pregunta, respuesta, citas y `request_id` en `history.db`, junto al índice configurado. El administrador puede establecer `DOC_ASSISTANT_HISTORY_ENABLED=0` o ajustar `DOC_ASSISTANT_HISTORY_RETENTION_DAYS` (30 por defecto, mínimo 1). La purga se ejecuta al arrancar y cada hora. El borrado desde el panel invalida las escrituras y streams anteriores; también se puede usar `python -m doc_assistant.history_clear --url http://127.0.0.1:3000 --yes` con el proxy local en ejecución. El comando elimina historial y feedback.
+
+El lanzador genera un token para API y proxy por ejecución. Si se arrancan por separado, ambos necesitan el mismo `DOC_ASSISTANT_HISTORY_TOKEN` secreto. No debe exponerse al navegador ni a otros equipos. La autorización es local, sin cuentas; no equivale a SSO. La organización debe validar las obligaciones legales y de protección de datos antes de desplegarlo.
+
+```text
+Respuesta incorrecta → pendiente → revisión humana → revisado → exportación JSONL
+                                  ↳ comprobar fallo y ausencia de datos sensibles
+```
+
+El comentario es opcional. Sin consentimiento explícito, el feedback no copia la traza con pregunta, respuesta, documentos ni importes; el usuario puede elegir incluirla. La revisión añade una respuesta esperada y exige confirmar el fallo y la ausencia de datos sensibles. Solo se exportan elementos revisados con respuesta esperada, como candidatos para ampliar la evaluación, no como gold aprobado automáticamente. El chat confirma el envío de feedback; los fallos de guardado de historial se registran con `request_id` y aparecen en Sistema sin cambiar la respuesta.

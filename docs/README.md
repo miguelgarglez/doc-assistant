@@ -19,18 +19,18 @@
 | ¿Dónde están las evidencias? | [Corrida sintética](../evidence/live/results.md), [evaluación sintética](../evidence/evaluacion-sintetica/README.md) y [galería](../evidence/evolution/README.md) |
 | ¿Dónde está cada pieza del repo? | [Estructura](repo-structure.md) |
 | ¿Cómo se versiona? | [Versionado](versioning.md) |
-| ¿Qué falta para guardar historial y feedback? | [Propuesta de persistencia](design/persistencia-historial-feedback.md) |
+| ¿Cuál fue la propuesta inicial de historial y feedback? | [Propuesta de persistencia](design/persistencia-historial-feedback.md) |
 
 ## Estado actual
 
-- La versión de comportamiento de referencia es v0.15.2; v0.15.3 ordena la documentación.
+- La versión de comportamiento de referencia es v0.17.0.
 - La [cobertura](requirements-coverage.md) registra 18 cumplidas, 10 parciales y 3 no.
 - Hay respuestas con citas, aclaraciones de facturas y bloques derivados de evidencia, con Markdown como alternativa.
 - La cola acota consultas por proceso; no limita ingestas ni comparte capacidad entre procesos.
 - Faltan gold aprobado y evaluación representativa; los resultados sintéticos no acreditan precisión general.
 - No están verificadas la carga sostenida ni la equidad de la cola, ni la causa del error histórico sin traza.
 - Linux y Windows siguen sin probar; el check registrado reutilizó dependencias y una raíz temporal ampliada para el build.
-- Multiusuario e historial persistente son propuestas, sin implementar.
+- El historial persistente funciona localmente; multiusuario y SSO siguen sin implementar.
 
 ## Orden de lectura
 
@@ -67,6 +67,7 @@ Para desarrollar:
 
 ## Notas por versión
 
+- [v0.17.0](evolution-notes/v0.17.0.md): historial local, feedback y revisión.
 - [v0.16.0](evolution-notes/v0.16.0.md): identidad de petición y piezas internas de historial y feedback.
 
 - [v0.14.0](evolution-notes/v0.14.0.md): bloques de respuesta y evidencia versionada.
