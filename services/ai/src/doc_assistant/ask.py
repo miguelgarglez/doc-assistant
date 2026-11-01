@@ -29,7 +29,6 @@ from doc_assistant.config import load_config
 from doc_assistant.domain.answers.inline import assign_by_rules, validate_model_segments
 from doc_assistant.domain.answers.partial_json import FieldStreamer
 from doc_assistant.domain.answers.verifier import verify
-from doc_assistant.infra.storage.chunks import ChunkStore
 
 ANSWER_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -279,27 +278,15 @@ def _ask_events(
     latencies["embed"] = round(time.perf_counter() - t0, 4)
 
     t1 = time.perf_counter()
-    store = ChunkStore(cfg.db, dim=dim)
-    try:
-        if trace is not None:
-            store.db.execute("BEGIN")
-            digest = hashlib.sha256()
-            for row in store.db.execute(
-                "SELECT chunk_id, doc, display_doc, section, heading, title, pages, body, text "
-                "FROM chunks ORDER BY chunk_id"
-            ):
-                digest.update(json.dumps(list(row), ensure_ascii=False).encode("utf-8"))
-                digest.update(b"\n")
-            trace["versions"]["chunk_index_sha256"] = digest.hexdigest()
-            trace["versions"]["index_schema_version"] = store.db.execute(
-                "PRAGMA user_version"
-            ).fetchone()[0]
-        vec = store.vector_search(q_emb, k=10)
-        bm = store.bm25(question, k=10)
-        cand_ids = _union_candidates(vec, bm)
-        cand_chunks = store.get_many(cand_ids)
-    finally:
-        store.db.close()
+    retrieval = bootstrap.retrieval_index(cfg.db, dim).search(
+        q_emb, question, fingerprint=trace is not None
+    )
+    vec, bm = retrieval.vector_scores, retrieval.keyword_scores
+    cand_ids = _union_candidates(vec, bm)
+    cand_chunks = retrieval.chunks
+    if trace is not None:
+        trace["versions"]["chunk_index_sha256"] = retrieval.index_sha256
+        trace["versions"]["index_schema_version"] = retrieval.schema_version
     latencies["search"] = round(time.perf_counter() - t1, 4)
 
     ordered = [cand_chunks[i] for i in cand_ids if i in cand_chunks]

@@ -20,6 +20,7 @@ from doc_assistant.application.invoices.service import InvoiceService
 from doc_assistant.application.ports.health import ProbeResult
 from doc_assistant.application.ports.invoice_writer import InvoiceWriter
 from doc_assistant.application.ports.models import LLM, Embedder, OcrPort, Reranker
+from doc_assistant.application.ports.retrieval import RetrievalIndex
 from doc_assistant.application.sources import SourceService
 from doc_assistant.config import AppConfig, load_config
 from doc_assistant.infra.health.probes import probe_index, probe_llama
@@ -29,7 +30,12 @@ from doc_assistant.infra.invoices.catalog import SqliteInvoiceCatalog
 from doc_assistant.infra.invoices.writer import SqliteInvoiceWriter
 from doc_assistant.infra.models.http import HttpEmbedder, HttpLLM, HttpReranker, LlamaOCR, OllamaOCR
 from doc_assistant.infra.pdf.service import PdfService
+from doc_assistant.infra.retrieval.sqlite import SqliteRetrievalIndex
 from doc_assistant.infra.sources.sqlite import SqliteSourceRepository
+
+
+def retrieval_index(db: Path, dim: int) -> RetrievalIndex:
+    return SqliteRetrievalIndex(db, dim)
 
 
 def build_ocr(cfg: AppConfig) -> OcrPort:
