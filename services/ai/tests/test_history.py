@@ -38,6 +38,7 @@ def test_history_is_separate_and_feedback_copies_server_trace(tmp_path):
         "kind": "incorrecta",
         "comment": "revisar",
         "trace": trace,
+        "status": "nuevo",
     }
 
 
@@ -94,6 +95,7 @@ def test_existing_feedback_gains_conversation_without_losing_orphans(tmp_path):
     with sqlite3.connect(path) as db:
         rows = dict(db.execute("SELECT feedback_id, conversation_id FROM feedback"))
     assert rows == {"f": "c", "orphan": None}
+    assert HistoryStore(path).get_feedback("c", "f")["status"] == "nuevo"
 
 
 def test_wal_initialization_retries_when_database_is_locked(tmp_path, monkeypatch):
@@ -171,3 +173,18 @@ def test_history_rejects_trace_for_a_different_request(tmp_path):
     assert not store.add_feedback("f", "c", "r1", "now", "otro", None)
     store.record("r1", "c", "now", {"request_id": "r1"})
     assert store.get("c", "r1") == {"request_id": "r1"}
+
+
+def test_feedback_review_status_is_scoped_and_survives_reopening(tmp_path):
+    path = tmp_path / "history.db"
+    store = HistoryStore(path)
+    store.record("r", "c", "now", {"question": "private"})
+    assert store.add_feedback("f", "c", "r", "now", "otro", None)
+    assert not store.set_feedback_status("other", "f", "revisado")
+    with pytest.raises(ValueError, match="status"):
+        store.set_feedback_status("c", "f", "unknown")
+    assert store.set_feedback_status("c", "f", "revisado")
+    reopened = HistoryStore(path)
+    assert reopened.get_feedback("c", "f")["status"] == "revisado"
+    assert reopened.list_feedback_page("c")[0][0]["status"] == "revisado"
+    assert not reopened.set_feedback_status("c", "missing", "descartado")

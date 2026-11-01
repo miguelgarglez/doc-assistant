@@ -50,6 +50,7 @@ class HistoryStore:
                     created_at TEXT NOT NULL,
                     kind TEXT NOT NULL,
                     comment TEXT,
+                    status TEXT NOT NULL DEFAULT 'nuevo',
                     trace_json TEXT NOT NULL
                 );
                 """
@@ -62,6 +63,8 @@ class HistoryStore:
                     "UPDATE feedback SET conversation_id = "
                     "(SELECT conversation_id FROM requests WHERE requests.request_id = feedback.request_id)"
                 )
+            if "status" not in columns:
+                db.execute("ALTER TABLE feedback ADD COLUMN status TEXT NOT NULL DEFAULT 'nuevo'")
             db.execute(
                 "CREATE INDEX IF NOT EXISTS feedback_conversation_time "
                 "ON feedback(conversation_id, created_at DESC, feedback_id DESC)"
@@ -143,7 +146,7 @@ class HistoryStore:
         if not 1 <= limit <= 100:
             raise ValueError("limit must be between 1 and 100")
         query = (
-            "SELECT feedback_id, request_id, created_at, kind, comment, trace_json "
+            "SELECT feedback_id, request_id, created_at, kind, comment, trace_json, status "
             "FROM feedback WHERE conversation_id = ?"
         )
         params: list[Any] = [conversation_id]
@@ -167,16 +170,28 @@ class HistoryStore:
             "kind": row[3],
             "comment": row[4],
             "trace": json.loads(row[5]),
+            "status": row[6],
         }
 
     def get_feedback(self, conversation_id: str, feedback_id: str) -> dict[str, Any] | None:
         """Read the server snapshot, including after its request has been removed."""
         with self._connect() as db:
             row = db.execute(
-                "SELECT feedback_id, request_id, created_at, kind, comment, trace_json "
+                "SELECT feedback_id, request_id, created_at, kind, comment, trace_json, status "
                 "FROM feedback WHERE conversation_id = ? AND feedback_id = ?",
                 (conversation_id, feedback_id),
             ).fetchone()
         if row is None:
             return None
         return self._feedback_row(row)
+
+    def set_feedback_status(self, conversation_id: str, feedback_id: str, status: str) -> bool:
+        """Update a feedback review state within its conversation."""
+        if status not in {"nuevo", "revisado", "convertido a caso", "descartado"}:
+            raise ValueError("invalid feedback status")
+        with self._connect() as db:
+            cursor = db.execute(
+                "UPDATE feedback SET status = ? WHERE conversation_id = ? AND feedback_id = ?",
+                (status, conversation_id, feedback_id),
+            )
+            return cursor.rowcount == 1
