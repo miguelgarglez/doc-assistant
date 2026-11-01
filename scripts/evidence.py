@@ -24,11 +24,11 @@ from package import http_ok
 FIX = ROOT / "evidence" / "fixtures"
 OUT = ROOT / "evidence" / "live"
 QUESTIONS = [
-    ("documento", "¿Qué alcance tiene el sensor SX-20?"),
-    ("documento", "¿Qué temperatura de trabajo admite el sensor?"),
-    ("factura", "¿Cuál es el importe total de la factura F-2026-001?"),
-    ("rechazo esperado", "¿Cuál es el precio del robot?"),
-    ("rechazo esperado", "¿Quién ganó el mundial de 2010?"),
+    ("documento", "¿Qué alcance tiene el sensor SX-20?", True, "4 m"),
+    ("documento", "¿Qué temperatura de trabajo admite el sensor?", True, "0 a 50 C"),
+    ("factura", "¿Cuál es el importe total de la factura F-2026-001?", True, "537.94"),
+    ("rechazo", "¿Cuál es el precio del robot?", False, "No dispongo"),
+    ("rechazo", "¿Quién ganó el mundial de 2010?", False, "No dispongo"),
 ]
 
 
@@ -120,17 +120,29 @@ def live() -> None:
                     "segundos": round(time.time() - t0, 1),
                 }
             )
-        for kind, q in QUESTIONS:
+        for kind, q, expected_ok, expected_text in QUESTIONS:
             t0 = time.time()
             r = json.loads(http_ok(f"{WEB}/ask", json.dumps({"question": q}).encode()))
+            citations_ok = bool(r["citations"]) if expected_ok else not r["citations"]
+            passed = (
+                r["ok"] is expected_ok
+                and expected_text.casefold() in r["answer"].casefold()
+                and citations_ok
+            )
             res["preguntas"].append(
                 {
                     "tipo": kind,
                     "pregunta": q,
+                    "esperado": {
+                        "ok": expected_ok,
+                        "texto_incluye": expected_text,
+                        "citas": "al menos una" if expected_ok else "ninguna",
+                    },
                     "ok": r["ok"],
                     "respuesta": r["answer"],
                     "motivo": r["reason"],
                     "citas": [(c["doc"], c["pages"], c["quote"]) for c in r["citations"]],
+                    "cumple": passed,
                     "segundos": round(time.time() - t0, 1),
                 }
             )
@@ -141,11 +153,30 @@ def live() -> None:
             os.killpg(p.pid, signal.SIGINT)
         p.wait(timeout=30)
         log.close()
+    invoice_passed = sum(
+        not item.get("discrepancias") and item.get("estado") == "ok" for item in res["facturas"]
+    )
+    question_passed = sum(item["cumple"] for item in res["preguntas"])
+    res["metricas"] = {
+        "facturas_sin_discrepancias": invoice_passed,
+        "facturas_total": len(res["facturas"]),
+        "preguntas_cumplen": question_passed,
+        "preguntas_total": len(res["preguntas"]),
+    }
     (OUT / "results.json").write_text(json.dumps(res, ensure_ascii=False, indent=2) + "\n")
     md = [
         f"# Corrida real con datos sintéticos — {res['fecha']}",
         "",
-        "Generado por `mise run evidence --live`. Datos: evidence/fixtures (sintéticos). No es la evaluación final.",
+        (
+            "Generado por `mise run evidence --live`. Los datos y las expectativas están "
+            "versionados en `evidence/fixtures` y `scripts/evidence.py`. Es una evaluación "
+            "sintética reproducible, no una medida de precisión sobre documentación de producción."
+        ),
+        "",
+        "## Resultado",
+        "",
+        f"- Extracción de facturas: **{invoice_passed}/{len(res['facturas'])}** sin discrepancias en los campos comprobados.",
+        f"- Preguntas: **{question_passed}/{len(res['preguntas'])}** cumplen el tipo de salida, el valor literal y la regla de citas esperados.",
         "",
         "## Facturas",
         "",
@@ -160,11 +191,11 @@ def live() -> None:
         "",
         "## Preguntas",
         "",
-        "| tipo | pregunta | ok | respuesta / motivo | citas | s |",
-        "|---|---|---|---|---|---|",
+        "| tipo | pregunta | esperado | resultado | cumple | citas | s |",
+        "|---|---|---|---|---|---|---|",
     ]
     md += [
-        f"| {q['tipo']} | {q['pregunta']} | {q['ok']} | {q['respuesta'] if q['ok'] else q['motivo']} | {'; '.join(f'{d} p.{pg}' for d, pg, _ in q['citas'])} | {q['segundos']} |"
+        f"| {q['tipo']} | {q['pregunta']} | ok={q['esperado']['ok']}; contiene «{q['esperado']['texto_incluye']}»; {q['esperado']['citas']} cita(s) | {q['respuesta']} | {'sí' if q['cumple'] else 'no'} | {'; '.join(f'{d} p.{pg}' for d, pg, _ in q['citas']) or '—'} | {q['segundos']} |"
         for q in res["preguntas"]
     ]
     (OUT / "results.md").write_text("\n".join(md) + "\n")

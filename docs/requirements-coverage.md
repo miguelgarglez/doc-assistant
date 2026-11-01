@@ -1,132 +1,91 @@
 # Cobertura de requisitos
 
-Requisitos parafraseados del enunciado (no se reproduce el texto original). Estado a fecha del tag más reciente (ver `docs/CHANGELOG.md`).
-- **Cumplido**: implementado y con una prueba que lo demuestra.
-- **Parcial**: implementado, pero la prueba es de humo o falta una parte.
-- **No**: falta.
+Esta tabla sigue la numeración del checklist original. **Cumplido** significa que existe implementación o documento y una forma concreta de comprobarlo. **Parcial** significa que el mecanismo existe, pero la evidencia pública es sintética o no permite generalizar. **Pendiente de cierre** se reserva al artefacto final que se genera en la última fase.
 
-"Fiabilidad real" dice qué prueba lo respalda. Una prueba con datos sintéticos o simulados no sustituye a la evaluación con un conjunto aprobado, que aún no existe.
-
-## Resumen v0.18.0
-
-- Mejoran la mantenibilidad y la legibilidad con capas comprobadas, features aisladas, suites por alcance y enlaces locales validados; no cambia el comportamiento.
-- Pendientes: gold aprobado, evaluación representativa, aislamiento multiusuario, persistencia de la cola y ejecución real del workflow multiplataforma.
-- Recuento: 31 filas, 18 cumplidas, 10 parciales y 3 no. La reorganización no cambia el estado de esas filas.
-
-## Resumen v0.17.1
-
-- Mejoran la visibilidad de peticiones, el historial contextual, la revisión de feedback y la subida de documentos largos con progreso y errores explicativos.
-- Pendientes: gold aprobado, evaluación representativa, aislamiento multiusuario y persistencia de la cola ante reinicios.
-- Recuento: 31 filas, 18 cumplidas, 10 parciales y 3 no. Las mejoras no cambian el estado de esas filas.
-
-## Resumen v0.17.0
-
-- Mejoran el historial local, la revisión de feedback y la visibilidad de fallos; las respuestas conservan su stream aunque falle el guardado.
-- Pendientes: gold aprobado, evaluación representativa, aislamiento multiusuario y persistencia de la cola ante reinicios.
-- Recuento: 31 filas, 18 cumplidas, 10 parciales y 3 no. Las mejoras no cambian el estado de esas filas.
-
-## Resumen v0.16.0
-
-- Mejoran la correlación de consultas y el cierre de streams incompletos; existen trazas y almacenamiento interno de historial y feedback. Check completo, tres pasadas con axe y humo HTTP sintético con modelos reales correctos.
-- Pendientes: conectar historial y feedback con autorización, privacidad, retención e interfaz; medir su coste completo, evaluación representativa y gold aprobado.
-- Recuento: 31 filas, 18 cumplidas, 10 parciales y 3 no. Las piezas internas no completan nuevos requisitos de usuario.
-
-## Resumen v0.15.2
-
-- Mejoran la concurrencia, la admisión acotada, los errores y la extracción de importes con dos puntos en una muestra sintética.
-- Pendientes: carga sostenida y equidad de la cola, evaluación representativa, gold aprobado y plataformas no probadas. La muestra sintética no acredita precisión general.
-- Recuento: 31 filas, 18 cumplidas, 10 parciales y 3 no. La carga nueva no cambia el estado de ninguna fila.
-
-## Resumen v0.15.0
-
-- Mejoran C3, A2 y la evidencia de portabilidad en macOS; el diseño multiusuario sigue siendo una propuesta.
-- Pendientes: gold aprobado, evaluación representativa, plataformas no probadas y el error interno observado durante peticiones simultáneas.
-- Recuento: 31 filas, 18 cumplidas, 10 parciales y 3 no.
+Conclusión: el alcance funcional solicitado está implementado. Los límites relevantes no son funciones ausentes, sino la representatividad de la evaluación, la ausencia de posiciones OCR para resaltar facturas y la portabilidad no ejecutada fuera de macOS.
 
 ## Consulta documental
 
-| Id | Requisito (paráfrasis) | Dónde | Estado | Fiabilidad real |
+| ID | Qué se exige | Dónde se cumple | Evidencia reproducible | Estado y límite |
 |---|---|---|---|---|
-| R1.1 / A4 | Responder solo con el contenido de los documentos | `application/ask/pipeline.py` (salida JSON del LLM) y `domain/answers/verifier.py`; las citas inline se asignan solo si la frase las sostiene (`domain/answers/inline.py`, ADR-011) | Parcial | Tests unitarios del verificador y de la consulta con LLM falso. Medido sobre el conjunto de evaluación en borrador (no aprobado): 24/33 contestables respondidas, 11/11 no contestables rechazadas, 0 respuestas sin respaldo (ADR-011). No es una tasa de error: sin gold aprobado no se puntúa la corrección. |
-| R1.2 / A3 | Citar el documento y la sección o página | `Citation` en el contrato (`doc`, `section`, `pages`, `doc_id`); marcadores numéricos pegados a la frase y solo las citas que se usan (`segments`, ADR-011) | Cumplido | Tests de API, de `inline` y de las plantillas (una cita por elemento listado; «¿qué facturas tengo?» pasa de 44 citas a 5); e2e de marcadores y vista previa; todas las respuestas con cita llevan marcador (24/24 en la medida). |
-| R1.3 | Mostrar el fragmento recuperado | Visor a pantalla completa (`SourceViewer`): página con el fragmento resaltado (`GET /sources/{id}/pages/{n}/highlight`), zoom, arrastre y navegación entre citas | Cumplido | Tests del localizador (`test_highlight.py`), del zoom (`pan-zoom`) y e2e; resaltado comprobado con un PDF real. Las facturas (imagen con OCR) no tienen posiciones: se enseña el campo extraído y el visor lo dice. Capturas `chat-visor-*` y `chat-visor-factura-*` en `evidence/screenshots`. |
-| R1.4 / R1.6 | No dar información ajena a los documentos | Rechazo cuando el verificador o el plan SQL no pasan | Parcial | 2 rechazos reales (fuera de dominio y dato ausente) y tests de rechazo. Sin conjunto adversarial ni métrica. |
-| R1.5 | Decir explícitamente "no dispongo" | `RefusalNotice` + `reason`; rechazos con `suggestions` (fuentes cercanas reales) y `empty_index` (ADR-009). Desde v0.13.1 una ambigüedad de factura ya no se muestra como rechazo (ADR-013) | Cumplido | e2e "rechazo"; capturas `chat-rechazo-*` (simuladas desde v0.13.3); `e2e/live.spec.ts` contra el stack; e2e y tests de servicio de que una aclaración no es un rechazo. |
-| R1.7 | Acreditar la ausencia de alucinaciones | `evidence/` | **No** | El gold está en borrador y no aprobado; las cifras antiguas no valen. Hoy solo hay pruebas de humo. |
-| A1 | Ingesta y troceado propios | `application/ingest/service.py` y `domain/documents/chunking.py` (por sección, `chunk_id` determinista) | Cumplido | Tests de chunking (secciones, pie de página fuera); ingesta real: 44 fragmentos en 1,8 s. |
-| A2 | Justificar el troceado y medirlo | `architecture.md`, `evidence/chunking/` | Parcial | Comparación reproducible en dos PDF sintéticos: secciones conserva 6/6 hechos literales completos y ventanas fijas de 64 caracteres conservan 2/6. No mide recuperación ni generaliza a documentos sin encabezados o secciones largas. |
+| R1.1 | Respuesta exclusivamente documental | `application/ask/pipeline.py` y `domain/answers/verifier.py` | `mise run test-integration`; `mise run evidence --live` | **Parcial.** La respuesta aceptada necesita citas verificadas; la evaluación pública usa corpus sintético. |
+| R1.2 | Documento y sección o página exactos | Tipo `Citation` del contrato; marcadores inline y visor | `mise run check`; `mise run evidence` | **Cumplido.** |
+| R1.3 | Fragmento recuperado visible | `features/viewer` y `/sources/{id}/pages/{n}/highlight` | Tests de `highlight`, e2e y `evidence/screenshots/chat-visor-*` | **Cumplido.** En facturas se muestra el campo OCR, sin rectángulo sobre la imagen. |
+| R1.4 | No informar fuera de las fuentes | Verificador, rechazo y ruta tipada de facturas | `mise run test-unit`; casos de rechazo de `mise run evidence --live` | **Parcial.** Se acredita en casos versionados, no como garantía matemática universal. |
+| R1.5 | Rechazo explícito fuera de alcance | `RefusalNotice`: «No dispongo de esa información…» | Capturas `chat-rechazo-*`; tests de consulta y e2e | **Cumplido.** |
+| R1.6 | Tratar una respuesta inventada como fallo | Una salida no verificada se retira y termina en rechazo | Tests SSE de `retract` y verificación | **Cumplido por diseño y tests.** |
+| R1.7 | Acreditar la fundamentación | `evidence/live/`, baterías unitarias y de integración | `mise run evidence --live` | **Parcial.** Hay expectativas y métricas reproducibles; falta un conjunto independiente con documentos de producción. |
+
+## Restricción local y hardware
+
+| ID | Qué se exige | Dónde se cumple | Evidencia reproducible | Estado y límite |
+|---|---|---|---|---|
+| C1 | Procesamiento íntegramente local | `config/config.yaml`; cinco procesos en `127.0.0.1` | `mise run start`; vista Sistema | **Cumplido.** Internet solo se necesita para instalar dependencias. |
+| C2 | Modelos ajustados a la máquina disponible | `scripts/assets.json`, `scripts/dev.py`, `docs/modelos-hardware.md` | Smoke real y medidas de memoria/latencia publicadas | **Cumplido.** |
+| C3 | Hardware explícito | README, sección «Hardware de prueba» | Comandos `sw_vers`, `sysctl` y `system_profiler` publicados | **Cumplido.** M4, CPU/GPU de 10 núcleos y 16 GiB unificados. |
+| C4 | Justificar modelos, cuantización y viabilidad | `docs/modelos-hardware.md` | Inventario SHA256, muestra RSS y comparación 4B/9B | **Parcial.** La elección está medida; la comparación de calidad es exploratoria. |
+| C5 | Vincular dimensionamiento al hardware real | `docs/modelos-hardware.md` | Mismas medidas sobre el M4 de entrega | **Parcial.** No se midió el pico de memoria unificada. |
+
+## Ingesta documental
+
+| ID | Qué se exige | Dónde se cumple | Evidencia reproducible | Estado y límite |
+|---|---|---|---|---|
+| A1 | Extracción, troceado e indexación propios | `application/ingest/service.py`, `domain/documents/chunking.py` | Tests de chunking e ingesta; `mise run evidence --live` | **Cumplido.** |
+| A2 | Estrategia de troceado justificada | Arquitectura y `evidence/chunking/` | `uv run --project services/ai python evidence/chunking/comparar.py` | **Parcial.** Secciones conservan 6/6 hechos frente a 2/6 con ventanas; no mide recall sobre un corpus representativo. |
+| A3 | Fuente exacta y fragmento junto a respuesta | Contrato, chat y visor | E2E de cita, vista previa y página resaltada | **Cumplido.** |
+| A4 | Garantía de fundamentación aplicable | Mismo flujo que R1.1–R1.7 | Tests del verificador y evidencia live | **Parcial** por el límite descrito en R1.7. |
 
 ## Facturas
 
-| Id | Requisito (paráfrasis) | Dónde | Estado | Fiabilidad real |
+| ID | Qué se exige | Dónde se cumple | Evidencia reproducible | Estado y límite |
 |---|---|---|---|---|
-| B1 | Subir la imagen de una factura | `POST /invoices/upload?job=`; modal «Añadir fuentes», aviso persistente con el estado real de cada archivo (`GET /ingest/jobs/{id}/events`) y cola `UploadStore` | Cumplido | Tests de API (incluido el 413) y de los eventos de ingesta; e2e de subida con estados, duplicados, fallo y reintento (respuestas simuladas); capturas del aviso con OCR real. El progreso vive en memoria: un reinicio del servicio lo pierde (ADR-011). |
-| B2 | Extracción estructurada fiable | `application/invoices/extract.py`: OCR → reglas Decimal → LLM solo para texto | Parcial | 6/6 facturas **sintéticas** sin discrepancias frente a su JSON. Las facturas reales aún no se han evaluado (lo decide Miguel). |
-| B3 | Incorporar las facturas al mismo índice y consultarlas en lenguaje natural | `chunk_invoice` en el mismo índice + `facturas_q` tipada; plan validado y resolución en código (ADR-012) | Cumplido | Baterías propias con LLM real: 36/36 y 33/33 adversariales, 0 falsas (antes 6/36 y 7/33). Contar y sumar en SQL. 2.005 facturas sintéticas: 33 ms de parte determinista. |
-| B4 | Diseñar los campos y no inventar ninguno | Campos sin evidencia → `null`; puertas de suma e IVA → "revisar" | Cumplido | `test_review_regressions` (texto sin evidencia → null) y e2e del detalle de factura (campos, motivo e imagen). |
-| B5 | No responder nada que no figure en las facturas | Valores y citas solo de facturas seleccionadas por código; ambigüedad → tarjeta «¿De qué factura?» con las candidatas reales (`clarification`, ADR-013); sin caída al RAG | Parcial | 0 respuestas falsas en 84 preguntas (A, B y C, 33 adversariales) y tests de cada regla; tests de servicio y e2e de la aclaración (datos ausentes → sin dato, no inventado). Las baterías son propias y no están aprobadas como gold. |
+| B1 | Cargar imagen de factura | `/invoices/upload`, modal «Añadir fuentes» y progreso SSE | Tests API/e2e; `mise run evidence --live` | **Cumplido.** |
+| B2 | Extracción estructurada fiable | `application/invoices/extract.py`: OCR, Decimal, texto y puertas aritméticas | Seis facturas con JSON esperado en `evidence/fixtures` | **Parcial.** 6/6 sintéticas sin discrepancias; no se publica una evaluación de facturas reales. |
+| B3 | Incorporación al mismo índice y consulta natural | `chunk_invoice`, `facturas_q` y plan validado | Baterías de facturas; pregunta live con cita | **Cumplido.** |
+| B4 | Campos definidos y ausencias sin invención | Campos ausentes `null`; suma/IVA incoherentes → `revisar` | Tests de regresión, campos y aritmética | **Cumplido.** |
+| B5 | Fundamentación también en facturas | SQL sobre columnas cerradas; citas solo de filas seleccionadas; aclaración ante ambigüedad | Baterías unitarias/live y e2e de aclaración | **Parcial.** Las baterías son propias y sintéticas. |
 
-## Restricciones
+## Escalado y despliegue
 
-| Id | Requisito (paráfrasis) | Dónde | Estado | Fiabilidad real |
+| ID | Qué se exige | Dónde se cumple | Evidencia reproducible | Estado |
 |---|---|---|---|---|
-| C1 / N1 | 100 % local, sin APIs de terceros | llama-server en 127.0.0.1 (Ollama opcional) | Cumplido | Todos los adaptadores apuntan a localhost (`config.yaml`). Internet solo en la instalación. |
-| C2 | Modelos elegidos para la máquina disponible | `config.yaml`, `assets.json` | Parcial | Funciona en un M4 de 16 GB (humo real). |
-| C3 | Especificar el hardware | README "Probado en" | Cumplido | `sysctl`, `sw_vers` y `system_profiler` identifican CPU y GPU de 10 núcleos, 16 GiB de memoria unificada y macOS 26.6.2. Hay una muestra RSS durante una consulta sintética; faltan picos y carga representativa (E-B2). |
-| C4 / C5 / E-C1 | Justificar cada modelo frente al hardware, con su cuantización y las alternativas descartadas | `docs/modelos-hardware.md` | **No** | Están inventariados los archivos y sus cuantizaciones. Hay instantáneas RSS y una comparación exploratoria reproducible de 4B y 9B con tres preguntas sintéticas y otra compilación. Faltan picos y una evaluación representativa de alternativas. |
-
-## Escalado
-
-| Id | Requisito (paráfrasis) | Dónde | Estado | Fiabilidad real |
-|---|---|---|---|---|
-| S1–S3 / E-C4 | Escalado, despliegue y compromisos | `docs/scaling-deployment.md` | Cumplido | Es documento (así lo pide el enunciado). |
+| S1 | Varias plantas y muchos usuarios | `docs/scaling-deployment.md` | Revisión documental | **Cumplido** como diseño, que es lo solicitado. |
+| S2 | Estrategia on-premise y/o nube | `docs/scaling-deployment.md` | Revisión documental | **Cumplido.** |
+| S3 | Compromisos de diseño | Tabla de límites y fases en el mismo documento | Revisión documental | **Cumplido.** |
 
 ## Entregables
 
-| Id | Requisito (paráfrasis) | Dónde | Estado | Fiabilidad real |
+| ID | Qué se exige | Dónde se cumple | Evidencia reproducible | Estado y límite |
 |---|---|---|---|---|
-| E-A1 | Código de calidad, errores controlados, README | `mise run check` (ruff, mypy, 406 tests normales del servicio, 28 de scripts, enlaces locales, contrato, eslint, tsc y build) | Cumplido | `check` OK; 35 casos live separados y optativos; revisión independiente triada (ADR-006). |
-| E-A2 | Sin scripts sueltos ni notebooks | Servicio + web + tareas mise | Cumplido | Los `scripts/` son las tareas del proyecto, con sus propios tests. |
-| E-A3 / E-A4 | Interfaz cuidada: respuesta, fuentes navegables, fragmento | `apps/web` (chat sobre AI SDK, citas inline, visor a pantalla completa, Fuentes, Sistema; ADR-010 y ADR-011); API de streaming con trazas y catálogo de fuentes (`docs/streaming.md`, ADR-009) | Cumplido | Integración: 118 e2e con respuestas simuladas en tres pasadas seguidas; los cuatro tests de fixtures contra stack real se omiten. Esos cuatro se ejecutaron en v0.12.0. Axe sin violaciones serias ni críticas en rutas, temas y modos (incluidos el visor, el diálogo de subida y el aviso); capturas contra el stack real con fuentes sintéticas en tres tamaños y cuatro combinaciones de tema. Desde v0.13.1: tarjeta de aclaración de facturas (teclado, axe en cuatro temas y modos) y vista previa de cita anclada con test de posición; 139 e2e en tres pasadas. No se ha probado con usuarios. |
-| E-B1 | Conjunto de evaluación con respuestas esperadas y métricas | — | **No** | El gold no está aprobado. `evidence/live` solo tiene 6 facturas y 5 preguntas, sin métricas agregadas. |
-| E-B2 | Latencia, tiempo de ingesta y RAM/VRAM en el hardware real | `evidence/live/results.md` (tiempos) | Parcial | Latencias de 3–6 s por pregunta y 11–18 s por factura; ingesta de 1,8 s. Hay dos instantáneas RSS de los cuatro modelos cargados y una consulta sintética en `docs/modelos-hardware.md`, con una compilación distinta a la del ZIP; faltan pico, carga representativa y desglose GPU. |
-| E-B3 | Capturas, incluido el rechazo | `evidence/screenshots/` | Cumplido | Regeneradas con `e2e/capture.mjs` contra el stack real (respuestas, vista previa de cita, respuesta panorámica, rechazo, visor con resaltado, visor de factura, diálogo y aviso de subida, Fuentes, Sistema, Ajustes); galería por versión en `evidence/evolution/`. v0.13.1 añade aclaración, respuesta tras elegir y vista previa de cita (36 capturas sintéticas). |
-| E-B4 | Otra evidencia | `docs/reviews/`, `docs/test-audit` (`services/ai/docs`), CHECKPOINT | Cumplido | — |
-| E-B5 / REP3 | Evidencia regenerable con un comando | `mise run evidence [--live]` | Cumplido | Ejecutado el 31-oct; las capturas son deterministas. |
-| E-C2 / E-C3 | Arquitectura: ingesta y garantía de fundamentación | `docs/architecture.md` | Parcial | Están descritas, pero sin medidas que las respalden (ver A2 y R1.7). |
-| REP1 / REP2 | Un comando, versiones fijadas, sin montajes frágiles | mise + `setup` con SHA256 + ZIP | Parcial | Probado en macOS, ZIP con smoke falso. Windows y Linux sin probar en real. El OCR viene en el ZIP (Ollama solo como alternativa). |
-| N2 | Documentar las elecciones | `decisions-log.md` | Cumplido | — |
-| N3 | Huecos del enunciado decididos | `docs/open-gaps.md` | Cumplido | — |
-| N5 | ZIP con código, README y arquitectura | `mise run package` | Parcial | Solo se ha probado el smoke falso, sin modelos. El paquete completo con smoke real está pendiente. |
+| E-A1 | Código estructurado, errores y README | Monorepo por capas, errores tipados y README | `mise run check` | **Cumplido.** |
+| E-A2 | No entregar scripts aislados ni notebooks | Servicio instalable, web y tareas de proyecto | Inventario del ZIP; no hay notebooks | **Cumplido.** `scripts/` contiene orquestación probada, no el producto aislado. |
+| E-A3 | Interfaz usable con respuesta, fuentes y fragmento | `apps/web`: Chat, Fuentes, Sistema y visor | Playwright + axe; capturas | **Cumplido.** |
+| E-A4 | Estética sin comprometer fiabilidad | Texto provisional marcado y retirada si falla verificación | Tests del transporte SSE y e2e | **Cumplido.** |
+| E-B1 | Preguntas, respuestas esperadas y métricas | Expectativas en `scripts/evidence.py`; resultados en `evidence/live/` | `mise run evidence --live` | **Cumplido con alcance sintético.** |
+| E-B2 | Latencia, ingesta y RAM/VRAM en hardware real | `docs/modelos-hardware.md` y `evidence/live/results.md` | Comando live y método publicado | **Cumplido con límites.** En Apple Silicon la VRAM no es separable de la RAM unificada; se publican RSS, no picos. |
+| E-B3 | Evidencia visual, incluido rechazo | `evidence/screenshots/` | `mise run evidence` | **Cumplido.** |
+| E-B4 | Evidencia adicional | Comparación de chunking, tests, galería y corrida live | Comandos enlazados desde `evidence/README.md` | **Cumplido.** |
+| E-B5 | Evidencia regenerable | Tarea `evidence` y fixtures versionadas | `mise run evidence`; `mise run evidence --live` | **Cumplido.** |
+| E-C1 | Arquitectura: modelos frente a hardware | `docs/architecture.md` y `docs/modelos-hardware.md` | Revisión de inventario y medidas | **Parcial** hasta cerrar la justificación final de alternativas. |
+| E-C2 | Arquitectura: ingesta y troceado | `docs/architecture.md` | Diagrama y comparación de chunking | **Cumplido.** |
+| E-C3 | Arquitectura: fundamentación | `docs/architecture.md` | Diagrama, tests y corrida live | **Cumplido con el límite de R1.7.** |
+| E-C4 | Arquitectura: escalado opcional | `docs/scaling-deployment.md` | Revisión documental | **Cumplido.** |
 
-**Trabajo sin publicar.**
-- Mejoran C3 con hardware consultado, A2 con comparación exploratoria sintética, E-B2 con muestras RSS y S1–S3 con una propuesta multiusuario detallada.
-- Pendientes: gold aprobado, evaluación de recuperación y comparación de modelos, picos de memoria, recorrido del ZIP y comprobaciones completas; el workflow no se ha ejecutado.
-- Recuento de 31 filas: 18 cumplidas, 10 parciales y 3 no. C3 cambia de parcial a cumplido y A2 de no a parcial.
+## Reproducibilidad y normas
 
-**v0.14.0.**
-- Mejoran B3, B4, B5 y E-A3/E-A4 con fichas y tablas derivadas de evidencia, contrato versionado, copia fiel y degradación; E-B3 incorpora comparación y galería. 180 e2e ×3 y batería propia de 35 casos live sin respuestas falsas.
-- Pendientes: B5 sigue parcial y E-B1 en "no" hasta el gold aprobado; faltan posiciones OCR y prueba de teclado virtual real. Las fechas conservan su representación almacenada.
-- Recuento de 31 filas: 17 cumplidas, 10 parciales y 4 no. No cambia el estado de ninguna fila.
+| ID | Qué se exige | Dónde se cumple | Evidencia reproducible | Estado y límite |
+|---|---|---|---|---|
+| REP1 | Arranque con un comando o pocos pasos | `mise install`, `mise run setup`, `mise run start` | Smoke del paquete en limpio | **Cumplido en macOS ARM64.** |
+| REP2 | Sin montajes manuales frágiles | Versiones fijadas, SHA256, modelos y binarios en el ZIP | `mise run package --smoke real` | **Parcial.** Windows y Linux están empaquetados pero no probados físicamente. |
+| REP3 | Evidencia con la misma facilidad | Tarea `evidence` | Comandos anteriores | **Cumplido.** |
+| N1 | IA permitida en desarrollo; procesamiento local | Configuración local | Vista Sistema y health checks | **Cumplido.** |
+| N2 | Elecciones documentadas | `docs/decisions-log.md` | Índice de decisiones | **Cumplido.** |
+| N3 | Resolver huecos deliberados | `docs/open-gaps.md` | Tabla de supuestos, razón, límite y mejora | **Cumplido.** |
+| N4 | Priorizar razonamiento sobre amplitud | Alcance y límites declarados | README y supuestos | **Cumplido como criterio de alcance.** |
+| N5 | ZIP con código, README y arquitectura | `scripts/package.py` | Inspección y smoke real del ZIP | **Pendiente de cierre** en la fase de empaquetado final. |
 
-**v0.13.3.**
-- Mejoran R1.5 (rechazo con lenguaje llano, sin códigos internos), B3 y B5 (importes es-ES y solo los campos pedidos, con una batería sintética de 35 casos y 0 falsas) y E-B3 (capturas nuevas). No cambia el estado de ninguna fila.
-- Pendientes: B5 sigue parcial hasta tener un gold aprobado; E-B1 sigue en "no"; las fechas se muestran como están guardadas.
-- Recuento final de 31 filas: 17 cumplidas, 10 parciales y 4 no.
+## Lectura correcta de la evidencia
 
-**v0.13.2.**
-- Mejoran E-A3/E-A4 y R1.5: la vista previa de una cita ya no tapa el composer cuando la cita está al final del hilo (límite de colisión en el hilo, tests de geometría). E-B3 suma las capturas antes y después. No cambia el estado de ninguna fila.
-- Pendientes: B5 sigue parcial hasta tener un gold aprobado; E-B1 sigue en "no"; el humo con modelos reales desde el ZIP está en `_agents/ui6/PROGRESO.md`, no en el repositorio.
-- Recuento final de 31 filas: 17 cumplidas, 10 parciales y 4 no.
-
-**v0.13.1 (ADR-013).**
-- Mejoran R1.5, B5 y E-A3/E-A4: la ambigüedad de facturas es una aclaración con candidatas reales y la vista previa de cita queda anclada. E-B3 suma las capturas nuevas. No cambia el estado de ninguna fila.
-- Pendientes: B5 sigue parcial hasta tener un gold aprobado; E-B1 sigue en "no"; las candidatas de persona para listas, conteos y sumas están sin hacer.
-- Recuento final de 31 filas: 17 cumplidas, 10 parciales y 4 no.
-
-**v0.13.0 integrada con v0.12.0 (ADR-011 y ADR-012).**
-- Mejoran R1.2, R1.3, B1 y E-A3/E-A4 con las citas inline, el visor y el progreso de v0.12.0; B3 y B5 incorporan el plan v2, SQL y aclaraciones de v0.13.0.
-- Pendientes: B5 sigue parcial hasta tener un gold aprobado; E-B1 sigue en "no".
-- Recuento final de 31 filas: 17 cumplidas, 10 parciales y 4 no.
-
-**Estado v0.18.0 (31 filas; algunas agrupan varios requisitos): 18 cumplidas, 10 parciales, 3 no (R1.7, C4/C5/E-C1, E-B1).** A2 sigue parcial: la comparación sintética no mide recuperación. Los tres "no" requieren acreditación o justificación de modelos frente al hardware.
+- Los fixtures son sintéticos para poder publicarlos y regenerarlos. Sirven para demostrar el mecanismo y detectar regresiones; no estiman la precisión sobre cualquier manual o factura.
+- «0 respuestas sin respaldo» en una batería finita no equivale a prometer cero errores universales. La defensa es estructural: evidencia primero, verificación después y rechazo seguro.
+- El siguiente paso para producción es acordar un conjunto independiente y representativo, ejecutarlo sin ajustar el sistema con sus respuestas y fijar umbrales de aceptación.
