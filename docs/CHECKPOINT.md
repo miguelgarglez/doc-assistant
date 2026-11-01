@@ -492,3 +492,4 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 11:11 CET · Exportación interna de borradores
 - El almacén genera líneas JSON para feedback revisado con respuesta esperada no vacía, limitado a una conversación. Incluyen la copia de la traza y siguen siendo borradores, no gold aprobado. Falta un comando de usuario y una política de acceso.
 - Pasan 13 pruebas de historial, Ruff, formato y mypy. Las trazas exportadas pueden contener información confidencial.
+- Suite completa del servicio: 355 pruebas pasan y 35 live se omiten. La advertencia de deprecación de Starlette sigue presente; esta suite no sustituye el check de entrega ni e2e.
