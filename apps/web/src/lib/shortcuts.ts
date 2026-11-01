@@ -12,6 +12,9 @@ export const SHORTCUTS: readonly ShortcutHelp[] = [
   { keys: "Esc", action: "Detener la respuesta" },
   { keys: "↑ / ↓", action: "Recorrer preguntas anteriores (campo vacío)" },
   { keys: "⌘/Ctrl+V", action: "Pegar un PDF o una imagen como fuente" },
+  { keys: "Alt+C", action: "Copiar la última respuesta" },
+  { keys: "Alt+T", action: "Copiar la tabla de la última respuesta" },
+  { keys: "Alt+1 … Alt+3", action: "Hacer una de las preguntas sugeridas" },
   { keys: "⌘/Ctrl+B", action: "Mostrar u ocultar el menú" },
   { keys: "? o ⌘/Ctrl+/", action: "Mostrar esta ayuda" },
 ]

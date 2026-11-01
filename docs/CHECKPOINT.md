@@ -136,3 +136,6 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 01:35 CET · Servicio y contrato de bloques
 - Fichas/listas/comparativas derivadas de SQL, número de fila citado y sumas con operación y citas de operandos. Versionado explícito `blocks_version: 1`; OpenAPI y cliente regenerados. Corregida pregunta por número que devolvía total y formato de importes en inventario. Markdown conserva los datos generales, incluido número.
 - Verificación: suite del servicio 307 passed / 35 live omitidos antes de añadir dos regresiones; batería y streaming repetidos con las nuevas invariantes.
+
+## 01-Nov 01:36 CET · Bloques y microinteracciones de lectura
+- Ficha y tabla con citas junto a cada valor; validación de estructura y correspondencia de documento/campo/valor, conjunto atómico y versión desconocida con alternativa Markdown. Copia TSV alineada y con notas, atajos fuera del editor, skeleton y streaming breve. Movimiento reducido también desactiva el scroll programático suave. Revisión independiente de servicio y UI aplicada. Primera pasada de bloques: 30/30 con axe; ampliada después para cubrir el pegado y Option.

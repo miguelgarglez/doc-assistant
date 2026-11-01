@@ -83,10 +83,29 @@
     *::before,
     *::after {
       animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+@layer components {
+  .figure {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    border-radius: 0.375rem;
+    padding: 0.0625rem 0.375rem;
+    background: color-mix(in oklab, var(--muted) 85%, transparent);
+    font-weight: 500;
+  }
+  .figure-date {
+    font-weight: 400;
+  }
+  [data-streamdown="table"] td,
+  [data-streamdown="table-cell"] {
+    font-variant-numeric: tabular-nums;
   }
 }
 

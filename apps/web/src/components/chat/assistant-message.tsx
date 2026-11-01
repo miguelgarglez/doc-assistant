@@ -6,7 +6,9 @@ import { toast } from "sonner"
 
 import { Message, MessageAction, MessageActions, MessageContent, MessageResponse } from "@/components/ai-elements/message"
 import { Shimmer } from "@/components/ai-elements/shimmer"
-import { Suggestion } from "@/components/ai-elements/suggestion"
+import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion"
+import { AnswerBlocks } from "@/components/chat/answer-blocks"
+import { AnswerSkeleton } from "@/components/chat/answer-skeleton"
 import { AnswerLink } from "@/components/chat/citation-marker"
 import { CitationContext } from "@/components/chat/citation-context"
 import { ClarificationCard } from "@/components/chat/clarification"
@@ -15,15 +17,21 @@ import { TraceBlock } from "@/components/chat/trace-block"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { duration } from "@/lib/format"
-import { copyText, formatAnswerMarkdown } from "@/lib/clipboard"
-import type { AskMessage, Citation, RefusalData, ResultData } from "@/lib/chat/types"
+import { copyText } from "@/lib/clipboard"
+import { answerMarkdown } from "@/lib/chat/answer-copy"
+import type { AskMessage, Block, Citation, FollowUp, RefusalData, ResultData } from "@/lib/chat/types"
+import { answerRehypePlugins } from "@/components/chat/answer-plugins"
 import { clarificationText } from "@/lib/chat/clarification"
 import { refusalCopy } from "@/lib/chat/refusal-copy"
 import { segmentsMatch, withMarkers } from "@/lib/chat/inline"
 import { suggestionLabel, viewOfAssistant, type AssistantView } from "@/lib/chat/view"
 import { cn } from "@/lib/utils"
+import { useMediaQuery } from "@/hooks/use-media-query"
 
 const answerComponents = { a: AnswerLink }
+
+/** Words fade in as they arrive. The global reduced-motion rule turns the fade off. */
+const STREAM_ANIMATION = { animation: "fadeIn", duration: 140, easing: "ease-out", stagger: 12, sep: "word" } as const
 
 type AssistantMessageProps = {
   message: AskMessage
@@ -46,6 +54,7 @@ export const AssistantMessage = memo(function AssistantMessage({
   onRetry,
   onAsk,
 }: AssistantMessageProps) {
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
   const view = viewOfAssistant(message, live, isLast ? error : undefined)
   const total = view.kind === "answer" ? (view.result.timings.total ?? null) : null
 
@@ -53,15 +62,22 @@ export const AssistantMessage = memo(function AssistantMessage({
     <Message data-kind={view.kind} data-testid="assistant-message" from="assistant">
       <MessageContent>
         <TraceBlock live={live} steps={view.steps} total={total} />
-        {view.kind === "pending" && view.steps.length === 0 ? (
-          <p className="text-sm" role="status">
-            <Shimmer>Buscando en las fuentes…</Shimmer>
-          </p>
+        {view.kind === "pending" ? (
+          <>
+            {view.steps.length === 0 ? (
+              <p className="text-sm" role="status">
+                <Shimmer>Buscando en las fuentes…</Shimmer>
+              </p>
+            ) : null}
+            <AnswerSkeleton />
+          </>
         ) : null}
         {view.kind === "provisional" ? (
           <div data-testid="provisional-answer">
             <div className="text-muted-foreground">
-              <MessageResponse isAnimating>{view.text}</MessageResponse>
+              <MessageResponse animated={reducedMotion ? false : STREAM_ANIMATION} isAnimating rehypePlugins={answerRehypePlugins}>
+                {view.text}
+              </MessageResponse>
             </div>
             <p className="mt-2 text-xs" role="status">
               <Shimmer>Verificando con las fuentes…</Shimmer>
@@ -71,7 +87,10 @@ export const AssistantMessage = memo(function AssistantMessage({
         {view.kind === "answer" ? (
           <AnswerBody
             activeIndex={activeCitation}
+            blocks={view.blocks}
             citations={view.citations}
+            followUps={view.followUps}
+            onAsk={onAsk}
             onOpen={onOpenCitation}
             segments={view.result.segments}
             text={view.text}
@@ -116,30 +135,65 @@ function copyTextOf(view: Extract<AssistantView, { kind: "answer" | "refusal" | 
     return `${copy.title}. ${copy.body}`
   }
   if (view.kind === "clarification") return clarificationText(view.clarification.clarification)
-  return formatAnswerMarkdown(withMarkers(view.text, view.result.segments, view.citations.length, "plain"), view.citations)
+  return answerMarkdown(view)
 }
 
 type AnswerBodyProps = {
   text: string
   segments: ResultData["segments"]
+  blocks: Block[]
+  followUps: FollowUp[]
+  onAsk: (question: string) => void
   citations: Citation[]
   activeIndex: number | null
   onOpen: (index: number) => void
 }
 
-/** The verified answer. Markers sit after each supported segment; without them the sources follow the text. */
-function AnswerBody({ text, segments, citations, activeIndex, onOpen }: AnswerBodyProps) {
-  const inline = segmentsMatch(text, segments, citations.length) && segments.some((segment) => segment.refs.length > 0)
+/**
+ * The verified answer. With blocks, the structured view replaces the Markdown body (it says the
+ * same, from the same rows); without them, or when they cannot be trusted, the Markdown is shown.
+ * Markers sit after each supported segment; without them the sources follow the text.
+ */
+function AnswerBody({ text, segments, blocks, followUps, onAsk, citations, activeIndex, onOpen }: AnswerBodyProps) {
+  const structured = blocks.length > 0
+  const inline = structured || (segmentsMatch(text, segments, citations.length) && segments.some((segment) => segment.refs.length > 0))
   const context = useMemo(() => ({ citations, activeIndex, onOpen }), [citations, activeIndex, onOpen])
   return (
     <CitationContext.Provider value={context}>
-      <div data-inline={inline} data-testid="answer-text">
-        <MessageResponse components={answerComponents}>
-          {inline ? withMarkers(text, segments, citations.length) : text}
-        </MessageResponse>
+      <div data-inline={inline} data-structured={structured} data-testid="answer-text">
+        {structured ? (
+          <AnswerBlocks blocks={blocks} onAsk={onAsk} />
+        ) : (
+          <MessageResponse components={answerComponents} rehypePlugins={answerRehypePlugins}>
+            {inline ? withMarkers(text, segments, citations.length) : text}
+          </MessageResponse>
+        )}
       </div>
       <Citations activeIndex={activeIndex} citations={citations} onOpen={onOpen} pills={!inline} />
+      <FollowUps items={followUps} onAsk={onAsk} />
     </CitationContext.Provider>
+  )
+}
+
+/** Questions the service can answer from what it found. Alt+1..3 asks them. */
+function FollowUps({ items, onAsk }: { items: FollowUp[]; onAsk: (question: string) => void }) {
+  if (items.length === 0) return null
+  return (
+    <Suggestions aria-label="Preguntas sugeridas" className="gap-1.5" data-testid="follow-ups">
+      {items.slice(0, 3).map((item, index) => (
+        <Suggestion
+          aria-keyshortcuts={`Alt+${index + 1}`}
+          className="h-auto max-w-full py-1 whitespace-normal text-left text-xs"
+          data-testid="follow-up"
+          key={item.question}
+          onClick={onAsk}
+          suggestion={item.question}
+          title={item.question}
+        >
+          {item.label}
+        </Suggestion>
+      ))}
+    </Suggestions>
   )
 }
 

@@ -4,7 +4,7 @@ import path from "node:path"
 import type { Page, Route } from "@playwright/test"
 
 import type { Source } from "../src/lib/api/types"
-import type { Clarification } from "../src/lib/chat/types"
+import type { Block, Citation, Clarification, FollowUp, KeyDataBlock, TableBlock } from "../src/lib/chat/types"
 
 /** Synthetic datasheet page, generated for the repo. */
 export const PAGE_PNG = fs.readFileSync(path.join(process.cwd(), "e2e", "fixtures", "page-acme-demo-ds.png"))
@@ -100,11 +100,16 @@ export const step = (id: string, status: "running" | "done", label: string, elap
 
 export type Segment = { text: string; refs: number[] }
 
+export type Extras = { blocks?: Block[]; follow_ups?: FollowUp[] }
+
 export function answerEvents(
   text = "La carga útil máxima es de 12 kg.",
-  citations = [CITATION],
-  segments: Segment[] = []
+  citations: Citation[] = [CITATION],
+  segments: Segment[] = [],
+  extras: Extras = {}
 ): SseEvent[] {
+  const blocks = extras.blocks ?? []
+  const follow_ups = extras.follow_ups ?? []
   return [
     step("retrieve", "running", "Buscando fragmentos relevantes"),
     step("retrieve", "done", "4 fragmentos candidatos", 0.05),
@@ -114,12 +119,111 @@ export function answerEvents(
     step("verify", "running", "Verificando citas contra los fragmentos"),
     step("verify", "done", "1 cita verificada", 0.01),
     ["citations", { citations }],
+    ...(blocks.length > 0 || follow_ups.length > 0 ? [["blocks", { blocks_version: 1, blocks, follow_ups }] as SseEvent] : []),
     [
       "done",
-      { ok: true, answer: text, citations, segments, reason: "", suggestions: [], inline: segments.length > 0 ? "rules" : "none", timings: { total: 1.3 } },
+      {
+        ok: true,
+        answer: text,
+        citations,
+        segments,
+        blocks_version: 1,
+        blocks,
+        follow_ups,
+        reason: "",
+        suggestions: [],
+        inline: segments.length > 0 ? "rules" : "none",
+        timings: { total: 1.3 },
+      },
     ],
   ]
 }
+
+const invoiceCitation = (numero: string, campo: string, text: string): Citation => ({
+  chunk_id: `${numero}:${campo}`,
+  quote: text,
+  doc: numero,
+  doc_id: `inv-${numero.toLowerCase()}`,
+  section: campo,
+  pages: [1],
+  fragment: text,
+})
+
+/** Synthetic invoice data for the structured blocks: every cell's text equals its citation's fragment. */
+export const KEY_DATA_CITATIONS: Citation[] = [
+  invoiceCitation("F-2026-001", "emisor", "María Soler García"),
+  invoiceCitation("F-2026-001", "cliente", "Talleres Puig, S.A."),
+  invoiceCitation("F-2026-001", "numero", "F-2026-001"),
+  invoiceCitation("F-2026-001", "fecha_emision", "2026-01-01"),
+  invoiceCitation("F-2026-001", "importe_total", "537,94 €"),
+]
+
+export const KEY_DATA_BLOCK: KeyDataBlock = {
+  type: "key_data",
+  title: "Datos clave",
+  doc_id: "inv-f-2026-001",
+  note: "Pendiente de revisión: F-2026-001",
+  items: [
+    { field: "emisor", label: "emisor", text: "María Soler García", kind: "text", cite: 0 },
+    { field: "cliente", label: "cliente", text: "Talleres Puig, S.A.", kind: "text", cite: 1 },
+    { field: "numero", label: "número", text: "F-2026-001", kind: "id", cite: 2 },
+    { field: "fecha_emision", label: "fecha de emisión", text: "2026-01-01", kind: "date", cite: 3 },
+    { field: "importe_total", label: "importe total", text: "537,94 €", kind: "amount", cite: 4 },
+  ],
+}
+
+export const KEY_DATA_TEXT =
+  "- Factura F-2026-001: importe total: 537,94 €; fecha de emisión: 2026-01-01; emisor: María Soler García; cliente: Talleres Puig, S.A."
+
+export const KEY_DATA_SEGMENTS: Segment[] = [{ text: KEY_DATA_TEXT, refs: [4, 3, 0, 1] }]
+
+export const KEY_DATA_FOLLOW_UPS: FollowUp[] = [
+  { label: "Fecha de vencimiento", question: "¿Cuál es la fecha de vencimiento de la factura F-2026-001?" },
+  { label: "Cuota de IVA", question: "¿Cuál es la cuota de IVA de la factura F-2026-001?" },
+]
+
+const ROWS = [
+  ["F-2026-001", "2026-01-01", "537,94 €"],
+  ["F-2026-002", "2026-02-14", "1.210,00 €"],
+  ["F-2026-003", "2026-03-30", "99,50 €"],
+] as const
+
+export const TABLE_CITATIONS: Citation[] = ROWS.flatMap(([numero, fecha, total]) => [
+  invoiceCitation(numero, "numero", numero),
+  invoiceCitation(numero, "fecha_emision", fecha),
+  invoiceCitation(numero, "importe_total", total),
+])
+
+export const TABLE_BLOCK: TableBlock = {
+  type: "table",
+  title: "Facturas de Talleres Puig, S.A.",
+  columns: [
+    { key: "numero", label: "Factura", kind: "id" },
+    { key: "fecha_emision", label: "fecha de emisión", kind: "date" },
+    { key: "importe_total", label: "importe total", kind: "amount" },
+  ],
+  rows: ROWS.map(([numero, fecha, total], i) => ({
+    doc_id: `inv-${numero.toLowerCase()}`,
+    question: `¿Qué datos tiene la factura ${numero}?`,
+    cells: [
+      { text: numero, kind: "id", cite: i * 3 },
+      { text: fecha, kind: "date", cite: i * 3 + 1 },
+      { text: total, kind: "amount", cite: i * 3 + 2 },
+    ],
+  })),
+  summary: { label: "Total", text: "1.847,44 €", kind: "amount", operation: "sum", refs: [2, 5, 8] },
+  note: null,
+}
+
+const TABLE_HEAD = "Facturas de Talleres Puig, S.A.:"
+const TABLE_BULLETS = ROWS.map(([n, f, t]) => `- ${n} (fecha de emisión: ${f}; importe total: ${t})`)
+
+export const TABLE_TEXT = `${TABLE_HEAD}\n\n${TABLE_BULLETS.join("\n")}`
+
+export const TABLE_SEGMENTS: Segment[] = [
+  { text: TABLE_HEAD, refs: [] },
+  ...TABLE_BULLETS.map((bullet, i) => ({ text: `${i === 0 ? "\n\n" : "\n"}${bullet}`, refs: [i * 3, i * 3 + 1, i * 3 + 2] })),
+]
 
 export function refusalEvents(provisional = "Texto sin verificar"): SseEvent[] {
   const answer = "No dispongo de esa información en los documentos"

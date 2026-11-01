@@ -2,6 +2,7 @@ import type { UIMessageChunk } from "ai"
 
 import type {
   AskDataParts,
+  BlocksData,
   Citation,
   Clarification,
   DoneEvent,
@@ -40,6 +41,8 @@ export class ChunkMapper {
         return this.token(event.text)
       case "citations":
         return [citationsChunk(event.citations)]
+      case "blocks":
+        return [blocksChunk({ blocks_version: event.blocks_version, blocks: event.blocks, follow_ups: event.follow_ups ?? [] })]
       case "refusal":
         return this.refuse(event.answer, event.reason, event.suggestions ?? [], event.retract)
       case "clarification":
@@ -139,6 +142,7 @@ export class ChunkMapper {
     }
     out.push(
       citationsChunk(event.citations),
+      blocksChunk({ blocks_version: event.blocks_version, blocks: event.blocks ?? [], follow_ups: event.follow_ups ?? [] }),
       {
         type: "data-result",
         id: "result",
@@ -181,4 +185,8 @@ function toStep(event: Extract<StreamEvent, { event: "step" }>): StepData {
 
 function citationsChunk(citations: Citation[]): AskChunk {
   return { type: "data-citations", id: "citations", data: citations }
+}
+
+function blocksChunk(data: BlocksData): AskChunk {
+  return { type: "data-blocks", id: "blocks", data }
 }

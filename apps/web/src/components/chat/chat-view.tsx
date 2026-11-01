@@ -18,6 +18,11 @@ import { SourceViewer } from "@/components/chat/source-viewer"
 import { UserMessage } from "@/components/chat/user-message"
 import { useConversation } from "@/components/providers/chat-provider"
 import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
+import { AnswerSkeleton } from "@/components/chat/answer-skeleton"
+import { answerMarkdown, firstTableTsv, type AnswerView } from "@/lib/chat/answer-copy"
+import { copyText } from "@/lib/clipboard"
+import { isEditableTarget } from "@/lib/shortcuts"
 import type { Citation } from "@/lib/chat/types"
 import { viewOfAssistant } from "@/lib/chat/view"
 
@@ -26,7 +31,7 @@ type ViewerState = { messageId: string; index: number }
 function ScrollOnSend({ count, lastRole }: { count: number; lastRole: string | undefined }) {
   const { scrollToBottom } = useStickToBottomContext()
   useEffect(() => {
-    if (lastRole === "user") void scrollToBottom("smooth")
+    if (lastRole === "user") void scrollToBottom("instant")
   }, [count, lastRole, scrollToBottom])
   return null
 }
@@ -65,6 +70,39 @@ export function ChatView() {
     setViewer(null)
     regenerate()
   }
+
+  const answer = useMemo<AnswerView | null>(() => {
+    const message = messages.at(-1)
+    if (busy || message?.role !== "assistant") return null
+    const view = viewOfAssistant(message, false)
+    return view.kind === "answer" ? view : null
+  }, [busy, messages])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!event.altKey || event.metaKey || event.ctrlKey || event.shiftKey || event.isComposing || event.defaultPrevented || viewerOpen) return
+      if (!answer || isEditableTarget(event.target)) return
+      const digit = /^Digit([1-3])$/.exec(event.code)
+      if (event.code === "KeyC" || event.code === "KeyT") {
+        event.preventDefault()
+        const table = event.code === "KeyT"
+        const text = table ? firstTableTsv(answer) : answerMarkdown(answer)
+        if (text === null) {
+          toast("Esta respuesta no tiene tabla")
+          return
+        }
+        void copyText(text).then((ok) => toast(ok ? (table ? "Tabla copiada" : "Respuesta copiada") : "No se pudo copiar"))
+      } else if (digit && !isEditableTarget(event.target)) {
+        const item = answer.followUps[Number(digit[1]) - 1]
+        if (!item) return
+        event.preventDefault()
+        send(item.question)
+      }
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  })
+
 
   const last = messages.at(-1)
   const awaitingAssistant = status === "submitted" && last?.role === "user"
@@ -117,6 +155,7 @@ export function ChatView() {
                     <p className="text-sm" role="status">
                       <Shimmer>Buscando en las fuentes…</Shimmer>
                     </p>
+                    <AnswerSkeleton />
                   </MessageContent>
                 </Message>
               ) : null}

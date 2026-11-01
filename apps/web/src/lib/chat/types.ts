@@ -7,6 +7,11 @@ export type Suggestion = components["schemas"]["Suggestion"]
 export type Segment = components["schemas"]["Segment"]
 export type Clarification = components["schemas"]["Clarification"]
 export type ClarificationCandidate = components["schemas"]["ClarificationCandidate"]
+export type KeyDataBlock = components["schemas"]["KeyDataBlock"]
+export type TableBlock = components["schemas"]["TableBlock"]
+export type Block = KeyDataBlock | TableBlock
+export type Cell = components["schemas"]["Cell"]
+export type FollowUp = components["schemas"]["FollowUp"]
 export type StepEvent = components["schemas"]["StepEvent"]
 export type DoneEvent = components["schemas"]["DoneEvent"]
 export type StreamEvent = components["schemas"]["StreamEvent"]
@@ -30,6 +35,9 @@ export type ResultData = {
   segments: Segment[]
 }
 
+/** What the service sends besides the text of an answer: structured blocks and questions it can answer next. */
+export type BlocksData = { blocks_version?: number; blocks: Block[]; follow_ups: FollowUp[] }
+
 export type RefusalData = {
   answer: string
   reason: string
@@ -48,6 +56,7 @@ export type AskDataParts = {
   step: StepData
   citations: Citation[]
   result: ResultData
+  blocks: BlocksData
   refusal: RefusalData
   clarification: ClarificationData
   failure: FailureData
