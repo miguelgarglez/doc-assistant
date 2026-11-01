@@ -372,3 +372,8 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 - La API ofrece una consulta paginada y local de metadatos de peticiones; no incluye pregunta, respuesta ni citas. El contrato se amplía sin eliminar rutas. Las pruebas cubren orden, paginación, límites y autorización.
 - Pendiente conectar la vista de Sistema y completar la revisión y las verificaciones de v0.17.1.
+
+## 01-Nov 15:09 CET · Sistema e historial contextual
+
+- La API real devolvió una conversación sintética que Sistema no mostraba: la vista solo consultaba estado y avisos. Se añade una tabla paginada de peticiones, con identificador copiable y metadatos de estado; los fallos de escritura sin persistir siguen en el estado del historial.
+- Se compararon dos paneles laterales. Historial abre ahora en un panel derecho estrecho que puede ampliarse; conserva búsqueda, borrado y Alt+H. Pasaron pruebas focalizadas de navegador y comprobaciones de tipos y lint; queda pendiente la batería completa.
