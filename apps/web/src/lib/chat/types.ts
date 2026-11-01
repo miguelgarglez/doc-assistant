@@ -53,6 +53,7 @@ export type FailureData = { code: string; message: string }
  * service sends besides tokens travels as a typed data part, so the UI never parses text.
  */
 export type AskDataParts = {
+  request: { request_id: string }
   step: StepData
   citations: Citation[]
   result: ResultData

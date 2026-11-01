@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
+import AxeBuilder from "@axe-core/playwright"
 
 import {
   answerEvents,
@@ -14,6 +15,57 @@ import {
 const assistant = (page: Page) => page.getByTestId("assistant-message")
 
 test.describe("chat", () => {
+  test("envía feedback sin contexto por defecto", async ({ page }) => {
+    await mockBackend(page)
+    let sent: Record<string, unknown> | undefined
+    await page.route("**/api/history/feedback", async (route) => {
+      sent = route.request().postDataJSON() as Record<string, unknown>
+      await route.fulfill({ status: 201, json: { feedback_id: "feedback-demo" } })
+    })
+    await page.goto("/")
+    await ask(page, "¿Cuál es la carga?")
+    await expect(assistant(page).last()).toHaveAttribute("data-kind", "answer")
+    await page.getByRole("button", { name: "Respuesta incorrecta" }).click()
+    expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([])
+    await page.getByLabel("Comentario opcional").fill("Revisar la cifra")
+    await page.getByRole("button", { name: "Enviar para revisión" }).click()
+    await expect(page.getByText("Respuesta enviada para revisión")).toBeVisible()
+    expect(sent).toMatchObject({ request_id: "request-demo", include_context: false, comment: "Revisar la cifra" })
+    expect(sent?.conversation_id).toBeTruthy()
+    await page.getByRole("button", { name: "Respuesta incorrecta" }).click()
+    await page.getByRole("checkbox", { name: /Incluir pregunta/ }).check()
+    await page.getByRole("button", { name: "Enviar para revisión" }).click()
+    await expect.poll(() => sent?.include_context).toBe(true)
+  })
+
+  test("mantiene la identidad al recargar y la cambia al crear una conversación", async ({ page }) => {
+    await mockBackend(page)
+    const ids: string[] = []
+    await page.route("**/api/ask/stream", async (route) => {
+      const body = route.request().postDataJSON() as { conversation_id: string }
+      ids.push(body.conversation_id)
+      await route.fulfill({ contentType: "text/event-stream", body: sse(answerEvents()) })
+    })
+    await page.goto("/")
+    await ask(page, "Primera pregunta")
+    await expect(assistant(page).last()).toHaveAttribute("data-kind", "answer")
+    await expect.poll(async () => page.evaluate(() => {
+      const value = window.sessionStorage.getItem("doc-assistant.conversation.v1")
+      return value?.includes('"request_id":"request-demo"') ?? false
+    })).toBe(true)
+    await page.reload()
+    await ask(page, "Segunda pregunta")
+    await expect(assistant(page)).toHaveCount(2)
+    await expect(assistant(page).last()).toHaveAttribute("data-kind", "answer")
+    await page.getByTestId("new-conversation").click()
+    await ask(page, "Conversación nueva")
+    await expect(assistant(page).last()).toHaveAttribute("data-kind", "answer")
+    expect(ids).toHaveLength(3)
+    expect(ids[0]).toBeTruthy()
+    expect(ids[1]).toBe(ids[0])
+    expect(ids[2]).not.toBe(ids[0])
+  })
+
   for (const active of [true, false]) {
     test(`aviso de historial cuando está ${active ? "activo" : "desactivado"}`, async ({ page }) => {
       await mockBackend(page)

@@ -9,7 +9,10 @@ const STREAM_TIMEOUT_MS = 180_000
 
 /** Streams `/ask/stream` through the SDK transport contract, so `useChat` owns state, abort and regenerate. */
 export class AskTransport implements ChatTransport<AskMessage> {
-  constructor(private readonly base = "/api") {}
+  constructor(
+    private readonly base = "/api",
+    private readonly conversationId?: () => string,
+  ) {}
 
   async sendMessages({
     messages,
@@ -23,6 +26,7 @@ export class AskTransport implements ChatTransport<AskMessage> {
       ...(abortSignal ? [abortSignal] : []),
     ])
     const base = this.base
+    const conversationId = this.conversationId?.()
 
     return new ReadableStream<AskChunk>({
       async start(out) {
@@ -39,7 +43,7 @@ export class AskTransport implements ChatTransport<AskMessage> {
           const response = await fetch(`${base}/ask/stream`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
-            body: JSON.stringify({ question }),
+            body: JSON.stringify({ question, ...(conversationId ? { conversation_id: conversationId } : {}) }),
             signal,
           })
           if (response.status === 404 || response.status === 405) {

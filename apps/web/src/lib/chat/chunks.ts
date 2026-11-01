@@ -120,14 +120,15 @@ export class ChunkMapper {
   }
 
   private done(event: DoneEvent): AskChunk[] {
+    const identity: AskChunk = { type: "data-request", id: "request", data: { request_id: event.request_id } }
     if (!event.ok && event.clarification) {
-      const out = [...this.clarify(event.reason, event.clarification), ...this.closeStep(), { type: "finish" } as AskChunk]
+      const out = [...this.clarify(event.reason, event.clarification), identity, ...this.closeStep(), { type: "finish" } as AskChunk]
       this.finished = true
       return out
     }
     if (!event.ok) {
       const out = this.refuse(event.answer, event.reason, event.suggestions ?? [], true)
-      out.push(...this.closeStep(), { type: "finish" })
+      out.push(identity, ...this.closeStep(), { type: "finish" })
       this.finished = true
       return out
     }
@@ -141,6 +142,7 @@ export class ChunkMapper {
       )
     }
     out.push(
+      identity,
       citationsChunk(event.citations),
       blocksChunk({ blocks_version: event.blocks_version, blocks: event.blocks ?? [], follow_ups: event.follow_ups ?? [] }),
       {

@@ -18,6 +18,7 @@ import type { AskMessage } from "@/lib/chat/types"
 import { lastTrace, lastQuestion } from "@/lib/chat/view"
 
 const STORAGE_KEY = "doc-assistant.conversation.v1"
+const CONVERSATION_KEY = "doc-assistant.conversation-id.v1"
 
 type ChatContextValue = {
   messages: AskMessage[]
@@ -28,6 +29,7 @@ type ChatContextValue = {
   regenerate: () => void
   stop: () => void
   clear: () => void
+  conversationId: () => string
   history: ReturnType<typeof useQuestionHistory>
   trace: ReturnType<typeof lastTrace>
 }
@@ -44,9 +46,43 @@ function restore(): AskMessage[] {
   }
 }
 
+class ConversationIdentity {
+  private id: string | null = null
+
+  get(): string {
+    if (!this.id) {
+      try {
+        this.id = window.sessionStorage.getItem(CONVERSATION_KEY)
+      } catch {
+        // A blocked session store does not prevent a new conversation.
+      }
+      this.id ||= crypto.randomUUID()
+      try {
+        window.sessionStorage.setItem(CONVERSATION_KEY, this.id)
+      } catch {
+        // The identity remains available for this page session.
+      }
+    }
+    return this.id
+  }
+
+  clear() {
+    this.id = null
+    try {
+      window.sessionStorage.removeItem(CONVERSATION_KEY)
+    } catch {
+      // Nothing persisted to remove.
+    }
+  }
+}
+
 /** The session conversation lives in one `Chat` so it survives route changes and reloads of the tab. */
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const chat = useMemo(() => new Chat<AskMessage>({ transport: new AskTransport() }), [])
+  const { chat, identity } = useMemo(() => {
+    const identity = new ConversationIdentity()
+    const chat = new Chat<AskMessage>({ transport: new AskTransport("/api", () => identity.get()) })
+    return { chat, identity }
+  }, [])
   const { messages, status, error, sendMessage, regenerate, stop, setMessages } = useChat<AskMessage>({ chat })
   const { markAttached, items } = useUploads()
   const history = useQuestionHistory()
@@ -93,19 +129,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const clear = useCallback(() => {
     void stop()
     setMessages([])
+    identity.clear()
     try {
       window.sessionStorage.removeItem(STORAGE_KEY)
     } catch {
       // Nothing persisted to remove.
     }
-  }, [setMessages, stop])
+  }, [identity, setMessages, stop])
 
   const busy = status === "submitted" || status === "streaming"
   const trace = useMemo(() => lastTrace(messages), [messages])
+  const getConversationId = useCallback(() => identity.get(), [identity])
 
   const value = useMemo<ChatContextValue>(
-    () => ({ messages, status, error, busy, ask, regenerate: retry, stop: () => void stop(), clear, history, trace }),
-    [messages, status, error, busy, ask, retry, stop, clear, history, trace]
+    () => ({ messages, status, error, busy, ask, regenerate: retry, stop: () => void stop(), clear, conversationId: getConversationId, history, trace }),
+    [messages, status, error, busy, ask, retry, stop, clear, getConversationId, history, trace]
   )
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>
 }

@@ -134,6 +134,7 @@ export function answerEvents(
         suggestions: [],
         inline: segments.length > 0 ? "rules" : "none",
         timings: { total: 1.3 },
+        request_id: "request-demo",
       },
     ],
   ]
@@ -336,6 +337,7 @@ export async function mockBackend(page: Page, options: BackendOptions = {}) {
   await page.route("**/api/invoices", (route) => route.fulfill({ json: [INVOICE] }))
   await page.route("**/api/invoices/*/image", (route) => route.fulfill({ contentType: "image/png", body: PAGE_PNG }))
   await page.route("**/api/health", (route) => route.fulfill({ json: { status: "ok" } }))
+  await page.route("**/api/history/status", (route) => route.fulfill({ json: { active: false } }))
   await page.route("**/api/health/components", (route) => route.fulfill({ json: HEALTH }))
   await page.route("**/api/ask/stream", async (route) => {
     const body = route.request().postDataJSON() as { question: string }

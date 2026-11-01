@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { Message, MessageAction, MessageActions, MessageContent, MessageResponse } from "@/components/ai-elements/message"
 import { Shimmer } from "@/components/ai-elements/shimmer"
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion"
+import { FeedbackAction } from "@/components/chat/feedback-action"
 import { AnswerBlocks } from "@/components/chat/answer-blocks"
 import { AnswerSkeleton } from "@/components/chat/answer-skeleton"
 import { AnswerLink } from "@/components/chat/citation-marker"
@@ -56,6 +57,7 @@ export const AssistantMessage = memo(function AssistantMessage({
 }: AssistantMessageProps) {
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
   const view = viewOfAssistant(message, live, isLast ? error : undefined)
+  const requestId = message.parts.find((part) => part.type === "data-request")?.data.request_id
   const total = view.kind === "answer" ? (view.result.timings.total ?? null) : null
 
   return (
@@ -122,7 +124,7 @@ export const AssistantMessage = memo(function AssistantMessage({
           </p>
         ) : null}
         {view.kind === "answer" || view.kind === "refusal" || view.kind === "clarification" ? (
-          <Actions copyText={copyTextOf(view)} elapsed={total} isLast={isLast} onRetry={onRetry} />
+          <Actions copyText={copyTextOf(view)} elapsed={total} isLast={isLast} onRetry={onRetry} requestId={requestId} />
         ) : null}
       </MessageContent>
     </Message>
@@ -197,7 +199,7 @@ function FollowUps({ items, onAsk }: { items: FollowUp[]; onAsk: (question: stri
   )
 }
 
-function Actions({ copyText: text, elapsed, isLast, onRetry }: { copyText: string; elapsed: number | null; isLast: boolean; onRetry: () => void }) {
+function Actions({ copyText: text, elapsed, isLast, onRetry, requestId }: { copyText: string; elapsed: number | null; isLast: boolean; onRetry: () => void; requestId?: string }) {
   const [copied, setCopied] = useState(false)
   const copy = async () => {
     const ok = await copyText(text)
@@ -218,6 +220,7 @@ function Actions({ copyText: text, elapsed, isLast, onRetry }: { copyText: strin
       <MessageAction data-testid="copy-answer" label={copied ? "Copiado" : "Copiar respuesta"} onClick={copy}>
         {copied ? <CheckIcon /> : <CopyIcon />}
       </MessageAction>
+      {requestId ? <FeedbackAction requestId={requestId} /> : null}
       {isLast ? (
         <MessageAction data-testid="regenerate" label="Volver a generar" onClick={onRetry}>
           <RefreshCwIcon />
