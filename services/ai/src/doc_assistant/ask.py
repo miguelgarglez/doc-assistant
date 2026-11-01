@@ -291,6 +291,7 @@ def _ask_events(
         trace["candidates"] = [
             {
                 "chunk_id": chunk["chunk_id"],
+                "text_sha256": hashlib.sha256(chunk["text"].encode("utf-8")).hexdigest(),
                 "position": position,
                 "vector_score": vector_scores.get(chunk["chunk_id"]),
                 "bm25_score": bm25_scores.get(chunk["chunk_id"]),

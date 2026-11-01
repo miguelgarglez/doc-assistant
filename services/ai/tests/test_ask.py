@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 from doc_assistant.adapters import FakeEmbedder, FakeLLM, FakeReranker
@@ -88,6 +89,8 @@ def test_private_trace_captures_scores_without_changing_events(
     }
     selected = [c for c in trace["candidates"] if c["selected"]]
     assert selected and all(c["rerank_score"] is not None for c in selected)
+    candidate = next(c for c in trace["candidates"] if c["chunk_id"] == chunk["chunk_id"])
+    assert candidate["text_sha256"] == hashlib.sha256(chunk["text"].encode()).hexdigest()
     assert any(c["vector_score"] is not None for c in trace["candidates"])
     assert trace["verification"]["ok"] is True
     assert trace["verification"]["citations"][0]["quote"] == "24 V"

@@ -353,3 +353,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Cuatro pruebas del almacén y Ruff pasan. La persistencia sigue desactivada.
 
 - Comprobación posterior: mypy detectó que el método `list` ocultaba el tipo integrado en las nuevas anotaciones. Se corrigió; mypy y las 11 pruebas de historial y consulta pasan.
+
+## 01-Nov 07:13 CET · Huella de candidatos
+- La traza opcional incluye el SHA256 del texto de cada candidato recuperado. Permite detectar cambios en ese texto, pero no reconstruirlo ni identificar una revisión completa del índice. No activa persistencia.
+- Siete pruebas de consulta y Ruff pasan. La política de texto y retención sigue pendiente.
