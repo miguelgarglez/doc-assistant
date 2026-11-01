@@ -6,6 +6,7 @@ import time
 import uuid
 from collections.abc import AsyncIterator, Callable, Iterator
 from contextlib import asynccontextmanager, closing
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -447,9 +448,39 @@ def _translate_ask_events(
 
 
 def queued_ask_stream(
-    capacity: AskCapacity, config_path: Path, question: str, request_id: str | None = None
+    capacity: AskCapacity,
+    config_path: Path,
+    question: str,
+    request_id: str | None = None,
+    *,
+    trace: dict[str, Any] | None = None,
 ) -> Iterator[str]:
+    started = time.monotonic()
+    if trace is not None:
+        trace.update(
+            {
+                "trace_schema_version": 1,
+                "question": question,
+                "steps": [],
+                "started_at": datetime.now(UTC).isoformat(),
+                "status": "interrupted",
+            }
+        )
+
+    def finish_admission(status: str, code: str | None = None) -> None:
+        if trace is not None:
+            trace.update(
+                {
+                    "status": status,
+                    "finished_at": datetime.now(UTC).isoformat(),
+                    "elapsed_s": round(time.monotonic() - started, 4),
+                }
+            )
+            if code is not None:
+                trace["error_code"] = code
+
     if not capacity.admitted.acquire(blocking=False):
+        finish_admission("error", "queue_full")
         yield sse(
             ErrorEvent(
                 code="queue_full",
@@ -461,12 +492,12 @@ def queued_ask_stream(
     try:
         acquired = capacity.running.acquire(blocking=False)
         if not acquired:
-            started = time.monotonic()
             yield sse(
                 StepEvent(id="route", status="running", label="Esperando turno para responder")
             )
             acquired = capacity.running.acquire(timeout=ASK_QUEUE_TIMEOUT_S)
             if not acquired:
+                finish_admission("error", "queue_timeout")
                 yield sse(
                     ErrorEvent(
                         code="queue_timeout",
@@ -482,8 +513,14 @@ def queued_ask_stream(
                     elapsed_s=round(time.monotonic() - started, 4),
                 )
             )
-        yield from ask_stream_events(config_path, question, request_id)
+        if trace is None:
+            yield from ask_stream_events(config_path, question, request_id)
+        else:
+            trace["queue_wait_s"] = round(time.monotonic() - started, 4)
+            yield from ask_stream_events(config_path, question, request_id, trace=trace)
     finally:
+        if trace is not None and "finished_at" not in trace:
+            finish_admission("interrupted")
         if acquired:
             capacity.running.release()
         capacity.admitted.release()

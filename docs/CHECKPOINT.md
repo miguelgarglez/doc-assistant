@@ -2,6 +2,7 @@
 (Horas reales de los commits, Europe/Madrid, tomadas de `git log`.)
 
 ## Hitos
+- **01-nov 07:16 · Admisión en la traza.** El colector opcional registra rechazo, espera agotada o interrupción en cola y conserva el tiempo de espera de consultas admitidas. Doce pruebas focalizadas, Ruff y mypy pasan. Ningún endpoint activa el colector todavía.
 - **01-nov 07:15 · Orden de recuperación en traza.** La traza opcional registra la posición de cada candidato tras el reranker, además de su posición inicial. Siete pruebas de consulta y Ruff pasan; no se ha activado persistencia ni cambiado el contrato público.
 - **01-Nov 02:51 · Suite del servicio.** 314 pruebas pasan y 35 live se omiten con el entorno Python existente. La regresión se ha ajustado a Ruff. No sustituye `mise run check` ni las tres pasadas e2e.
 - **01-Nov 02:50 · Carga sintética concurrente.** Con modelos locales, cuatro consultas SSE y dos ingestas PDF simultáneas terminaron correctamente. El modelo tenía dos slots; esta muestra no demuestra el comportamiento bajo saturación prolongada.
