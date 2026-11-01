@@ -125,3 +125,22 @@ class HistoryStore:
                 (feedback_id, created_at, kind, comment, conversation_id, request_id),
             )
             return cursor.rowcount == 1
+
+    def get_feedback(self, conversation_id: str, feedback_id: str) -> dict[str, Any] | None:
+        """Read the server snapshot, including after its request has been removed."""
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT feedback_id, request_id, created_at, kind, comment, trace_json "
+                "FROM feedback WHERE conversation_id = ? AND feedback_id = ?",
+                (conversation_id, feedback_id),
+            ).fetchone()
+        if row is None:
+            return None
+        return {
+            "feedback_id": row[0],
+            "request_id": row[1],
+            "created_at": row[2],
+            "kind": row[3],
+            "comment": row[4],
+            "trace": json.loads(row[5]),
+        }

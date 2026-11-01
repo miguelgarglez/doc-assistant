@@ -452,3 +452,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 11:03 CET · Permisos del archivo de historial
 - El almacén crea una base nueva con permisos POSIX 0600 independientemente de la umask. La creación exclusiva admite inicializaciones simultáneas. No cambia permisos de bases ya existentes ni sustituye controles de acceso o cifrado.
 - Ocho pruebas de historial y Ruff pasan. Las comprobaciones de permisos se omiten fuera de POSIX; la persistencia sigue desconectada de la API.
+
+## 01-Nov 11:03 CET · Lectura interna del feedback
+- El almacén permite recuperar la copia de feedback por conversación incluso después de borrar la petición. Una prueba comprueba el contenido y rechaza otra conversación. El identificador no autentica y no se expone ningún endpoint.
+- Ocho pruebas de historial, Ruff y mypy pasan.

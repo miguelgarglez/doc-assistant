@@ -29,6 +29,16 @@ def test_history_is_separate_and_feedback_copies_server_trace(tmp_path):
     assert saved is not None
     assert json.loads(saved[0]) == trace
     assert saved[1] == "c1"
+    assert store.get_feedback("c2", "f1") is None
+    assert store.get_feedback("c1", "missing") is None
+    assert store.get_feedback("c1", "f1") == {
+        "feedback_id": "f1",
+        "request_id": "r1",
+        "created_at": "now",
+        "kind": "incorrecta",
+        "comment": "revisar",
+        "trace": trace,
+    }
 
 
 def test_duplicate_request_is_not_overwritten(tmp_path):
