@@ -9,8 +9,8 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 
 ## Trabajo sin publicar
 
-- Mejoran la concurrencia entre PDF y consultas, y la explicación de errores del modelo en chat y Sistema.
-- Pendientes: verificar la cola y la saturación, evaluación representativa, gold aprobado y plataformas no probadas. El fallo histórico carece de traza.
+- Mejoran la concurrencia entre PDF y consultas, la admisión acotada y la explicación de errores del modelo en chat y Sistema.
+- Pendientes: carga sostenida y equidad de la cola, evaluación representativa, gold aprobado y plataformas no probadas. El fallo histórico carece de traza.
 - Recuento: 31 filas, 18 cumplidas, 10 parciales y 3 no. La carga nueva no cambia el estado de ninguna fila.
 
 ## Resumen v0.15.0

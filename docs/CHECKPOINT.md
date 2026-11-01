@@ -284,3 +284,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 - Con modelos locales, 12 consultas y 4 PDF en hasta 8 tareas: 6 consultas devolvieron respuesta verificada, 6 recibieron `queue_full` y los 4 PDF se indexaron. Cuatro consultas mostraron el paso de espera. El HTTP 200 de SSE no representa por sí solo el resultado del flujo.
 - Los procesos de la prueba se cerraron por PID. La prueba no mide equidad ni comportamiento sostenido y no reproduce la carga de facturas.
 
+## 01-Nov 03:18 CET · Check con código actual
+- `mise run check` pasó con `PYTHONPATH` apuntando al servicio actual: 322 pruebas del servicio y 26 de scripts, 35 live omitidas, Ruff, mypy, ESLint, tipos, contrato sin deriva y build. El build usó la raíz temporal ampliada para resolver dependencias existentes; después se retiró la adaptación.
+- Se repiten las pasadas de navegador con el build final. La autorización de dependencias locales sigue en decisiones pendientes.
+
