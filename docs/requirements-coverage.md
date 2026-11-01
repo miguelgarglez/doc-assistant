@@ -37,7 +37,7 @@ Requisitos parafraseados del enunciado (no se reproduce el texto original). Esta
 | C1 / N1 | 100 % local, sin APIs de terceros | llama-server en 127.0.0.1 (Ollama opcional) | Cumplido | Todos los adaptadores apuntan a localhost (`config.yaml`). Internet solo en la instalación. |
 | C2 | Modelos elegidos para la máquina disponible | `config.yaml`, `assets.json` | Parcial | Funciona en un M4 de 16 GB (humo real). |
 | C3 | Especificar el hardware | README "Probado en" | Cumplido | `sysctl`, `sw_vers` y `system_profiler` identifican CPU y GPU de 10 núcleos, 16 GiB de memoria unificada y macOS 26.6.2. Hay una muestra RSS durante una consulta sintética; faltan picos y carga representativa (E-B2). |
-| C4 / C5 / E-C1 | Justificar cada modelo frente al hardware, con su cuantización y las alternativas descartadas | `docs/modelos-hardware.md` | **No** | Están inventariados los archivos y sus cuantizaciones. Hay instantáneas RSS de carga y consulta sintética con otra compilación; faltan picos y una comparación reproducible de alternativas. |
+| C4 / C5 / E-C1 | Justificar cada modelo frente al hardware, con su cuantización y las alternativas descartadas | `docs/modelos-hardware.md` | **No** | Están inventariados los archivos y sus cuantizaciones. Hay instantáneas RSS y una comparación exploratoria reproducible de 4B y 9B con tres preguntas sintéticas y otra compilación. Faltan picos y una evaluación representativa de alternativas. |
 
 ## Escalado
 

@@ -2,6 +2,7 @@
 (Horas reales de los commits, Europe/Madrid, tomadas de `git log`.)
 
 ## Hitos
+- **01-nov 02:28 · Comparación exploratoria de modelos.** Qwen3.5 4B y 9B respondieron tres preguntas sintéticas iguales; se anotaron RSS y tiempos individuales con otra actividad en el equipo. Método reproducible y límites en `modelos-hardware.md`; no permite descartar alternativas. Los dos procesos se cerraron por PID.
 - **01-nov 02:27 · Documentación de continuación.** CHANGELOG y cobertura reflejan la comparación sintética, las muestras de memoria y los límites de las verificaciones, sin declarar una versión cerrada.
 - **01-nov 02:27 · Memoria de modelos.** Cuatro servidores con compilación 11960 y modelos fijados: dos muestras RSS antes/después de una inferencia sintética. Detalle y límites en `modelos-hardware.md`; no mide pico ni equivale a GPU separada. Procesos cerrados por PID y puertos libres.
 - **01-nov 02:26 · Playwright y axe.** Tres pasadas con 180 aprobadas y 4 live omitidas cada una, en el puerto 3180. Se usó Node 26 del sistema para Playwright; el check de proyecto utilizó las versiones fijadas por mise.

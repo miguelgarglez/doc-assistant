@@ -35,3 +35,22 @@ En el Mac del README se arrancaron los cuatro modelos de `scripts/dev.py` por se
 | OCR | 1.791 MiB | 1.791 MiB |
 
 Son dos instantáneas, no el pico de una carga completa; RSS puede incluir páginas compartidas y no permite sumar sin más ni separar memoria GPU en este Mac de memoria unificada. No hubo OCR, recuperación ni trabajo concurrente durante la consulta. La versión de llama.cpp, el contexto y la carga afectan los resultados. Por eso E-B2 sigue parcial: faltan pico de memoria y carga representativa con la compilación de entrega. Los cuatro procesos se cerraron por sus PID y sus puertos quedaron libres.
+
+## Comparación exploratoria de dos modelos de lenguaje
+
+Con los dos archivos Qwen3.5 Q4_K_M locales se ejecutaron tres preguntas sintéticas idénticas, secuencialmente y con temperatura 0: dos datos literales y una ausencia explícita. Ambos devolvieron los tres resultados esperados. Las respuestas fueron `4 m`, `24 V` y `No está indicado.` para ambos. El servidor fue la compilación 11960, con contexto 8192 y dos slots. Hubo otra actividad en el equipo, incluidas pruebas de navegador. Una sola ejecución por pregunta no permite comparar calidad ni rendimiento de forma fiable.
+
+| Modelo | RSS al cargar | RSS tras las consultas | Tiempos observados |
+|---|---:|---:|---|
+| Qwen3.5 4B | 3.152 MiB | 3.420 MiB | 0,30 / 0,35 / 0,40 s |
+| Qwen3.5 9B | 2.630 MiB | 2.902 MiB | 0,55 / 0,61 / 0,67 s |
+
+La RSS observada del 9B fue menor en esta muestra. No es el consumo total ni demuestra que necesite menos memoria: la residencia de páginas y la memoria del dispositivo pueden variar. No se ha medido el pico. Los tiempos incluyen la petición HTTP y corresponden a salidas cortas; no son una comparación controlada ni predicen tiempos de la aplicación. El experimento no permite descartar ninguna alternativa y C4/C5/E-C1 sigue en «no».
+
+Para repetirlo en macOS con los dos GGUF ya disponibles y `llama-server` compatible en PATH:
+
+```sh
+DOC_ASSISTANT_MODELS_DIR=/ruta/a/modelos uv run --frozen --project services/ai python evidence/modelos/comparar.py
+```
+
+Usa el puerto 8181 y cierra por PID los servidores que crea. Se puede seleccionar otro ejecutable mediante `DOC_ASSISTANT_LLAMA_SERVER`; las cifras dependen de su versión y de la carga del equipo.
