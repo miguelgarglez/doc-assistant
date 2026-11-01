@@ -2,6 +2,7 @@
 (Horas reales de los commits, Europe/Madrid, tomadas de `git log`.)
 
 ## Hitos
+- **01-nov 07:19 · Pasos de espera en traza.** El colector conserva por separado los eventos de cola tal como los recibe el cliente, incluso si después termina el pipeline o se interrumpe la espera. Quince pruebas focalizadas, Ruff y mypy pasan.
 - **01-nov 07:18 · Tipo de resultado en traza.** El colector distingue respuesta, rechazo, aclaración y error, incluida la interrupción. Catorce pruebas focalizadas, Ruff y mypy pasan; el dato sigue en memoria.
 - **01-nov 07:18 · Colector sin streaming.** La función interna `ask` acepta el mismo colector opcional que el pipeline de streaming. Ocho pruebas de consulta, Ruff y mypy pasan; el endpoint no activa el colector.
 - **01-nov 07:18 · Estado del diseño de historial.** El documento distingue las piezas internas ya implementadas de la persistencia y la interfaz pendientes, y describe los límites y el coste aún no medido de la huella del índice.

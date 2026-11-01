@@ -466,6 +466,7 @@ def queued_ask_stream(
                 "request_id": request_id,
                 "question": question,
                 "steps": [],
+                "queue_steps": [],
                 "started_at": datetime.now(UTC).isoformat(),
                 "status": "interrupted",
             }
@@ -484,6 +485,11 @@ def queued_ask_stream(
             if code is not None:
                 trace["error_code"] = code
 
+    def queue_step(step: StepEvent) -> str:
+        if trace is not None:
+            trace["queue_steps"].append(step.model_dump(mode="json", exclude={"event"}))
+        return sse(step)
+
     if not capacity.admitted.acquire(blocking=False):
         finish_admission("error", "queue_full")
         yield sse(
@@ -497,7 +503,7 @@ def queued_ask_stream(
     try:
         acquired = capacity.running.acquire(blocking=False)
         if not acquired:
-            yield sse(
+            yield queue_step(
                 StepEvent(id="route", status="running", label="Esperando turno para responder")
             )
             acquired = capacity.running.acquire(timeout=ASK_QUEUE_TIMEOUT_S)
@@ -510,7 +516,7 @@ def queued_ask_stream(
                     )
                 )
                 return
-            yield sse(
+            yield queue_step(
                 StepEvent(
                     id="route",
                     status="done",
