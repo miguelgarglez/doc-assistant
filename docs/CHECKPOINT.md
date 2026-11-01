@@ -15,6 +15,15 @@
 - Historial y feedback tienen piezas internas probadas en la rama de origen, desconectadas de la API y de la interfaz. Multiusuario sigue como propuesta.
 - No hay persistencia automática; faltan privacidad, retención, autorización y comunicación de errores de escritura.
 
+## Diario de integración v0.16.0
+
+- 01-Nov 12:02 CET: integrados los 66 commits posteriores a v0.15.2 mediante merge. Conservado el índice docs/README.md y el diario previo de main.
+- Corregida una expectativa del test SSE importado. La reproducción con Node 24.22.2 falló antes y pasó después; añadido caso con request_id dentro del JSON. No sustituye Playwright.
+- Comparación OpenAPI con main: solo se añade request_id a DoneEvent y a sus campos de salida requeridos. La regeneración y el check de deriva siguen pendientes.
+- Enlaces internos: 692 comprobados, 0 rotos. Búsqueda del nombre privado sin coincidencias. Auditoría preliminar del merge y tags existentes: TOTAL 0.
+- No cerrado: este worktree aún no tiene dependencias locales. Faltan mise run check, tres pasadas Playwright con axe y humo real en el stack aislado. No hay cambios visuales ni capturas nuevas.
+- No se han activado los endpoints de historial ni feedback. No se ha creado tag ni actualizado main.
+
 ## Hitos
 - **01-Nov 02:51 · Suite del servicio.** 314 pruebas pasan y 35 live se omiten con el entorno Python existente. La regresión se ha ajustado a Ruff. No sustituye `mise run check` ni las tres pasadas e2e.
 - **01-Nov 02:50 · Carga sintética concurrente.** Con modelos locales, cuatro consultas SSE y dos ingestas PDF simultáneas terminaron correctamente. El modelo tenía dos slots; esta muestra no demuestra el comportamiento bajo saturación prolongada.
