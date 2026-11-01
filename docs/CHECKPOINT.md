@@ -509,3 +509,7 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 ## 01-Nov 11:15 CET · Huella de la configuración utilizada
 - La traza calcula `config_sha256` con los mismos bytes de YAML que carga la petición. Antes, si el archivo cambiaba entre la carga y una segunda lectura, la huella podía describir otro contenido. La huella no identifica las variables de entorno expandidas.
 - La regresión reproduce el fallo anterior y pasa con la corrección. Pasan 12 pruebas de consulta, Ruff y mypy; la persistencia sigue desconectada.
+
+## 01-Nov 11:16 CET · Invariantes del historial
+- El almacén rechaza una traza con `conversation_id` distinto y motivos de feedback fuera de los cuatro previstos. Las trazas antiguas sin ese campo siguen admitidas. El filtro no autentica y la persistencia sigue desconectada.
+- Pasan 20 pruebas de historial, revisión y exportación; Ruff, formato y mypy correctos.

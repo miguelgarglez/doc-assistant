@@ -231,3 +231,22 @@ def test_export_contains_only_reviewed_drafts_with_expected_answers(tmp_path):
     assert item["feedback_id"] == "c-ready"
     assert item["expected_answer"] == "15 €"
     assert item["trace"] == {"question": "c"}
+
+
+def test_history_rejects_trace_for_a_different_conversation(tmp_path):
+    store = HistoryStore(tmp_path / "history.db")
+    with pytest.raises(ValueError, match="conversation_id"):
+        store.record("r", "c1", "now", {"conversation_id": "c2"})
+    assert store.get("c1", "r") is None
+    store.record("r", "c1", "now", {"conversation_id": "c1"})
+    assert store.get("c1", "r") == {"conversation_id": "c1"}
+
+
+def test_feedback_rejects_unknown_kind_without_writing(tmp_path):
+    store = HistoryStore(tmp_path / "history.db")
+    store.record("r", "c", "now", {"question": "private"})
+    with pytest.raises(ValueError, match="kind"):
+        store.add_feedback("f", "c", "r", "now", "unknown", None)
+    assert store.get_feedback("c", "f") is None
+    for kind in ("incorrecta", "cita_equivocada", "falta_informacion", "otro"):
+        assert store.add_feedback(kind, "c", "r", "now", kind, None)

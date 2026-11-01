@@ -83,6 +83,8 @@ class HistoryStore:
     ) -> None:
         if "request_id" in trace and trace["request_id"] != request_id:
             raise ValueError("trace request_id does not match the request")
+        if "conversation_id" in trace and trace["conversation_id"] != conversation_id:
+            raise ValueError("trace conversation_id does not match the conversation")
         with self._connect() as db:
             db.execute(
                 "INSERT INTO requests VALUES (?, ?, ?, ?)",
@@ -129,6 +131,8 @@ class HistoryStore:
         kind: str,
         comment: str | None,
     ) -> bool:
+        if kind not in {"incorrecta", "cita_equivocada", "falta_informacion", "otro"}:
+            raise ValueError("invalid feedback kind")
         with self._connect() as db:
             cursor = db.execute(
                 "INSERT INTO feedback (feedback_id, request_id, conversation_id, created_at, kind, comment, trace_json) "
