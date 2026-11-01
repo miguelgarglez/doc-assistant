@@ -29,7 +29,7 @@ apps/web/            Next.js 16 + TS strict
   src/features/viewer/             página y resaltado
   src/components/uploads/          diálogo y avisos de subida
   src/components/sources/          gestión de fuentes
-  src/components/system/           estado de componentes y última traza
+  src/features/system/             estado de componentes y última traza
   src/components/ai-elements/      componentes de conversación
   src/components/providers/        estado compartido de chat y subidas
   src/lib/domain/                  tipos y utilidades de dominio

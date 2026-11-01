@@ -5,12 +5,12 @@ import { useEffect, useMemo, useState } from "react"
 
 import { useConversation } from "@/components/providers/chat-provider"
 import { Page, PageHeader } from "@/components/shell/page"
-import { HistoryStatusPanel } from "@/components/system/history-status"
-import { SystemDiagram } from "@/components/system/system-diagram"
-import { TracePanel } from "@/components/system/trace-panel"
+import { HistoryStatusPanel } from "@/features/system"
+import { SystemDiagram } from "@/features/system"
+import { TracePanel } from "@/features/system"
 import { Button } from "@/components/ui/button"
-import { useHealth } from "@/hooks/use-health"
-import { pieceUsage } from "@/lib/system/pieces"
+import { useHealth } from "@/features/system"
+import { pieceUsage } from "@/features/system"
 
 const REPLAY_STEP_MS = 700
 

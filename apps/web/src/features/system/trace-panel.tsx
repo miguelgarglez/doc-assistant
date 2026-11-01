@@ -6,7 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import type { Trace } from "@/lib/chat/view"
 import { duration } from "@/lib/format"
-import { PIECES, STEP_PIECES } from "@/lib/system/pieces"
+import { PIECES, STEP_PIECES } from "@/features/system/pieces"
 import { cn } from "@/lib/utils"
 
 type TracePanelProps = {

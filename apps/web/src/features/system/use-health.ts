@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import type { ComponentsHealth } from "@/lib/api/types"
-import { PIECES, UNKNOWN, type PieceId, type PieceStatus } from "@/lib/system/pieces"
+import { PIECES, UNKNOWN, type PieceId, type PieceStatus } from "@/features/system/pieces"
 
 type HealthState = {
   pieces: Record<PieceId, PieceStatus>

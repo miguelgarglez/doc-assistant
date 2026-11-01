@@ -1,5 +1,5 @@
-import type { ComponentHealth } from "../api/types"
-import type { StepData, StepId } from "../chat/types"
+import type { ComponentHealth } from "@/lib/api/types"
+import type { StepData, StepId } from "@/lib/chat/types"
 
 export type PieceId = "web" | "proxy" | ComponentHealth["id"]
 

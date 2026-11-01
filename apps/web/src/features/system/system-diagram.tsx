@@ -25,7 +25,7 @@ import {
   type PieceId,
   type PieceStatus,
   type PieceUsage,
-} from "@/lib/system/pieces"
+} from "@/features/system/pieces"
 import { cn } from "@/lib/utils"
 
 const ICONS: Record<PieceId, LucideIcon> = {
