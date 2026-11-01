@@ -361,3 +361,9 @@ Decisión clave y por qué: el proxy filtra hop-by-hop + Expect y devuelve 502 `
 
 - Si SQLite no abre al arrancar, la cola conserva las consultas y reintenta; Sistema distingue ese fallo de una desactivación. Una prueba integrada verifica la recuperación, el `request_id` y el stream intacto. La cola sigue siendo volátil ante reinicios.
 - Paginación probada con 101 conversaciones y 101 avisos. Un fixture derivado del humo sintético restaura dos respuestas con citas, una aclaración y un rechazo. Los formularios usan componentes shadcn sobre Base UI y las vistas focalizadas pasan axe.
+
+## 01-Nov 14:23 CET · Verificación de historial y feedback
+
+- `mise run check` terminó correctamente con 395 pruebas del servicio, 35 live omitidas y 26 pruebas de scripts; lint, tipos, contrato generado y build correctos. El build reutilizó dependencias existentes y una raíz de Turbopack ampliada temporalmente.
+- Tres pasadas Playwright con axe dieron 199 aprobadas y cuatro live omitidas cada una. Cubren las vistas de historial y revisión, la paginación de 101 elementos, restauración de resultados sintéticos reales y contraste del botón en hover en cuatro temas y modos.
+- El humo con modelos locales comprobó en una sola ejecución una respuesta documental y otra de factura con citas, aclaración y rechazo, las cuatro consultas guardadas y un aviso revisado y exportado. Son datos sintéticos, no una medida de precisión general.
