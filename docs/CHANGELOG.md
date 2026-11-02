@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.19.2 · Diagrama de arquitectura
+
+- Corregido el diagrama de componentes: el título del subgrafo va entre comillas y GitHub lo renderiza. Se comprobaron los seis diagramas Mermaid de la documentación.
+
 ## v0.19.1 · Evidencia visual reproducible
 
 - `mise run evidence --live` regenera las capturas finales sobre el stack local y los fixtures sintéticos, además de escribir las métricas.

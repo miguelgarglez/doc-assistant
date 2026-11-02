@@ -11,7 +11,7 @@ flowchart LR
     U[Ingeniero<br/>navegador] --> W[Next.js<br/>UI + proxy BFF]
     W --> A[FastAPI<br/>API y casos de uso]
 
-    subgraph Equipo local · 127.0.0.1
+    subgraph local["Equipo local · 127.0.0.1"]
       W
       A
       L[Qwen3.5 4B Q4_K_M<br/>respuesta y planificación]
