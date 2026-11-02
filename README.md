@@ -28,7 +28,7 @@ mise run start
 
 Abre <http://127.0.0.1:3000>. `Ctrl-C` detiene la web, el servicio y los cuatro servidores de modelos.
 
-El ZIP de entrega ya contiene los cinco GGUF y los binarios fijados de llama.cpp para macOS ARM64, Linux x64 y Windows x64. `setup` verifica sus SHA256 y no vuelve a descargarlos. Las dependencias Python y npm sí se instalan desde sus lockfiles.
+El ZIP de entrega incluye los binarios fijados de llama.cpp para macOS ARM64, Linux x64 y Windows x64, pero no los modelos, que ocupan unos 5,4 GB. `mise run setup` descarga los cinco GGUF desde las URLs fijadas en `scripts/assets.json` y verifica el SHA256 y el tamaño de cada uno; si ya los tienes, indica su carpeta con `--models-dir`. Después del setup todo funciona sin conexión. Las dependencias Python y npm sí se instalan desde sus lockfiles.
 
 ### Demo con datos de ejemplo
 

@@ -76,7 +76,7 @@ Conclusión: el alcance funcional solicitado está implementado. Los límites re
 | ID | Qué se exige | Dónde se cumple | Evidencia reproducible | Estado y límite |
 |---|---|---|---|---|
 | REP1 | Arranque con un comando o pocos pasos | `mise install`, `mise run setup`, `mise run start` | Smoke del paquete en limpio | **Cumplido en macOS ARM64.** |
-| REP2 | Sin montajes manuales frágiles | Versiones fijadas, SHA256, modelos y binarios en el ZIP | `mise run package --smoke real` | **Parcial.** Windows y Linux están empaquetados pero no probados físicamente. |
+| REP2 | Sin montajes manuales frágiles | Versiones fijadas, SHA256, binarios en el ZIP y descarga verificada de los modelos en `setup` | `mise run package --smoke real` | **Parcial.** Windows y Linux están empaquetados pero no probados físicamente. |
 | REP3 | Evidencia con la misma facilidad | Tarea `evidence` | Comandos anteriores | **Cumplido.** |
 | N1 | IA permitida en desarrollo; procesamiento local | Configuración local | Vista Sistema y health checks | **Cumplido.** |
 | N2 | Elecciones documentadas | `docs/decisions-log.md` | Índice de decisiones | **Cumplido.** |

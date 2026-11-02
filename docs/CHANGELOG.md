@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.19.3 · ZIP ligero
+
+- El ZIP de entrega se reduce a código, documentación, evidencia y binarios fijados. Los modelos (5,4 GB) los descarga `mise run setup` desde URLs fijadas, con verificación de SHA256 y tamaño.
+
 ## v0.19.2 · Diagrama de arquitectura
 
 - Corregido el diagrama de componentes: el título del subgrafo va entre comillas y GitHub lo renderiza. Se comprobaron los seis diagramas Mermaid de la documentación.
