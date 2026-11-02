@@ -159,6 +159,22 @@ def smoke(zip_path: Path, prefix: str, fake: bool) -> None:
     if "[setup] descargando" in log:
         raise SystemExit("[smoke] setup descargó algo (debería usar lo empaquetado)")
     print(f"[smoke] setup OK sin descargas de modelos/binarios ({time.time() - t0:.0f} s)")
+    mise = shutil.which("mise")
+    if mise is None:
+        raise SystemExit("[smoke] necesito mise para comprobar el paquete")
+    checked_project = subprocess.run(
+        [mise, "run", "check"],
+        check=False,
+        cwd=root,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    check_log = checked_project.stdout + checked_project.stderr
+    (td / "check.log").write_text(check_log)
+    if checked_project.returncode != 0:
+        raise SystemExit(f"[smoke] mise run check falló:\n{check_log[-3000:]}")
+    print(f"[smoke] mise run check OK ({time.time() - t0:.0f} s)")
     if fake:
         env["DOC_ASSISTANT_FAKE_LLAMA"] = "1"
     kw: dict[str, object] = (

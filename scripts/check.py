@@ -86,12 +86,27 @@ def main() -> int:
         gen_client()
     else:
         python_checks()
-        gen_client()
-        step(
-            "sin drift del contrato",
-            [tool("git"), "diff", "--exit-code", "--", *CONTRACT],
-            ROOT,
+        packaged_contract = (
+            {path: (ROOT / path).read_bytes() for path in CONTRACT}
+            if not (ROOT / ".git").exists()
+            else None
         )
+        gen_client()
+        if packaged_contract is None:
+            step(
+                "sin drift del contrato",
+                [tool("git"), "diff", "--exit-code", "--", *CONTRACT],
+                ROOT,
+            )
+        else:
+            changed = [
+                path
+                for path, before in packaged_contract.items()
+                if (ROOT / path).read_bytes() != before
+            ]
+            if changed:
+                raise SystemExit(f"[check] FALLO en drift del contrato: {', '.join(changed)}")
+            print("[check] sin drift del contrato: comparación del paquete OK", flush=True)
         web_checks()
         build()
         print("[check] OK", flush=True)

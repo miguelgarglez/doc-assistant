@@ -12,6 +12,7 @@ from urllib.parse import unquote, urlsplit
 from _common import ROOT
 
 LINK = re.compile(r"!?\[[^\]]*]\((?P<target><[^>]+>|[^)\s]+)(?:\s+[^)]*)?\)")
+EXCLUDED_DIRS = frozenset({"node_modules", ".venv", ".next", "vendor", "models", "data"})
 
 
 @dataclass(frozen=True)
@@ -22,13 +23,22 @@ class BrokenLink:
 
 
 def tracked_markdown(root: Path) -> list[Path]:
-    result = subprocess.run(
-        ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "*.md"],
-        cwd=root,
-        check=True,
-        capture_output=True,
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "*.md"],
+            cwd=root,
+            check=False,
+            capture_output=True,
+        )
+    except OSError:
+        result = None
+    if result is not None and result.returncode == 0:
+        return [root / name.decode() for name in result.stdout.split(b"\0") if name]
+    return sorted(
+        path
+        for path in root.rglob("*.md")
+        if not EXCLUDED_DIRS.intersection(path.relative_to(root).parts)
     )
-    return [root / name.decode() for name in result.stdout.split(b"\0") if name]
 
 
 def local_path(source: Path, target: str) -> Path | None:
