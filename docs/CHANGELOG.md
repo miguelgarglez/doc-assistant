@@ -6,6 +6,7 @@
 - El verificador rechaza también afirmaciones sin solapamiento léxico suficiente con las fuentes recuperadas; se añadió una regresión para una cita literal pero irrelevante.
 - Evaluación local regenerada con expectativas explícitas: 6/6 facturas sintéticas sin discrepancias en los campos comprobados y 5/5 preguntas con salida y citas esperadas.
 - Evidencia visual canónica de chat, rechazo, visor y Sistema; se retiraron galerías duplicadas, diarios, handoffs y revisiones internas.
+- ZIP autocontenido probado desde un directorio limpio: setup sin descargas, `mise run check`, ingesta PDF, respuesta con cita, OCR de factura y cierre sin puertos ocupados.
 - OpenAPI y cliente generado sin cambios respecto a v0.18.0.
 
 ## v0.18.0 · Estructura por responsabilidad

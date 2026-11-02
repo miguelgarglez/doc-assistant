@@ -82,7 +82,7 @@ Conclusión: el alcance funcional solicitado está implementado. Los límites re
 | N2 | Elecciones documentadas | `docs/decisions-log.md` | Índice de decisiones | **Cumplido.** |
 | N3 | Resolver huecos deliberados | `docs/open-gaps.md` | Tabla de supuestos, razón, límite y mejora | **Cumplido.** |
 | N4 | Priorizar razonamiento sobre amplitud | Alcance y límites declarados | README y supuestos | **Cumplido como criterio de alcance.** |
-| N5 | ZIP con código, README y arquitectura | `scripts/package.py` | Inspección y smoke real del ZIP | **Pendiente de cierre** en la fase de empaquetado final. |
+| N5 | ZIP con código, README y arquitectura | `scripts/package.py` | ZIP íntegro, `mise run check` y smoke real tras descomprimir | **Cumplido.** |
 
 ## Lectura correcta de la evidencia
 
