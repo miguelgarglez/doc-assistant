@@ -325,6 +325,12 @@ test.describe("añadir fuentes", () => {
     await mockBackend(page)
     await page.route("**/api/documents*", (route) => route.fulfill(created(2)))
     await page.goto("/")
+    await expect(async () => {
+      await page.keyboard.press("ControlOrMeta+/")
+      await expect(page.getByRole("dialog", { name: "Atajos de teclado" })).toBeVisible()
+    }).toPass()
+    await page.keyboard.press("Escape")
+    await expect(page.getByRole("dialog", { name: "Atajos de teclado" })).toHaveCount(0)
     await expect(page.getByTestId("drop-overlay")).toHaveCSS("opacity", "0")
     await page.evaluate(() => {
       const data = new DataTransfer()

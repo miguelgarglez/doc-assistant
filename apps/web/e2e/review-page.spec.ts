@@ -34,6 +34,7 @@ test("revisa con redacciones, confirma y puede descartar desde teclado", async (
   expect(payload).toMatchObject({ redacted_comment: "Falta un dato", redacted_context: "Importe omitido", confirmed_no_sensitive_data: true })
   await expect(page.getByText("No hay avisos en esta categoría.")).toBeVisible()
   await expect(page.getByRole("heading", { name: "Detalle del aviso" })).toHaveCount(0)
+  await expect(page.locator("[data-sonner-toast]").filter({ hasText: "Aviso revisado" })).toHaveCSS("opacity", "1")
   expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze()).violations).toEqual([])
   await page.getByRole("tab", { name: /Revisados/ }).click()
   await expect(page.getByRole("heading", { name: "Detalle del aviso" })).toBeVisible()
