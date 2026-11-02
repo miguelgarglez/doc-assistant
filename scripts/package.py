@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from _common import (
     ARCHIVES,
     ASSETS,
+    PORT_ENV,
     ROOT,
     PortError,
     busy_message,
@@ -166,7 +167,7 @@ def smoke(zip_path: Path, prefix: str, fake: bool) -> None:
         [mise, "run", "check"],
         check=False,
         cwd=root,
-        env=env,
+        env={key: value for key, value in env.items() if key not in PORT_ENV.values()},
         capture_output=True,
         text=True,
     )
