@@ -16,11 +16,13 @@ Todas las fuentes de esta carpeta son sintéticas y se pueden publicar. No conti
 mise run evidence
 ```
 
-Regenera capturas deterministas con Playwright y las respuestas simuladas versionadas. Sirve para verificar interfaz, navegación, accesibilidad y presentación, no la calidad de los modelos.
+Ejecuta las pruebas deterministas de Playwright con respuestas simuladas versionadas. Sirve para verificar interfaz, navegación, accesibilidad y presentación, no la calidad de los modelos.
 
 ```sh
 mise run evidence --live
 ```
+
+Además de evaluar los modelos con fixtures sintéticos, arranca el stack local y regenera las capturas finales a 1440 × 900: respuesta documental con cita, visor, respuesta de factura, rechazo y vista Sistema.
 
 Arranca los modelos reales, ingiere `evidence/fixtures`, ejecuta el conjunto con expectativas, escribe `live/results.json` y `live/results.md`, y cierra el stack. Requiere haber ejecutado `mise run setup`.
 

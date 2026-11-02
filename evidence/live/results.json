@@ -1,5 +1,5 @@
 {
-  "fecha": "2026-11-02 00:48 CET",
+  "fecha": "2026-11-02 01:18 CET",
   "documentos": [
     {
       "fichero": "robot-demo.pdf",
@@ -16,42 +16,42 @@
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 16.7
+      "segundos": 13.8
     },
     {
       "fichero": "factura_011.png",
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 22.7
+      "segundos": 20.8
     },
     {
       "fichero": "factura_021.png",
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 24.5
+      "segundos": 21.9
     },
     {
       "fichero": "factura_031.png",
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 22.0
+      "segundos": 20.0
     },
     {
       "fichero": "factura_041.png",
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 26.1
+      "segundos": 30.2
     },
     {
       "fichero": "factura_051.png",
       "estado": "ok",
       "motivo": null,
       "discrepancias": {},
-      "segundos": 27.9
+      "segundos": 39.8
     }
   ],
   "preguntas": [
@@ -76,7 +76,7 @@
         ]
       ],
       "cumple": true,
-      "segundos": 10.5
+      "segundos": 15.1
     },
     {
       "tipo": "documento",
@@ -99,7 +99,7 @@
         ]
       ],
       "cumple": true,
-      "segundos": 10.6
+      "segundos": 15.4
     },
     {
       "tipo": "factura",
@@ -122,7 +122,7 @@
         ]
       ],
       "cumple": true,
-      "segundos": 7.0
+      "segundos": 9.7
     },
     {
       "tipo": "rechazo",
@@ -137,7 +137,7 @@
       "motivo": "llm_unanswerable",
       "citas": [],
       "cumple": true,
-      "segundos": 6.8
+      "segundos": 8.7
     },
     {
       "tipo": "rechazo",
@@ -152,7 +152,7 @@
       "motivo": "llm_unanswerable",
       "citas": [],
       "cumple": true,
-      "segundos": 5.6
+      "segundos": 7.1
     }
   ],
   "metricas": {

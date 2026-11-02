@@ -84,8 +84,8 @@ Es una defensa por capas, no una promesa imposible de demostrar con una muestra 
 ```sh
 mise run check             # lint, tipos, tests, enlaces, contrato y build
 CI=1 pnpm --filter web e2e # interfaz y accesibilidad
-mise run evidence          # capturas deterministas
-mise run evidence --live   # modelos reales + fixtures sintéticos
+mise run evidence          # e2e deterministas de interfaz y accesibilidad
+mise run evidence --live   # modelos reales, fixtures sintéticos y capturas finales
 mise run package           # ZIP autocontenido y smoke en limpio
 ```
 

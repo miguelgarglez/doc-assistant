@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.19.1 · Evidencia visual reproducible
+
+- `mise run evidence --live` regenera las capturas finales sobre el stack local y los fixtures sintéticos, además de escribir las métricas.
+- Se distingue explícitamente la verificación e2e determinista de la captura con modelos reales.
+
 ## v0.19.0 · Entrega final
 
 - Documentación de entrada orientada al evaluador: guía de lectura, arquitectura con diagramas, matriz requisito-evidencia, decisiones y supuestos con plan de mejora.

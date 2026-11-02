@@ -1,6 +1,6 @@
-"""Regenera evidence/: capturas Playwright (sin modelos) y, con --live, una corrida
+"""Verifica la interfaz con Playwright y, con --live, ejecuta y captura una corrida
 real con documentos y facturas sintéticos de evidence/fixtures (requiere modelos y,
-para facturas, Ollama con glm-ocr). Salida: evidence/live/results.{json,md}.
+para facturas, Ollama con glm-ocr). Salida: evidence/live/results.{json,md} y capturas.
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ def screenshots() -> None:
     if pnpm is None:
         raise SystemExit("[evidence] necesito pnpm (mise install)")
     subprocess.run([pnpm, "--filter", "web", "e2e"], cwd=ROOT, check=True)
-    print("[evidence] capturas en evidence/screenshots")
+    print("[evidence] interfaz y accesibilidad verificadas")
 
 
 def live() -> None:
@@ -146,6 +146,24 @@ def live() -> None:
                     "segundos": round(time.time() - t0, 1),
                 }
             )
+        node = shutil.which("node")
+        if node is None:
+            raise SystemExit("[evidence] necesito node para capturar la interfaz")
+        capture_env = {
+            **os.environ,
+            "BASE": f"http://127.0.0.1:{ports['web']}",
+            "OUT": str(ROOT / "evidence" / "screenshots"),
+            "ONLY": "1440x900",
+            "THEMES": "industrial-light",
+            "ROUTES": "sistema",
+        }
+        subprocess.run(
+            [node, "e2e/capture.mjs"],
+            cwd=ROOT / "apps" / "web",
+            env=capture_env,
+            check=True,
+        )
+        print("[evidence] capturas live finales en evidence/screenshots")
     finally:
         if sys.platform == "win32":
             p.send_signal(signal.CTRL_BREAK_EVENT)  # type: ignore[attr-defined]

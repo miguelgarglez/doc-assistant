@@ -41,5 +41,5 @@ run = "uv run --project services/ai python scripts/check_links.py"
 description = "ZIP64 de entrega (código, docs, evidence, modelos, binarios) y prueba en limpio"
 run = "uv run --project services/ai python scripts/package.py"
 [tasks.evidence]
-description = "Regenera evidence/ (capturas; --live añade corrida real con fixtures sintéticos)"
+description = "Verifica la interfaz; --live evalúa modelos y regenera capturas con fixtures sintéticos"
 run = "uv run --project services/ai python scripts/evidence.py"

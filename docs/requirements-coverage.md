@@ -63,7 +63,7 @@ Conclusión: el alcance funcional solicitado está implementado. Los límites re
 | E-A4 | Estética sin comprometer fiabilidad | Texto provisional marcado y retirada si falla verificación | Tests del transporte SSE y e2e | **Cumplido.** |
 | E-B1 | Preguntas, respuestas esperadas y métricas | Expectativas en `scripts/evidence.py`; resultados en `evidence/live/` | `mise run evidence --live` | **Cumplido con alcance sintético.** |
 | E-B2 | Latencia, ingesta y RAM/VRAM en hardware real | `docs/modelos-hardware.md` y `evidence/live/results.md` | Comando live y método publicado | **Cumplido con límites.** En Apple Silicon la VRAM no es separable de la RAM unificada; se publican RSS, no picos. |
-| E-B3 | Evidencia visual, incluido rechazo | `evidence/screenshots/` | `mise run evidence` | **Cumplido.** |
+| E-B3 | Evidencia visual, incluido rechazo | `evidence/screenshots/` | `mise run evidence --live` | **Cumplido.** |
 | E-B4 | Evidencia adicional | Comparación de chunking, tests, galería y corrida live | Comandos enlazados desde `evidence/README.md` | **Cumplido.** |
 | E-B5 | Evidencia regenerable | Tarea `evidence` y fixtures versionadas | `mise run evidence`; `mise run evidence --live` | **Cumplido.** |
 | E-C1 | Arquitectura: modelos frente a hardware | `docs/architecture.md` y `docs/modelos-hardware.md` | Revisión de inventario, alternativas y medidas | **Cumplido.** |
